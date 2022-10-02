@@ -6,6 +6,7 @@ pub enum GOKZMapIdentifier {
 	Id(u16),
 }
 
+#[derive(Clone)]
 pub enum GOKZModeIdentifier {
 	Name(GOKZModeName),
 	Id(u16),
@@ -15,6 +16,74 @@ pub enum GOKZModeIdentifier {
 pub enum GOKZPlayerIdentifier {
 	Name(String),
 	SteamID(String),
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub enum GOKZRank {
+	Legend(String),
+	Master(String),
+	Pro(String),
+	Semipro(String),
+	ExpertPlus(String),
+	Expert(String),
+	ExpertMinus(String),
+	SkilledPlus(String),
+	Skilled(String),
+	SkilledMinus(String),
+	RegularPlus(String),
+	Regular(String),
+	RegularMinus(String),
+	CasualPlus(String),
+	Casual(String),
+	CasualMinus(String),
+	AmateurPlus(String),
+	Amateur(String),
+	AmateurMinus(String),
+	BeginnerPlus(String),
+	Beginner(String),
+	BeginnerMinus(String),
+	New(String),
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct GlobalAPIStatusPage {
+	pub id: String,
+	pub name: String,
+	pub url: String,
+	pub time_zone: String,
+	pub updated_at: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct GlobalAPIStatusComponent {
+	pub id: String,
+	pub name: String,
+	pub status: String,
+	pub created_at: String,
+	pub updated_at: String,
+	pub position: i32,
+	pub description: String,
+	pub showcase: bool,
+	pub start_date: Option<String>,
+	pub group_id: Option<String>,
+	pub page_id: String,
+	pub group: bool,
+	pub only_show_if_degraded: bool,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct GlobalAPIStatusStatus {
+	pub indicator: String,
+	pub description: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct GlobalAPIStatus {
+	pub page: GlobalAPIStatusPage,
+	pub components: Vec<GlobalAPIStatusComponent>,
+	pub incidents: Vec<String>,
+	pub scheduled_maintenances: Vec<String>,
+	pub status: GlobalAPIStatusStatus,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
@@ -84,7 +153,7 @@ pub struct GOKZRecord {
 	pub map_id: u16,
 	pub stage: u8,
 	pub mode: GOKZModeName,
-	pub tickrate: u16,
+	pub tickrate: u8,
 	pub time: f32,
 	pub teleports: u32,
 	pub created_on: String,
@@ -96,4 +165,57 @@ pub struct GOKZRecord {
 	pub points: u16,
 	pub record_filter_id: u32,
 	pub replay_id: u32,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct GOKZRecordFilter {
+	pub id: u32,
+	pub map_id: u16,
+	pub stage: u8,
+	pub mode_id: u16,
+	pub tickrate: u8,
+	pub has_teleports: bool,
+	pub created_on: String,
+	pub updated_on: String,
+	pub updated_by_id: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
+pub struct GOKZPlayerProfile {
+	pub name: String,
+	pub steam_id: Option<String>,
+	pub steam_id64: String,
+	pub rank: GOKZRank,
+	pub points: (u32, u32),
+	pub records: (u32, u32),
+	pub completion: [(u32, u32); 8],
+	pub completion_percentage: [(f32, f32); 8],
+	pub is_banned: bool,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct KZGOCompletionCount {
+	#[serde(rename(deserialize = "1"))]
+	pub one: u32,
+	#[serde(rename(deserialize = "2"))]
+	pub two: u32,
+	#[serde(rename(deserialize = "3"))]
+	pub three: u32,
+	#[serde(rename(deserialize = "4"))]
+	pub four: u32,
+	#[serde(rename(deserialize = "5"))]
+	pub five: u32,
+	#[serde(rename(deserialize = "6"))]
+	pub six: u32,
+	#[serde(rename(deserialize = "7"))]
+	pub seven: u32,
+	pub total: u32,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct KZGOCompletionStats {
+	pub _id: String,
+	pub mode: String,
+	pub pro: KZGOCompletionCount,
+	pub tp: KZGOCompletionCount,
 }

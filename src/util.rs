@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 pub enum GOKZErrorType {
 	GlobalAPI,
 	KZGO,
-	Conversion,
+	Parsing,
 	Other,
 }
 

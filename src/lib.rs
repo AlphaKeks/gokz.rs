@@ -21,7 +21,7 @@ where
 		Ok(url) => url,
 		Err(why) => {
 			return Err(GOKZError {
-				r#type: GOKZErrorType::Conversion,
+				r#type: GOKZErrorType::Parsing,
 				tldr: String::from("Invalid params."),
 				raw: why.to_string(),
 			})
@@ -44,7 +44,34 @@ where
 		Ok(json) => Ok(json),
 		Err(why) => {
 			return Err(GOKZError {
-				r#type: GOKZErrorType::Conversion,
+				r#type: GOKZErrorType::Parsing,
+				tldr: String::from("Failed to parse to JSON."),
+				raw: why.to_string(),
+			})
+		}
+	}
+}
+
+pub async fn check_api() -> Result<GlobalAPIStatus, GOKZError> {
+	let url = String::from("https://status.global-api.com/api/v2/summary.json");
+
+	let client = reqwest::Client::new();
+	let request = match client.get(url).send().await {
+		Ok(data) => data,
+		Err(why) => {
+			return Err(GOKZError {
+				r#type: GOKZErrorType::GlobalAPI,
+				tldr: String::from("GlobalAPI request failed."),
+				raw: why.to_string(),
+			})
+		}
+	};
+
+	match request.json::<GlobalAPIStatus>().await {
+		Ok(json) => Ok(json),
+		Err(why) => {
+			return Err(GOKZError {
+				r#type: GOKZErrorType::Parsing,
 				tldr: String::from("Failed to parse to JSON."),
 				raw: why.to_string(),
 			})
@@ -436,7 +463,7 @@ pub async fn get_recent(player: GOKZPlayerIdentifier) -> Result<GOKZRecord, GOKZ
 					Ok(date) => date,
 					Err(why) => {
 						return Err(GOKZError {
-							r#type: GOKZErrorType::Conversion,
+							r#type: GOKZErrorType::Parsing,
 							tldr: String::from("Failed to parse date string."),
 							raw: why.to_string(),
 						})
@@ -450,4 +477,458 @@ pub async fn get_recent(player: GOKZPlayerIdentifier) -> Result<GOKZRecord, GOKZ
 
 		return Ok(recent.1.to_owned());
 	}
+}
+
+pub async fn get_place(record: GOKZRecord) -> Result<u16, GOKZError> {
+	return api_request::<u16>(format!("records/place/{}", record.id), vec![]).await;
+}
+
+pub async fn get_filter_dist(
+	mode: GOKZModeIdentifier,
+	runtype: bool,
+) -> Result<Vec<GOKZRecordFilter>, GOKZError> {
+	let mut params = vec![
+		("stages", 0.to_string()),
+		("tickrates", 128.to_string()),
+		("limit", 999.to_string()),
+		("has_teleports", runtype.to_string()),
+		("mode_ids", String::new()),
+	];
+
+	match mode {
+		GOKZModeIdentifier::Name(name) => {
+			params[4].1 = match name {
+				GOKZModeName::kz_timer => String::from("200"),
+				GOKZModeName::kz_simple => String::from("201"),
+				GOKZModeName::kz_vanilla => String::from("202"),
+			}
+		}
+		GOKZModeIdentifier::Id(id) => params[4].1 = id.to_string(),
+	}
+
+	return api_request::<Vec<GOKZRecordFilter>>(String::from("record_filters?"), params).await;
+}
+
+pub async fn get_unfinished(
+	player: GOKZPlayerIdentifier,
+	tier: Option<u8>,
+	mode: GOKZModeIdentifier,
+	runtype: bool,
+) -> Result<Vec<String>, GOKZError> {
+	let doable = match get_filter_dist(mode.clone(), runtype).await {
+		Ok(filters) => filters,
+		Err(why) => return Err(why),
+	};
+
+	let completed = match get_times(player, mode, runtype).await {
+		Ok(records) => records,
+		Err(why) => return Err(why),
+	};
+
+	let mut comp_ids = vec![];
+	let mut uncomp_ids = vec![];
+
+	for record in completed {
+		comp_ids.push(record.map_id);
+	}
+
+	for filter in doable {
+		if !comp_ids.contains(&filter.map_id) {
+			uncomp_ids.push(filter.map_id);
+		}
+	}
+
+	let global_maps = match get_maps().await {
+		Ok(maps) => maps,
+		Err(why) => return Err(why),
+	};
+
+	let mut uncompleted = vec![];
+	for map in global_maps {
+		if uncomp_ids.contains(&map.id)
+			&& (match tier {
+				Some(x) => &map.difficulty == &x,
+				None => true,
+			}) && (if runtype {
+			!&map.name.starts_with("kzpro_")
+		} else {
+			true
+		}) {
+			uncompleted.push(map.name);
+		}
+	}
+
+	return Ok(uncompleted);
+}
+
+pub async fn get_profile(
+	input_player: GOKZPlayerIdentifier,
+	mode: GOKZModeIdentifier,
+) -> Result<GOKZPlayerProfile, GOKZError> {
+	let mut player = GOKZPlayerProfile {
+		name: String::new(),
+		steam_id: None,
+		steam_id64: String::new(),
+		is_banned: false,
+		points: (0, 0),
+		records: (0, 0),
+		completion: [(0, 0); 8],
+		completion_percentage: [(0.0, 0.0); 8],
+		rank: GOKZRank::New("New".to_string()),
+	};
+
+	match input_player.clone() {
+		GOKZPlayerIdentifier::Name(name) => {
+			if let Ok(res) = get_player(GOKZPlayerIdentifier::Name(name)).await {
+				player.name = res.name;
+				player.steam_id = Some(res.steam_id);
+				player.steam_id64 = res.steamid64;
+				player.is_banned = res.is_banned;
+			} else {
+				return Err(GOKZError {
+					r#type: GOKZErrorType::GlobalAPI,
+					tldr: String::from("Failed to get API Player by name."),
+					raw: String::new(),
+				});
+			}
+		}
+		GOKZPlayerIdentifier::SteamID(steam_id) => {
+			if let Ok(res) = get_player(GOKZPlayerIdentifier::SteamID(steam_id)).await {
+				player.name = res.name;
+				player.steam_id = Some(res.steam_id);
+				player.steam_id64 = res.steamid64;
+				player.is_banned = res.is_banned;
+			} else {
+				return Err(GOKZError {
+					r#type: GOKZErrorType::GlobalAPI,
+					tldr: String::from("Failed to get API Player by name."),
+					raw: String::new(),
+				});
+			}
+		}
+	}
+
+	let mut global_maps = vec![HashMap::new(), HashMap::new()];
+	match get_maps().await {
+		Ok(maps) => {
+			for map in maps {
+				global_maps[0].insert(map.name.clone(), map.difficulty);
+				global_maps[1].insert(map.name, map.difficulty);
+			}
+		}
+		Err(why) => return Err(why),
+	}
+
+	let tp_times = if let Ok(times) = get_times(
+		match player.steam_id.clone() {
+			Some(steam_id) => GOKZPlayerIdentifier::SteamID(steam_id),
+			None => GOKZPlayerIdentifier::Name(player.name.clone()),
+		},
+		mode.clone(),
+		true,
+	)
+	.await
+	{
+		times
+	} else {
+		vec![]
+	};
+
+	let pro_times = if let Ok(times) = get_times(input_player, mode.clone(), false).await {
+		times
+	} else {
+		vec![]
+	};
+
+	if tp_times.len() == 0 && pro_times.len() == 0 {
+		return Err(GOKZError {
+			r#type: GOKZErrorType::GlobalAPI,
+			tldr: String::from("This player has no API times."),
+			raw: String::new(),
+		});
+	}
+
+	let x;
+	if tp_times.len() > pro_times.len() {
+		x = tp_times.len()
+	} else {
+		x = pro_times.len()
+	}
+
+	for i in 0..x {
+		if tp_times.len() > i {
+			if global_maps[0].contains_key(&tp_times[i].map_name) {
+				player.points.0 += tp_times[i].points as u32;
+				player.completion[7].0 += 1;
+
+				match global_maps[0].get(&tp_times[i].map_name) {
+					Some(h) => match h {
+						1 => player.completion[0].0 += 1,
+						2 => player.completion[1].0 += 1,
+						3 => player.completion[2].0 += 1,
+						4 => player.completion[3].0 += 1,
+						5 => player.completion[4].0 += 1,
+						6 => player.completion[5].0 += 1,
+						7 => player.completion[6].0 += 1,
+						_ => (),
+					},
+					_ => (),
+				}
+
+				if &tp_times[i].points == &1000 {
+					player.records.0 += 1;
+				}
+
+				global_maps[0].remove(&tp_times[i].map_name);
+			}
+		}
+
+		if pro_times.len() > i {
+			if global_maps[1].contains_key(&pro_times[i].map_name) {
+				player.points.1 += pro_times[i].points as u32;
+				player.completion[7].1 += 1;
+
+				match global_maps[1].get(&pro_times[i].map_name) {
+					Some(h) => match h {
+						1 => player.completion[0].1 += 1,
+						2 => player.completion[1].1 += 1,
+						3 => player.completion[2].1 += 1,
+						4 => player.completion[3].1 += 1,
+						5 => player.completion[4].1 += 1,
+						6 => player.completion[5].1 += 1,
+						7 => player.completion[6].1 += 1,
+						_ => (),
+					},
+					_ => (),
+				}
+
+				if &pro_times[i].points == &1000 {
+					player.records.1 += 1;
+				}
+
+				global_maps[1].remove(&pro_times[i].map_name);
+			}
+		}
+	}
+
+	let total_points = &player.points.0 + &player.points.1;
+	let mode = match mode {
+		GOKZModeIdentifier::Name(name) => name,
+		GOKZModeIdentifier::Id(id) => match id {
+			200 => GOKZModeName::kz_timer,
+			201 => GOKZModeName::kz_simple,
+			202 => GOKZModeName::kz_timer,
+			_ => GOKZModeName::kz_timer,
+		},
+	};
+	match mode {
+		GOKZModeName::kz_timer => {
+			if total_points >= 1_000_000 {
+				player.rank = GOKZRank::Legend(String::from("Legend"))
+			} else if total_points >= 800_000 {
+				player.rank = GOKZRank::Master("Master".to_string());
+			} else if total_points >= 600_000 {
+				player.rank = GOKZRank::Pro("Pro".to_string());
+			} else if total_points >= 400_000 {
+				player.rank = GOKZRank::Semipro("Semipro".to_string());
+			} else if total_points >= 250_000 {
+				player.rank = GOKZRank::ExpertPlus("Expert+".to_string());
+			} else if total_points >= 230_000 {
+				player.rank = GOKZRank::Expert("Expert".to_string());
+			} else if total_points >= 200_000 {
+				player.rank = GOKZRank::ExpertMinus("Expert-".to_string());
+			} else if total_points >= 150_000 {
+				player.rank = GOKZRank::SkilledPlus("Skilled+".to_string());
+			} else if total_points >= 120_000 {
+				player.rank = GOKZRank::Skilled("Skilled".to_string());
+			} else if total_points >= 100_000 {
+				player.rank = GOKZRank::SkilledMinus("Skilled-".to_string());
+			} else if total_points >= 80_000 {
+				player.rank = GOKZRank::RegularPlus("Regular+".to_string());
+			} else if total_points >= 70_000 {
+				player.rank = GOKZRank::Regular("Regular".to_string());
+			} else if total_points >= 60_000 {
+				player.rank = GOKZRank::RegularMinus("Regular-".to_string());
+			} else if total_points >= 40_000 {
+				player.rank = GOKZRank::CasualPlus("Casual+".to_string());
+			} else if total_points >= 30_000 {
+				player.rank = GOKZRank::Casual("Casual".to_string());
+			} else if total_points >= 20_000 {
+				player.rank = GOKZRank::CasualMinus("Casual-".to_string());
+			} else if total_points >= 10_000 {
+				player.rank = GOKZRank::AmateurPlus("Amateur+".to_string());
+			} else if total_points >= 5_000 {
+				player.rank = GOKZRank::Amateur("Amateur".to_string());
+			} else if total_points >= 2_000 {
+				player.rank = GOKZRank::AmateurMinus("Amateur-".to_string());
+			} else if total_points >= 1_000 {
+				player.rank = GOKZRank::BeginnerPlus("Beginner+".to_string());
+			} else if total_points >= 500 {
+				player.rank = GOKZRank::Beginner("Beginner".to_string());
+			} else if total_points > 0 {
+				player.rank = GOKZRank::BeginnerMinus("Beginner-".to_string());
+			} else {
+				player.rank = GOKZRank::New("New".to_string());
+			}
+		}
+		GOKZModeName::kz_simple => {
+			if total_points >= 800_000 {
+				player.rank = GOKZRank::Legend("Legend".to_string());
+			} else if total_points >= 500_000 {
+				player.rank = GOKZRank::Master("Master".to_string());
+			} else if total_points >= 400_000 {
+				player.rank = GOKZRank::Pro("Pro".to_string());
+			} else if total_points >= 300_000 {
+				player.rank = GOKZRank::Semipro("Semipro".to_string());
+			} else if total_points >= 250_000 {
+				player.rank = GOKZRank::ExpertPlus("Expert+".to_string());
+			} else if total_points >= 230_000 {
+				player.rank = GOKZRank::Expert("Expert".to_string());
+			} else if total_points >= 200_000 {
+				player.rank = GOKZRank::ExpertMinus("Expert-".to_string());
+			} else if total_points >= 150_000 {
+				player.rank = GOKZRank::SkilledPlus("Skilled+".to_string());
+			} else if total_points >= 120_000 {
+				player.rank = GOKZRank::Skilled("Skilled".to_string());
+			} else if total_points >= 100_000 {
+				player.rank = GOKZRank::SkilledMinus("Skilled-".to_string());
+			} else if total_points >= 80_000 {
+				player.rank = GOKZRank::RegularPlus("Regular+".to_string());
+			} else if total_points >= 70_000 {
+				player.rank = GOKZRank::Regular("Regular".to_string());
+			} else if total_points >= 60_000 {
+				player.rank = GOKZRank::RegularMinus("Regular-".to_string());
+			} else if total_points >= 40_000 {
+				player.rank = GOKZRank::CasualPlus("Casual+".to_string());
+			} else if total_points >= 30_000 {
+				player.rank = GOKZRank::Casual("Casual".to_string());
+			} else if total_points >= 20_000 {
+				player.rank = GOKZRank::CasualMinus("Casual-".to_string());
+			} else if total_points >= 10_000 {
+				player.rank = GOKZRank::AmateurPlus("Amateur+".to_string());
+			} else if total_points >= 5_000 {
+				player.rank = GOKZRank::Amateur("Amateur".to_string());
+			} else if total_points >= 2_000 {
+				player.rank = GOKZRank::AmateurMinus("Amateur-".to_string());
+			} else if total_points >= 1_000 {
+				player.rank = GOKZRank::BeginnerPlus("Beginner+".to_string());
+			} else if total_points >= 500 {
+				player.rank = GOKZRank::Beginner("Beginner".to_string());
+			} else if total_points > 0 {
+				player.rank = GOKZRank::BeginnerMinus("Beginner-".to_string());
+			} else {
+				player.rank = GOKZRank::New("New".to_string());
+			}
+		}
+		GOKZModeName::kz_vanilla => {
+			if total_points >= 600_000 {
+				player.rank = GOKZRank::Legend("Legend".to_string());
+			} else if total_points >= 400_000 {
+				player.rank = GOKZRank::Master("Master".to_string());
+			} else if total_points >= 300_000 {
+				player.rank = GOKZRank::Pro("Pro".to_string());
+			} else if total_points >= 250_000 {
+				player.rank = GOKZRank::Semipro("Semipro".to_string());
+			} else if total_points >= 200_000 {
+				player.rank = GOKZRank::ExpertPlus("Expert+".to_string());
+			} else if total_points >= 180_000 {
+				player.rank = GOKZRank::Expert("Expert".to_string());
+			} else if total_points >= 160_000 {
+				player.rank = GOKZRank::ExpertMinus("Expert-".to_string());
+			} else if total_points >= 140_000 {
+				player.rank = GOKZRank::SkilledPlus("Skilled+".to_string());
+			} else if total_points >= 120_000 {
+				player.rank = GOKZRank::Skilled("Skilled".to_string());
+			} else if total_points >= 100_000 {
+				player.rank = GOKZRank::SkilledMinus("Skilled-".to_string());
+			} else if total_points >= 80_000 {
+				player.rank = GOKZRank::RegularPlus("Regular+".to_string());
+			} else if total_points >= 70_000 {
+				player.rank = GOKZRank::Regular("Regular".to_string());
+			} else if total_points >= 60_000 {
+				player.rank = GOKZRank::RegularMinus("Regular-".to_string());
+			} else if total_points >= 40_000 {
+				player.rank = GOKZRank::CasualPlus("Casual+".to_string());
+			} else if total_points >= 30_000 {
+				player.rank = GOKZRank::Casual("Casual".to_string());
+			} else if total_points >= 20_000 {
+				player.rank = GOKZRank::CasualMinus("Casual-".to_string());
+			} else if total_points >= 10_000 {
+				player.rank = GOKZRank::AmateurPlus("Amateur+".to_string());
+			} else if total_points >= 5_000 {
+				player.rank = GOKZRank::Amateur("Amateur".to_string());
+			} else if total_points >= 2_000 {
+				player.rank = GOKZRank::AmateurMinus("Amateur-".to_string());
+			} else if total_points >= 1_000 {
+				player.rank = GOKZRank::BeginnerPlus("Beginner+".to_string());
+			} else if total_points >= 500 {
+				player.rank = GOKZRank::Beginner("Beginner".to_string());
+			} else if total_points > 0 {
+				player.rank = GOKZRank::BeginnerMinus("Beginner-".to_string());
+			} else {
+				player.rank = GOKZRank::New("New".to_string());
+			}
+		}
+	}
+
+	let doable_request = match reqwest::Client::new()
+		.get(format!("https://kzgo.eu/api/completions/{}", mode.as_str()))
+		.send()
+		.await
+	{
+		Ok(data) => match data.json::<KZGOCompletionStats>().await {
+			Ok(stats) => stats,
+			Err(why) => {
+				return Err(GOKZError {
+					r#type: GOKZErrorType::Parsing,
+					tldr: String::from("Failed to parse KZ:GO JSON."),
+					raw: why.to_string(),
+				})
+			}
+		},
+		Err(why) => {
+			return Err(GOKZError {
+				r#type: GOKZErrorType::KZGO,
+				tldr: String::from("KZ:GO API Request failed."),
+				raw: why.to_string(),
+			})
+		}
+	};
+
+	let doable = [
+		[
+			doable_request.tp.one,
+			doable_request.tp.two,
+			doable_request.tp.three,
+			doable_request.tp.four,
+			doable_request.tp.five,
+			doable_request.tp.six,
+			doable_request.tp.seven,
+			doable_request.tp.total,
+		],
+		[
+			doable_request.pro.one,
+			doable_request.pro.two,
+			doable_request.pro.three,
+			doable_request.pro.four,
+			doable_request.pro.five,
+			doable_request.pro.six,
+			doable_request.pro.seven,
+			doable_request.pro.total,
+		],
+	];
+
+	for i in 0..8 {
+		if player.completion[i].0 > 0 {
+			player.completion_percentage[i].0 =
+				(player.completion[i].0 as f32 / doable[0][i] as f32) * 100.0;
+		}
+
+		if player.completion[i].1 > 0 {
+			player.completion_percentage[i].1 =
+				(player.completion[i].1 as f32 / doable[1][i] as f32) * 100.0;
+		}
+	}
+
+	Ok(player)
 }

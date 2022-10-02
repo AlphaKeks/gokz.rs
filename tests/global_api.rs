@@ -473,3 +473,22 @@ pub async fn test_get_recent() {
 	assert_eq!(recent2, test2);
 	assert_eq!(recent3, test3);
 }
+
+#[tokio::test]
+pub async fn test_get_place() {
+	let record = get_pb(
+		GOKZPlayerIdentifier::Name(String::from("AlphaKeks")),
+		GOKZMapIdentifier::Name(String::from("kz_alien_city")),
+		0,
+		GOKZModeIdentifier::Name(GOKZModeName::kz_simple),
+		true,
+	)
+	.await
+	.unwrap();
+
+	let place = 10;
+
+	let test = get_place(record).await.unwrap();
+
+	assert_eq!(place, test);
+}
