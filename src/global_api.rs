@@ -147,7 +147,7 @@ pub struct GOKZPlayer {
 pub struct GOKZRecord {
 	pub id: u32,
 	pub steamid64: String,
-	pub player_name: String,
+	pub player_name: Option<String>,
 	pub steam_id: String,
 	pub server_id: u16,
 	pub map_id: u16,

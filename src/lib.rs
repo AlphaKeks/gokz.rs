@@ -12,7 +12,11 @@ use futures::future::join_all;
 use crate::global_api::*;
 use crate::util::*;
 
-async fn api_request<T>(path: String, params: Vec<(&str, String)>) -> Result<T, GOKZError>
+async fn api_request<T>(
+	path: String,
+	params: Vec<(&str, String)>,
+	client: &reqwest::Client,
+) -> Result<T, GOKZError>
 where
 	T: serde::de::DeserializeOwned,
 {
@@ -28,7 +32,6 @@ where
 		}
 	};
 
-	let client = reqwest::Client::new();
 	let request = match client.get(url).send().await {
 		Ok(data) => data,
 		Err(why) => {
@@ -52,10 +55,9 @@ where
 	}
 }
 
-pub async fn check_api() -> Result<GlobalAPIStatus, GOKZError> {
+pub async fn check_api(client: &reqwest::Client) -> Result<GlobalAPIStatus, GOKZError> {
 	let url = String::from("https://status.global-api.com/api/v2/summary.json");
 
-	let client = reqwest::Client::new();
 	let request = match client.get(url).send().await {
 		Ok(data) => data,
 		Err(why) => {
@@ -79,16 +81,19 @@ pub async fn check_api() -> Result<GlobalAPIStatus, GOKZError> {
 	}
 }
 
-pub async fn get_maps() -> Result<Vec<GOKZMap>, GOKZError> {
+pub async fn get_maps(client: &reqwest::Client) -> Result<Vec<GOKZMap>, GOKZError> {
 	let params = vec![
 		("is_validated", true.to_string()),
 		("limit", 999.to_string()),
 	];
 
-	return api_request::<Vec<GOKZMap>>(String::from("maps?"), params).await;
+	api_request::<Vec<GOKZMap>>(String::from("maps?"), params, &client).await
 }
 
-pub async fn get_map(identifier: GOKZMapIdentifier) -> Result<GOKZMap, GOKZError> {
+pub async fn get_map(
+	identifier: GOKZMapIdentifier,
+	client: &reqwest::Client,
+) -> Result<GOKZMap, GOKZError> {
 	let mut params = vec![("is_validated", true.to_string()), ("limit", 1.to_string())];
 
 	let map = match identifier {
@@ -98,7 +103,7 @@ pub async fn get_map(identifier: GOKZMapIdentifier) -> Result<GOKZMap, GOKZError
 
 	params.push((map.0, map.1));
 
-	match api_request::<Vec<GOKZMap>>(String::from("maps?"), params).await {
+	match api_request::<Vec<GOKZMap>>(String::from("maps?"), params, &client).await {
 		Ok(mut maps) => Ok(maps.remove(0)),
 		Err(why) => Err(why),
 	}
@@ -107,6 +112,7 @@ pub async fn get_map(identifier: GOKZMapIdentifier) -> Result<GOKZMap, GOKZError
 pub async fn validate_map(
 	identifier: GOKZMapIdentifier,
 	map_list: Vec<GOKZMap>,
+	client: &reqwest::Client,
 ) -> Result<GOKZMap, GOKZError> {
 	let not_global = GOKZError {
 		r#type: GOKZErrorType::Other,
@@ -136,11 +142,14 @@ pub async fn validate_map(
 	}
 }
 
-pub async fn get_modes() -> Result<Vec<GOKZMode>, GOKZError> {
-	return api_request::<Vec<GOKZMode>>(String::from("modes?"), vec![]).await;
+pub async fn get_modes(client: &reqwest::Client) -> Result<Vec<GOKZMode>, GOKZError> {
+	api_request::<Vec<GOKZMode>>(String::from("modes?"), vec![], &client).await
 }
 
-pub async fn get_mode(identifier: GOKZModeIdentifier) -> Result<GOKZMode, GOKZError> {
+pub async fn get_mode(
+	identifier: GOKZModeIdentifier,
+	client: &reqwest::Client,
+) -> Result<GOKZMode, GOKZError> {
 	let mut path = String::from("modes/");
 
 	match identifier {
@@ -148,10 +157,13 @@ pub async fn get_mode(identifier: GOKZModeIdentifier) -> Result<GOKZMode, GOKZEr
 		GOKZModeIdentifier::Id(id) => path.push_str(format!("id/{id}").as_str()),
 	}
 
-	return api_request(path, vec![]).await;
+	api_request(path, vec![], &client).await
 }
 
-pub async fn get_player(identifier: GOKZPlayerIdentifier) -> Result<GOKZPlayer, GOKZError> {
+pub async fn get_player(
+	identifier: GOKZPlayerIdentifier,
+	client: &reqwest::Client,
+) -> Result<GOKZPlayer, GOKZError> {
 	let mut params = vec![("limit", 1.to_string()), ("", String::new())];
 
 	match identifier {
@@ -165,7 +177,7 @@ pub async fn get_player(identifier: GOKZPlayerIdentifier) -> Result<GOKZPlayer, 
 		}
 	}
 
-	match api_request::<Vec<GOKZPlayer>>(String::from("players?"), params).await {
+	match api_request::<Vec<GOKZPlayer>>(String::from("players?"), params, &client).await {
 		Ok(mut players) => return Ok(players.remove(0)),
 		Err(why) => return Err(why),
 	}
@@ -176,6 +188,7 @@ pub async fn get_wr(
 	course: u8,
 	mode: GOKZModeIdentifier,
 	runtype: bool,
+	client: &reqwest::Client,
 ) -> Result<GOKZRecord, GOKZError> {
 	let mut params = vec![
 		("tickrate", 128.to_string()),
@@ -211,7 +224,7 @@ pub async fn get_wr(
 		}
 	}
 
-	match api_request::<Vec<GOKZRecord>>(String::from("records/top?"), params).await {
+	match api_request::<Vec<GOKZRecord>>(String::from("records/top?"), params, &client).await {
 		Ok(mut records) => return Ok(records.remove(0)),
 		Err(why) => return Err(why),
 	}
@@ -221,6 +234,7 @@ pub async fn get_maptop(
 	course: u8,
 	mode: GOKZModeIdentifier,
 	runtype: bool,
+	client: &reqwest::Client,
 ) -> Result<Vec<GOKZRecord>, GOKZError> {
 	let mut params = vec![
 		("tickrate", 128.to_string()),
@@ -256,7 +270,7 @@ pub async fn get_maptop(
 		}
 	}
 
-	match api_request::<Vec<GOKZRecord>>(String::from("records/top?"), params).await {
+	match api_request::<Vec<GOKZRecord>>(String::from("records/top?"), params, &client).await {
 		Ok(records) => {
 			if records.len() < 1 {
 				return Err(GOKZError {
@@ -278,6 +292,7 @@ pub async fn get_pb(
 	course: u8,
 	mode: GOKZModeIdentifier,
 	runtype: bool,
+	client: &reqwest::Client,
 ) -> Result<GOKZRecord, GOKZError> {
 	let mut params = vec![
 		("tickrate", 128.to_string()),
@@ -325,7 +340,7 @@ pub async fn get_pb(
 		}
 	}
 
-	match api_request::<Vec<GOKZRecord>>(String::from("records/top?"), params).await {
+	match api_request::<Vec<GOKZRecord>>(String::from("records/top?"), params, &client).await {
 		Ok(mut records) => return Ok(records.remove(0)),
 		Err(why) => return Err(why),
 	}
@@ -335,6 +350,7 @@ pub async fn get_times(
 	player: GOKZPlayerIdentifier,
 	mode: GOKZModeIdentifier,
 	runtype: bool,
+	client: &reqwest::Client,
 ) -> Result<Vec<GOKZRecord>, GOKZError> {
 	let mut params = vec![
 		("tickrate", 128.to_string()),
@@ -371,10 +387,10 @@ pub async fn get_times(
 	}
 
 	let mut filtered_times: Vec<GOKZRecord> = vec![];
-	match api_request::<Vec<GOKZRecord>>(String::from("records/top?"), params).await {
+	match api_request::<Vec<GOKZRecord>>(String::from("records/top?"), params, &client).await {
 		Ok(records) => {
 			let mut global_maps: HashMap<u16, GOKZMap> = HashMap::new();
-			match get_maps().await {
+			match get_maps(client).await {
 				Ok(maps) => {
 					for map in maps {
 						global_maps.insert(map.id, map);
@@ -395,7 +411,10 @@ pub async fn get_times(
 	};
 }
 
-pub async fn get_recent(player: GOKZPlayerIdentifier) -> Result<GOKZRecord, GOKZError> {
+pub async fn get_recent(
+	player: GOKZPlayerIdentifier,
+	client: &reqwest::Client,
+) -> Result<GOKZRecord, GOKZError> {
 	let mut players: Vec<GOKZPlayerIdentifier> = vec![];
 	for _ in 0..5 {
 		players.push(player.clone());
@@ -406,16 +425,19 @@ pub async fn get_recent(player: GOKZPlayerIdentifier) -> Result<GOKZRecord, GOKZ
 			players.remove(0),
 			GOKZModeIdentifier::Name(GOKZModeName::kz_timer),
 			true,
+			client,
 		),
 		get_times(
 			players.remove(0),
 			GOKZModeIdentifier::Name(GOKZModeName::kz_timer),
 			false,
+			client,
 		),
 		get_times(
 			players.remove(0),
 			GOKZModeIdentifier::Name(GOKZModeName::kz_simple),
 			true,
+			client,
 		),
 	];
 
@@ -424,16 +446,19 @@ pub async fn get_recent(player: GOKZPlayerIdentifier) -> Result<GOKZRecord, GOKZ
 			players.remove(0),
 			GOKZModeIdentifier::Name(GOKZModeName::kz_simple),
 			false,
+			client,
 		),
 		get_times(
 			players.remove(0),
 			GOKZModeIdentifier::Name(GOKZModeName::kz_vanilla),
 			true,
+			client,
 		),
 		get_times(
 			player,
 			GOKZModeIdentifier::Name(GOKZModeName::kz_vanilla),
 			false,
+			client,
 		),
 	];
 
@@ -479,13 +504,14 @@ pub async fn get_recent(player: GOKZPlayerIdentifier) -> Result<GOKZRecord, GOKZ
 	}
 }
 
-pub async fn get_place(record: GOKZRecord) -> Result<u16, GOKZError> {
-	return api_request::<u16>(format!("records/place/{}", record.id), vec![]).await;
+pub async fn get_place(record: GOKZRecord, client: &reqwest::Client) -> Result<u16, GOKZError> {
+	return api_request::<u16>(format!("records/place/{}", record.id), vec![], &client).await;
 }
 
 pub async fn get_filter_dist(
 	mode: GOKZModeIdentifier,
 	runtype: bool,
+	client: &reqwest::Client,
 ) -> Result<Vec<GOKZRecordFilter>, GOKZError> {
 	let mut params = vec![
 		("stages", 0.to_string()),
@@ -506,7 +532,8 @@ pub async fn get_filter_dist(
 		GOKZModeIdentifier::Id(id) => params[4].1 = id.to_string(),
 	}
 
-	return api_request::<Vec<GOKZRecordFilter>>(String::from("record_filters?"), params).await;
+	return api_request::<Vec<GOKZRecordFilter>>(String::from("record_filters?"), params, &client)
+		.await;
 }
 
 pub async fn get_unfinished(
@@ -514,13 +541,14 @@ pub async fn get_unfinished(
 	tier: Option<u8>,
 	mode: GOKZModeIdentifier,
 	runtype: bool,
+	client: &reqwest::Client,
 ) -> Result<Vec<String>, GOKZError> {
-	let doable = match get_filter_dist(mode.clone(), runtype).await {
+	let doable = match get_filter_dist(mode.clone(), runtype, client).await {
 		Ok(filters) => filters,
 		Err(why) => return Err(why),
 	};
 
-	let completed = match get_times(player, mode, runtype).await {
+	let completed = match get_times(player, mode, runtype, client).await {
 		Ok(records) => records,
 		Err(why) => return Err(why),
 	};
@@ -538,7 +566,7 @@ pub async fn get_unfinished(
 		}
 	}
 
-	let global_maps = match get_maps().await {
+	let global_maps = match get_maps(client).await {
 		Ok(maps) => maps,
 		Err(why) => return Err(why),
 	};
@@ -564,6 +592,7 @@ pub async fn get_unfinished(
 pub async fn get_profile(
 	input_player: GOKZPlayerIdentifier,
 	mode: GOKZModeIdentifier,
+	client: &reqwest::Client,
 ) -> Result<GOKZPlayerProfile, GOKZError> {
 	let mut player = GOKZPlayerProfile {
 		name: String::new(),
@@ -579,7 +608,7 @@ pub async fn get_profile(
 
 	match input_player.clone() {
 		GOKZPlayerIdentifier::Name(name) => {
-			if let Ok(res) = get_player(GOKZPlayerIdentifier::Name(name)).await {
+			if let Ok(res) = get_player(GOKZPlayerIdentifier::Name(name), client).await {
 				player.name = res.name;
 				player.steam_id = Some(res.steam_id);
 				player.steam_id64 = res.steamid64;
@@ -593,7 +622,7 @@ pub async fn get_profile(
 			}
 		}
 		GOKZPlayerIdentifier::SteamID(steam_id) => {
-			if let Ok(res) = get_player(GOKZPlayerIdentifier::SteamID(steam_id)).await {
+			if let Ok(res) = get_player(GOKZPlayerIdentifier::SteamID(steam_id), client).await {
 				player.name = res.name;
 				player.steam_id = Some(res.steam_id);
 				player.steam_id64 = res.steamid64;
@@ -609,7 +638,7 @@ pub async fn get_profile(
 	}
 
 	let mut global_maps = vec![HashMap::new(), HashMap::new()];
-	match get_maps().await {
+	match get_maps(client).await {
 		Ok(maps) => {
 			for map in maps {
 				global_maps[0].insert(map.name.clone(), map.difficulty);
@@ -626,6 +655,7 @@ pub async fn get_profile(
 		},
 		mode.clone(),
 		true,
+		client,
 	)
 	.await
 	{
@@ -634,7 +664,7 @@ pub async fn get_profile(
 		vec![]
 	};
 
-	let pro_times = if let Ok(times) = get_times(input_player, mode.clone(), false).await {
+	let pro_times = if let Ok(times) = get_times(input_player, mode.clone(), false, client).await {
 		times
 	} else {
 		vec![]
