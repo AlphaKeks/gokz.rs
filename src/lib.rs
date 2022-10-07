@@ -1,7 +1,4 @@
-#![allow(unused_imports, unused_variables, dead_code)]
-
 pub mod global_api;
-pub mod kzgo;
 pub mod util;
 
 use std::collections::HashMap;
@@ -12,11 +9,7 @@ use futures::future::join_all;
 use crate::global_api::*;
 use crate::util::*;
 
-async fn api_request<T>(
-	path: String,
-	params: Vec<(&str, String)>,
-	client: &reqwest::Client,
-) -> Result<T, GOKZError>
+async fn api_request<T>(path: String, params: Vec<(&str, String)>, client: &reqwest::Client) -> Result<T, GOKZError>
 where
 	T: serde::de::DeserializeOwned,
 {
@@ -27,7 +20,7 @@ where
 			return Err(GOKZError {
 				r#type: GOKZErrorType::Parsing,
 				tldr: String::from("Invalid params."),
-				raw: why.to_string(),
+				raw: Some(why.to_string()),
 			})
 		}
 	};
@@ -38,20 +31,18 @@ where
 			return Err(GOKZError {
 				r#type: GOKZErrorType::GlobalAPI,
 				tldr: String::from("GlobalAPI request failed."),
-				raw: why.to_string(),
+				raw: Some(why.to_string()),
 			})
 		}
 	};
 
 	match request.json::<T>().await {
 		Ok(json) => Ok(json),
-		Err(why) => {
-			return Err(GOKZError {
-				r#type: GOKZErrorType::Parsing,
-				tldr: String::from("Failed to parse to JSON."),
-				raw: why.to_string(),
-			})
-		}
+		Err(why) => Err(GOKZError {
+			r#type: GOKZErrorType::Parsing,
+			tldr: String::from("Failed to parse to JSON."),
+			raw: Some(why.to_string()),
+		}),
 	}
 }
 
@@ -64,36 +55,28 @@ pub async fn check_api(client: &reqwest::Client) -> Result<GlobalAPIStatus, GOKZ
 			return Err(GOKZError {
 				r#type: GOKZErrorType::GlobalAPI,
 				tldr: String::from("GlobalAPI request failed."),
-				raw: why.to_string(),
+				raw: Some(why.to_string()),
 			})
 		}
 	};
 
 	match request.json::<GlobalAPIStatus>().await {
 		Ok(json) => Ok(json),
-		Err(why) => {
-			return Err(GOKZError {
-				r#type: GOKZErrorType::Parsing,
-				tldr: String::from("Failed to parse to JSON."),
-				raw: why.to_string(),
-			})
-		}
+		Err(why) => Err(GOKZError {
+			r#type: GOKZErrorType::Parsing,
+			tldr: String::from("Failed to parse to JSON."),
+			raw: Some(why.to_string()),
+		}),
 	}
 }
 
 pub async fn get_maps(client: &reqwest::Client) -> Result<Vec<GOKZMap>, GOKZError> {
-	let params = vec![
-		("is_validated", true.to_string()),
-		("limit", 999.to_string()),
-	];
+	let params = vec![("is_validated", true.to_string()), ("limit", 999.to_string())];
 
 	api_request::<Vec<GOKZMap>>(String::from("maps?"), params, &client).await
 }
 
-pub async fn get_map(
-	identifier: GOKZMapIdentifier,
-	client: &reqwest::Client,
-) -> Result<GOKZMap, GOKZError> {
+pub async fn get_map(identifier: GOKZMapIdentifier, client: &reqwest::Client) -> Result<GOKZMap, GOKZError> {
 	let mut params = vec![("is_validated", true.to_string()), ("limit", 1.to_string())];
 
 	let map = match identifier {
@@ -104,20 +87,26 @@ pub async fn get_map(
 	params.push((map.0, map.1));
 
 	match api_request::<Vec<GOKZMap>>(String::from("maps?"), params, &client).await {
-		Ok(mut maps) => Ok(maps.remove(0)),
+		Ok(mut maps) => {
+			if maps.len() > 0 {
+				Ok(maps.remove(0))
+			} else {
+				Err(GOKZError {
+					r#type: GOKZErrorType::GlobalAPI,
+					tldr: String::from("Map not found."),
+					raw: None,
+				})
+			}
+		}
 		Err(why) => Err(why),
 	}
 }
 
-pub async fn validate_map(
-	identifier: GOKZMapIdentifier,
-	map_list: Vec<GOKZMap>,
-	client: &reqwest::Client,
-) -> Result<GOKZMap, GOKZError> {
+pub async fn validate_map(identifier: GOKZMapIdentifier, map_list: Vec<GOKZMap>) -> Result<GOKZMap, GOKZError> {
 	let not_global = GOKZError {
 		r#type: GOKZErrorType::Other,
 		tldr: String::from("The provided map is not global."),
-		raw: String::new(),
+		raw: None,
 	};
 
 	match identifier {
@@ -128,7 +117,7 @@ pub async fn validate_map(
 				}
 			}
 
-			return Err(not_global);
+			Err(not_global)
 		}
 		GOKZMapIdentifier::Id(id) => {
 			for map in map_list {
@@ -137,7 +126,7 @@ pub async fn validate_map(
 				}
 			}
 
-			return Err(not_global);
+			Err(not_global)
 		}
 	}
 }
@@ -146,10 +135,7 @@ pub async fn get_modes(client: &reqwest::Client) -> Result<Vec<GOKZMode>, GOKZEr
 	api_request::<Vec<GOKZMode>>(String::from("modes?"), vec![], &client).await
 }
 
-pub async fn get_mode(
-	identifier: GOKZModeIdentifier,
-	client: &reqwest::Client,
-) -> Result<GOKZMode, GOKZError> {
+pub async fn get_mode(identifier: GOKZModeIdentifier, client: &reqwest::Client) -> Result<GOKZMode, GOKZError> {
 	let mut path = String::from("modes/");
 
 	match identifier {
@@ -160,10 +146,7 @@ pub async fn get_mode(
 	api_request(path, vec![], &client).await
 }
 
-pub async fn get_player(
-	identifier: GOKZPlayerIdentifier,
-	client: &reqwest::Client,
-) -> Result<GOKZPlayer, GOKZError> {
+pub async fn get_player(identifier: GOKZPlayerIdentifier, client: &reqwest::Client) -> Result<GOKZPlayer, GOKZError> {
 	let mut params = vec![("limit", 1.to_string()), ("", String::new())];
 
 	match identifier {
@@ -178,8 +161,18 @@ pub async fn get_player(
 	}
 
 	match api_request::<Vec<GOKZPlayer>>(String::from("players?"), params, &client).await {
-		Ok(mut players) => return Ok(players.remove(0)),
-		Err(why) => return Err(why),
+		Ok(mut players) => {
+			if players.len() > 0 {
+				Ok(players.remove(0))
+			} else {
+				Err(GOKZError {
+					r#type: GOKZErrorType::GlobalAPI,
+					tldr: String::from("Player not found."),
+					raw: None,
+				})
+			}
+		}
+		Err(why) => Err(why),
 	}
 }
 
@@ -215,20 +208,31 @@ pub async fn get_wr(
 			params[5].0 = "modes_list_string";
 			params[5].1 = String::from(mode_name.as_str());
 		}
-		GOKZModeIdentifier::Id(mode_id) => {
+		GOKZModeIdentifier::Id(_) => {
 			return Err(GOKZError {
 				r#type: GOKZErrorType::Other,
 				tldr: String::from("This function only takes mode names."),
-				raw: String::new(),
+				raw: None,
 			})
 		}
 	}
 
 	match api_request::<Vec<GOKZRecord>>(String::from("records/top?"), params, &client).await {
-		Ok(mut records) => return Ok(records.remove(0)),
-		Err(why) => return Err(why),
+		Ok(mut records) => {
+			if records.len() > 0 {
+				Ok(records.remove(0))
+			} else {
+				Err(GOKZError {
+					r#type: GOKZErrorType::GlobalAPI,
+					tldr: String::from("No records found."),
+					raw: None,
+				})
+			}
+		}
+		Err(why) => Err(why),
 	}
 }
+
 pub async fn get_maptop(
 	map: GOKZMapIdentifier,
 	course: u8,
@@ -261,25 +265,25 @@ pub async fn get_maptop(
 			params[5].0 = "modes_list_string";
 			params[5].1 = String::from(mode_name.as_str());
 		}
-		GOKZModeIdentifier::Id(mode_id) => {
+		GOKZModeIdentifier::Id(_) => {
 			return Err(GOKZError {
 				r#type: GOKZErrorType::Other,
 				tldr: String::from("This function only takes mode names."),
-				raw: String::new(),
+				raw: None,
 			})
 		}
 	}
 
 	match api_request::<Vec<GOKZRecord>>(String::from("records/top?"), params, &client).await {
 		Ok(records) => {
-			if records.len() < 1 {
+			if records.len() > 0 {
+				return Ok(records);
+			} else {
 				return Err(GOKZError {
 					r#type: GOKZErrorType::Other,
 					tldr: String::from("This map has 0 completions."),
-					raw: String::new(),
+					raw: None,
 				});
-			} else {
-				return Ok(records);
 			}
 		}
 		Err(why) => return Err(why),
@@ -331,18 +335,28 @@ pub async fn get_pb(
 			params[6].0 = "modes_list_string";
 			params[6].1 = String::from(mode_name.as_str());
 		}
-		GOKZModeIdentifier::Id(mode_id) => {
+		GOKZModeIdentifier::Id(_) => {
 			return Err(GOKZError {
 				r#type: GOKZErrorType::Other,
 				tldr: String::from("This function only takes mode names."),
-				raw: String::new(),
+				raw: None,
 			})
 		}
 	}
 
 	match api_request::<Vec<GOKZRecord>>(String::from("records/top?"), params, &client).await {
-		Ok(mut records) => return Ok(records.remove(0)),
-		Err(why) => return Err(why),
+		Ok(mut records) => {
+			if records.len() > 0 {
+				Ok(records.remove(0))
+			} else {
+				Err(GOKZError {
+					r#type: GOKZErrorType::GlobalAPI,
+					tldr: String::from("No records found."),
+					raw: None,
+				})
+			}
+		}
+		Err(why) => Err(why),
 	}
 }
 
@@ -377,11 +391,11 @@ pub async fn get_times(
 			params[5].0 = "modes_list_string";
 			params[5].1 = String::from(name.as_str());
 		}
-		GOKZModeIdentifier::Id(mode_id) => {
+		GOKZModeIdentifier::Id(_) => {
 			return Err(GOKZError {
 				r#type: GOKZErrorType::Other,
 				tldr: String::from("This function only takes mode names."),
-				raw: String::new(),
+				raw: None,
 			})
 		}
 	}
@@ -405,16 +419,13 @@ pub async fn get_times(
 				Err(why) => return Err(why),
 			};
 
-			return Ok(filtered_times);
+			Ok(filtered_times)
 		}
-		Err(why) => return Err(why),
-	};
+		Err(why) => Err(why),
+	}
 }
 
-pub async fn get_recent(
-	player: GOKZPlayerIdentifier,
-	client: &reqwest::Client,
-) -> Result<GOKZRecord, GOKZError> {
+pub async fn get_recent(player: GOKZPlayerIdentifier, client: &reqwest::Client) -> Result<GOKZRecord, GOKZError> {
 	let mut players: Vec<GOKZPlayerIdentifier> = vec![];
 	for _ in 0..5 {
 		players.push(player.clone());
@@ -477,30 +488,29 @@ pub async fn get_recent(
 		return Err(GOKZError {
 			r#type: GOKZErrorType::Other,
 			tldr: String::from("This player has no recent times."),
-			raw: String::new(),
+			raw: None,
 		});
 	} else {
 		let mut recent = (0, &records[0]);
 
 		for i in 1..records.len() {
-			let date =
-				match NaiveDateTime::parse_from_str(&records[i].created_on, "%Y-%m-%dT%H:%M:%S") {
-					Ok(date) => date,
-					Err(why) => {
-						return Err(GOKZError {
-							r#type: GOKZErrorType::Parsing,
-							tldr: String::from("Failed to parse date string."),
-							raw: why.to_string(),
-						})
-					}
-				};
+			let date = match NaiveDateTime::parse_from_str(&records[i].created_on, "%Y-%m-%dT%H:%M:%S") {
+				Ok(date) => date,
+				Err(why) => {
+					return Err(GOKZError {
+						r#type: GOKZErrorType::Parsing,
+						tldr: String::from("Failed to parse date string."),
+						raw: Some(why.to_string()),
+					})
+				}
+			};
 
 			if date.timestamp() > recent.0 {
 				recent = (date.timestamp(), &records[i]);
 			}
 		}
 
-		return Ok(recent.1.to_owned());
+		Ok(recent.1.to_owned())
 	}
 }
 
@@ -532,8 +542,7 @@ pub async fn get_filter_dist(
 		GOKZModeIdentifier::Id(id) => params[4].1 = id.to_string(),
 	}
 
-	return api_request::<Vec<GOKZRecordFilter>>(String::from("record_filters?"), params, &client)
-		.await;
+	return api_request::<Vec<GOKZRecordFilter>>(String::from("record_filters?"), params, &client).await;
 }
 
 pub async fn get_unfinished(
@@ -617,7 +626,7 @@ pub async fn get_profile(
 				return Err(GOKZError {
 					r#type: GOKZErrorType::GlobalAPI,
 					tldr: String::from("Failed to get API Player by name."),
-					raw: String::new(),
+					raw: None,
 				});
 			}
 		}
@@ -631,7 +640,7 @@ pub async fn get_profile(
 				return Err(GOKZError {
 					r#type: GOKZErrorType::GlobalAPI,
 					tldr: String::from("Failed to get API Player by name."),
-					raw: String::new(),
+					raw: None,
 				});
 			}
 		}
@@ -674,7 +683,7 @@ pub async fn get_profile(
 		return Err(GOKZError {
 			r#type: GOKZErrorType::GlobalAPI,
 			tldr: String::from("This player has no API times."),
-			raw: String::new(),
+			raw: None,
 		});
 	}
 
@@ -912,7 +921,7 @@ pub async fn get_profile(
 				return Err(GOKZError {
 					r#type: GOKZErrorType::Parsing,
 					tldr: String::from("Failed to parse KZ:GO JSON."),
-					raw: why.to_string(),
+					raw: Some(why.to_string()),
 				})
 			}
 		},
@@ -920,7 +929,7 @@ pub async fn get_profile(
 			return Err(GOKZError {
 				r#type: GOKZErrorType::KZGO,
 				tldr: String::from("KZ:GO API Request failed."),
-				raw: why.to_string(),
+				raw: Some(why.to_string()),
 			})
 		}
 	};
@@ -950,13 +959,11 @@ pub async fn get_profile(
 
 	for i in 0..8 {
 		if player.completion[i].0 > 0 {
-			player.completion_percentage[i].0 =
-				(player.completion[i].0 as f32 / doable[0][i] as f32) * 100.0;
+			player.completion_percentage[i].0 = (player.completion[i].0 as f32 / doable[0][i] as f32) * 100.0;
 		}
 
 		if player.completion[i].1 > 0 {
-			player.completion_percentage[i].1 =
-				(player.completion[i].1 as f32 / doable[1][i] as f32) * 100.0;
+			player.completion_percentage[i].1 = (player.completion[i].1 as f32 / doable[1][i] as f32) * 100.0;
 		}
 	}
 

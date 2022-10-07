@@ -12,5 +12,5 @@ pub enum GOKZErrorType {
 pub struct GOKZError {
 	pub r#type: GOKZErrorType,
 	pub tldr: String,
-	pub raw: String,
+	pub raw: Option<String>,
 }
