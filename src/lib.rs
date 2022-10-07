@@ -112,7 +112,7 @@ pub async fn validate_map(identifier: GOKZMapIdentifier, map_list: Vec<GOKZMap>)
 	match identifier {
 		GOKZMapIdentifier::Name(name) => {
 			for map in map_list {
-				if map.name == name {
+				if map.name.contains(&name.to_lowercase()) {
 					return Ok(map);
 				}
 			}
