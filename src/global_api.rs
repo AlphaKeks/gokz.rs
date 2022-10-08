@@ -116,6 +116,22 @@ impl GOKZModeName {
 			GOKZModeName::kz_vanilla => "kz_vanilla",
 		}
 	}
+
+	pub fn fancy(&self) -> &'static str {
+		match self {
+			GOKZModeName::kz_timer => "KZTimer",
+			GOKZModeName::kz_simple => "SimpleKZ",
+			GOKZModeName::kz_vanilla => "Vanilla",
+		}
+	}
+
+	pub fn fancy_short(&self) -> &'static str {
+		match self {
+			GOKZModeName::kz_timer => "KZT",
+			GOKZModeName::kz_simple => "SKZ",
+			GOKZModeName::kz_vanilla => "VNL",
+		}
+	}
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
