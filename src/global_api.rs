@@ -1,18 +1,19 @@
 #![allow(dead_code)]
 use serde::{Deserialize, Serialize};
 
+#[derive(Debug)]
 pub enum GOKZMapIdentifier {
 	Name(String),
 	Id(u16),
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum GOKZModeIdentifier {
 	Name(GOKZModeName),
 	Id(u16),
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum GOKZPlayerIdentifier {
 	Name(String),
 	SteamID(String),
