@@ -1,238 +1,925 @@
-#![allow(dead_code)]
-use serde::{Deserialize, Serialize};
+#![allow(unused, dead_code)]
 
-#[derive(Debug)]
-pub enum GOKZMapIdentifier {
-	Name(String),
-	Id(u16),
-}
+use serde::{de::DeserializeOwned, Serialize};
+pub const BASE_URL: &'static str = "https://kztimerglobal.com/api/v2/";
 
-#[derive(Clone, Debug)]
-pub enum GOKZModeIdentifier {
-	Name(GOKZModeName),
-	Id(u16),
-}
+pub trait ParamData {}
+pub trait ResponseData {}
 
-#[derive(Clone, Debug)]
-pub enum GOKZPlayerIdentifier {
-	Name(String),
-	SteamID(String),
-}
+use crate::prelude::{Error, ErrorKind};
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-pub enum GOKZRank {
-	Legend(String),
-	Master(String),
-	Pro(String),
-	Semipro(String),
-	ExpertPlus(String),
-	Expert(String),
-	ExpertMinus(String),
-	SkilledPlus(String),
-	Skilled(String),
-	SkilledMinus(String),
-	RegularPlus(String),
-	Regular(String),
-	RegularMinus(String),
-	CasualPlus(String),
-	Casual(String),
-	CasualMinus(String),
-	AmateurPlus(String),
-	Amateur(String),
-	AmateurMinus(String),
-	BeginnerPlus(String),
-	Beginner(String),
-	BeginnerMinus(String),
-	New(String),
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-pub struct GlobalAPIStatusPage {
-	pub id: String,
-	pub name: String,
-	pub url: String,
-	pub time_zone: String,
-	pub updated_at: String,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-pub struct GlobalAPIStatusComponent {
-	pub id: String,
-	pub name: String,
-	pub status: String,
-	pub created_at: String,
-	pub updated_at: String,
-	pub position: i32,
-	pub description: String,
-	pub showcase: bool,
-	pub start_date: Option<String>,
-	pub group_id: Option<String>,
-	pub page_id: String,
-	pub group: bool,
-	pub only_show_if_degraded: bool,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-pub struct GlobalAPIStatusStatus {
-	pub indicator: String,
-	pub description: String,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-pub struct GlobalAPIStatus {
-	pub page: GlobalAPIStatusPage,
-	pub components: Vec<GlobalAPIStatusComponent>,
-	pub incidents: Vec<String>,
-	pub scheduled_maintenances: Vec<String>,
-	pub status: GlobalAPIStatusStatus,
-}
-
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-pub struct GOKZMap {
-	pub id: u16,
-	pub name: String,
-	pub filesize: u128,
-	pub validated: bool,
-	pub difficulty: u8,
-	pub created_on: String,
-	pub updated_on: String,
-	pub approved_by_steamid64: String,
-	pub workshop_url: String,
-	pub download_url: Option<String>,
-}
-
-#[allow(non_camel_case_types)]
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-pub enum GOKZModeName {
-	kz_timer,
-	kz_simple,
-	kz_vanilla,
-}
-
-impl GOKZModeName {
-	pub fn as_str(&self) -> &'static str {
-		match self {
-			GOKZModeName::kz_timer => "kz_timer",
-			GOKZModeName::kz_simple => "kz_simple",
-			GOKZModeName::kz_vanilla => "kz_vanilla",
-		}
-	}
-
-	pub fn fancy(&self) -> &'static str {
-		match self {
-			GOKZModeName::kz_timer => "KZTimer",
-			GOKZModeName::kz_simple => "SimpleKZ",
-			GOKZModeName::kz_vanilla => "Vanilla",
-		}
-	}
-
-	pub fn fancy_short(&self) -> &'static str {
-		match self {
-			GOKZModeName::kz_timer => "KZT",
-			GOKZModeName::kz_simple => "SKZ",
-			GOKZModeName::kz_vanilla => "VNL",
-		}
+async fn api_request<T, P>(route: &'static str, params: P, client: &reqwest::Client) -> Result<T, Error>
+where
+	T: DeserializeOwned + ResponseData,
+	P: Serialize + ParamData,
+{
+	match client.get(format!("{}{}", BASE_URL, route)).query(&params).send().await {
+		Ok(data) => match data.json::<T>().await {
+			Ok(json) => Ok(json),
+			Err(why) => Err(Error {
+				kind: ErrorKind::Parsing,
+				tldr: "Failed to parse JSON.",
+				raw: Some(why.to_string()),
+			}),
+		},
+		Err(why) => Err(Error {
+			kind: ErrorKind::GlobalAPI,
+			tldr: "GlobalAPI Request failed.",
+			raw: Some(why.to_string()),
+		}),
 	}
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-pub struct GOKZMode {
-	pub id: u16,
-	pub name: GOKZModeName,
-	pub description: String,
-	pub latest_version: u16,
-	pub latest_version_description: String,
-	pub website: String,
-	pub repo: String,
-	pub contact_steamid64: String,
-	pub supported_tickrates: Option<u16>,
-	pub created_on: String,
-	pub updated_on: String,
-	pub updated_by_id: String,
+pub mod functions {
+	use crate::prelude::{Error, ErrorKind, MapIdentifier, Mode};
+
+	use super::{api_request, maps, modes, status};
+
+	pub async fn check_api(client: &reqwest::Client) -> Result<status::APIStatusShort, Error> {
+		match client
+			.get("https://status.global-api.com/api/v2/summary.json")
+			.send()
+			.await
+		{
+			Ok(data) => match data.json::<status::APIStatus>().await {
+				Ok(mut json) => Ok(status::APIStatusShort {
+					status: json.status.description,
+					frontend: json.components.remove(0).status,
+					backend: json.components.remove(0).status,
+				}),
+				Err(why) => Err(Error {
+					kind: ErrorKind::Parsing,
+					tldr: "Failed to parse JSON.",
+					raw: Some(why.to_string()),
+				}),
+			},
+			Err(why) => Err(Error {
+				kind: ErrorKind::GlobalAPI,
+				tldr: "GlobalAPI Request failed.",
+				raw: Some(why.to_string()),
+			}),
+		}
+	}
+
+	pub async fn get_maps(client: &reqwest::Client) -> Result<Vec<maps::Response>, Error> {
+		let mut params = maps::Params::default();
+		params.limit = Some(999);
+		params.is_validated = Some(true);
+
+		match api_request::<Vec<maps::Response>, maps::Params>("maps?", params, &client).await {
+			Ok(maps) => {
+				if maps.len() > 0 {
+					Ok(maps)
+				} else {
+					Err(Error {
+						kind: ErrorKind::GlobalAPI,
+						tldr: "seems like gc deleted all the maps lololol",
+						raw: None,
+					})
+				}
+			}
+			Err(why) => Err(why),
+		}
+	}
+
+	pub async fn get_map(map: MapIdentifier, client: &reqwest::Client) -> Result<maps::Response, Error> {
+		let params = match map {
+			MapIdentifier::Id(_) => {
+				return Err(Error {
+					kind: ErrorKind::InvalidInput,
+					tldr: "Please do not use an ID for this function.",
+					raw: None,
+				})
+			}
+			MapIdentifier::Name(name) => {
+				let mut temp = maps::Params::default();
+				temp.name = Some(name);
+				temp
+			}
+		};
+
+		match api_request::<Vec<maps::Response>, maps::Params>("maps?", params, client).await {
+			Ok(mut data) => {
+				if data.len() < 1 {
+					Err(Error {
+						kind: ErrorKind::GlobalAPI,
+						tldr: "This map does not exist.",
+						raw: None,
+					})
+				} else {
+					Ok(data.remove(0))
+				}
+			}
+			Err(why) => Err(why),
+		}
+	}
+
+	pub async fn get_modes(client: &reqwest::Client) -> Result<Vec<modes::Response>, Error> {
+		api_request::<Vec<modes::Response>, modes::name::Params>("modes?", modes::name::Params {}, client).await
+	}
+
+	pub async fn get_mode(mode: Mode, client: &reqwest::Client) -> Result<modes::Response, Error> {
+		api_request::<modes::Response, modes::name::Params>(mode.as_route(), modes::name::Params {}, &client).await
+	}
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-pub struct GOKZPlayer {
-	pub steamid64: String,
-	pub steam_id: String,
-	pub is_banned: bool,
-	pub total_records: u32,
-	pub name: String,
+pub mod status {
+	use serde::{Deserialize, Serialize};
+
+	#[derive(Debug, Serialize, Deserialize)]
+	pub struct APIStatusShort {
+		pub status: String,
+		pub frontend: String,
+		pub backend: String,
+	}
+
+	#[derive(Debug, Serialize, Deserialize)]
+	pub struct APIStatusPage {
+		pub id: String,
+		pub name: String,
+		pub url: String,
+		pub time_zone: String,
+		pub updated_at: String,
+	}
+
+	#[derive(Debug, Serialize, Deserialize)]
+	pub struct APIStatusComponent {
+		pub id: String,
+		pub name: String,
+		pub status: String,
+		pub created_at: String,
+		pub updated_at: String,
+		pub position: i32,
+		pub description: String,
+		pub showcase: bool,
+		pub start_date: Option<String>,
+		pub group_id: Option<String>,
+		pub group: bool,
+		pub only_show_if_degraded: bool,
+	}
+
+	#[derive(Debug, Serialize, Deserialize)]
+	pub struct APIStatusStatus {
+		pub indicator: String,
+		pub description: String,
+	}
+
+	#[derive(Debug, Serialize, Deserialize)]
+	pub struct APIStatus {
+		pub page: APIStatusPage,
+		pub components: Vec<APIStatusComponent>,
+		pub incidents: Vec<Option<String>>,
+		pub scheduled_maintenances: Vec<Option<String>>,
+		pub status: APIStatusStatus,
+	}
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-pub struct GOKZRecord {
-	pub id: u32,
-	pub steamid64: String,
-	pub player_name: Option<String>,
-	pub steam_id: String,
-	pub server_id: u16,
-	pub map_id: u16,
-	pub stage: u8,
-	pub mode: GOKZModeName,
-	pub tickrate: u8,
-	pub time: f32,
-	pub teleports: u32,
-	pub created_on: String,
-	pub updated_on: String,
-	// TODO: this might always be 0, no idea
-	pub updated_by: u32,
-	pub server_name: Option<String>,
-	pub map_name: String,
-	pub points: u16,
-	pub record_filter_id: u32,
-	pub replay_id: u32,
+pub mod bans {
+	use crate::global_api::ParamData;
+	use crate::global_api::ResponseData;
+	use serde::{Deserialize, Serialize};
+
+	#[derive(Debug, Clone, Serialize)]
+	pub struct Params {
+		pub ban_types: Option<&'static str>,
+		pub ban_types_list: Option<Vec<&'static str>>,
+		pub is_expired: Option<bool>,
+		pub ip: Option<&'static str>,
+		pub steamid64: Option<&'static str>,
+		pub steam_id: Option<&'static str>,
+		pub notes_contains: Option<&'static str>,
+		pub stats_contains: Option<&'static str>,
+		pub server_id: Option<u32>,
+		pub created_since: Option<&'static str>,
+		pub updated_since: Option<&'static str>,
+		pub offset: Option<i32>,
+		pub limit: Option<u32>,
+	}
+
+	impl ParamData for Params {}
+
+	#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+	pub struct Response {
+		pub id: u32,
+		pub ban_type: String,
+		pub expires_on: String,
+		pub steamid64: String,
+		pub player_name: String,
+		pub steam_id: String,
+		pub notes: String,
+		pub stats: String,
+		pub server_id: u16,
+		pub updated_by_id: String,
+		pub created_on: String,
+		pub updated_on: String,
+	}
+
+	impl ResponseData for Response {}
+	impl ResponseData for Vec<Response> {}
+
+	impl Params {
+		pub fn default() -> Self {
+			Params {
+				ban_types: None,
+				ban_types_list: None,
+				is_expired: None,
+				ip: None,
+				steamid64: None,
+				steam_id: None,
+				notes_contains: None,
+				stats_contains: None,
+				server_id: None,
+				created_since: None,
+				updated_since: None,
+				offset: None,
+				limit: Some(1),
+			}
+		}
+	}
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-pub struct GOKZRecordFilter {
-	pub id: u32,
-	pub map_id: u16,
-	pub stage: u8,
-	pub mode_id: u16,
-	pub tickrate: u8,
-	pub has_teleports: bool,
-	pub created_on: String,
-	pub updated_on: String,
-	pub updated_by_id: String,
+pub mod maps {
+	use serde::{Deserialize, Serialize};
+
+	use super::{ParamData, ResponseData};
+
+	#[derive(Debug, Clone, Serialize)]
+	pub struct Params {
+		pub id: Option<Vec<u16>>,
+		pub name: Option<&'static str>,
+		pub larger_than_filesize: Option<u32>,
+		pub smaller_than_filesize: Option<u32>,
+		pub is_validated: Option<bool>,
+		pub difficulty: Option<u8>,
+		pub created_since: Option<&'static str>,
+		pub updated_since: Option<&'static str>,
+		pub offset: Option<i32>,
+		pub limit: Option<u32>,
+	}
+
+	impl ParamData for Params {}
+
+	#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+	pub struct Response {
+		pub id: u32,
+		pub name: String,
+		pub filesize: u64,
+		pub validated: bool,
+		pub difficulty: u8,
+		pub created_on: String,
+		pub updated_on: String,
+		pub approved_by_steamid64: String,
+		pub workshop_url: String,
+		pub download_url: Option<String>,
+	}
+
+	impl ResponseData for Response {}
+	impl ResponseData for Vec<Response> {}
+
+	impl Params {
+		pub fn default() -> Self {
+			Params {
+				id: None,
+				name: None,
+				larger_than_filesize: None,
+				smaller_than_filesize: None,
+				is_validated: None,
+				difficulty: None,
+				created_since: None,
+				updated_since: None,
+				offset: None,
+				limit: Some(1),
+			}
+		}
+	}
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq)]
-pub struct GOKZPlayerProfile {
-	pub name: String,
-	pub steam_id: Option<String>,
-	pub steam_id64: String,
-	pub rank: GOKZRank,
-	pub points: (u32, u32),
-	pub records: (u32, u32),
-	pub completion: [(u32, u32); 8],
-	pub completion_percentage: [(f32, f32); 8],
-	pub is_banned: bool,
+pub mod modes {
+	use serde::{Deserialize, Serialize};
+
+	use super::{ParamData, ResponseData};
+
+	#[derive(Debug, Clone, Serialize)]
+	pub enum Params {
+		Name(name::Params),
+		Id(id::Params),
+	}
+
+	impl ParamData for Params {}
+
+	#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+	pub struct Response {
+		pub id: u8,
+		pub name: String,
+		pub description: String,
+		pub latest_version: u8,
+		pub latest_version_description: String,
+		pub website: String,
+		pub repo: String,
+		pub contact_steamid64: String,
+		pub supported_tickrates: Option<u8>,
+		pub created_on: String,
+		pub updated_on: String,
+		pub updated_by_id: String,
+	}
+
+	impl ResponseData for Response {}
+	impl ResponseData for Vec<Response> {}
+
+	pub mod name {
+		use serde::{Deserialize, Serialize};
+
+		use crate::global_api::{ParamData, ResponseData};
+
+		#[derive(Debug, Clone, Serialize)]
+		pub struct Params {}
+
+		impl ParamData for Params {}
+	}
+
+	pub mod id {
+		use serde::{Deserialize, Serialize};
+
+		use crate::global_api::{ParamData, ResponseData};
+
+		#[derive(Debug, Clone, Serialize)]
+		pub struct Params {}
+
+		impl ParamData for Params {}
+	}
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct KZGOCompletionCount {
-	#[serde(rename(deserialize = "1"))]
-	pub one: u32,
-	#[serde(rename(deserialize = "2"))]
-	pub two: u32,
-	#[serde(rename(deserialize = "3"))]
-	pub three: u32,
-	#[serde(rename(deserialize = "4"))]
-	pub four: u32,
-	#[serde(rename(deserialize = "5"))]
-	pub five: u32,
-	#[serde(rename(deserialize = "6"))]
-	pub six: u32,
-	#[serde(rename(deserialize = "7"))]
-	pub seven: u32,
-	pub total: u32,
+pub mod player_ranks {
+	use serde::{Deserialize, Serialize};
+
+	use super::{ParamData, ResponseData};
+
+	#[allow(non_snake_case)]
+	#[derive(Debug, Clone, Serialize)]
+	pub struct Params {
+		pub points_greater_than: Option<u32>,
+		pub average_greater_than: Option<u32>,
+		pub rating_greater_than: Option<u32>,
+		pub finishes_greater_than: Option<u32>,
+		pub steamid64s: Option<Vec<u64>>,
+		pub record_filter_ids: Option<Vec<u32>>,
+		pub map_ids: Option<Vec<u16>>,
+		pub stages: Option<Vec<u8>>,
+		pub mode_ids: Option<Vec<u8>>,
+		pub tickrates: Option<Vec<u8>>,
+		pub has_teleports: Option<bool>,
+		pub mapTag: Option<&'static str>,
+		pub offset: Option<i32>,
+		pub limit: Option<u32>,
+	}
+
+	impl ParamData for Params {}
+
+	#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+	pub struct Response {
+		pub points: u32,
+		pub average: u32,
+		pub rating: u32,
+		pub finishes: u32,
+		pub steamid64: String,
+		pub steamid: String,
+		pub player_name: String,
+	}
+
+	impl ResponseData for Response {}
+	impl ResponseData for Vec<Response> {}
+
+	impl Params {
+		pub fn default() -> Self {
+			Params {
+				points_greater_than: None,
+				average_greater_than: None,
+				rating_greater_than: None,
+				finishes_greater_than: None,
+				steamid64s: None,
+				record_filter_ids: None,
+				map_ids: None,
+				stages: None,
+				mode_ids: None,
+				tickrates: None,
+				has_teleports: None,
+				mapTag: None,
+				offset: None,
+				limit: Some(1),
+			}
+		}
+	}
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct KZGOCompletionStats {
-	pub _id: String,
-	pub mode: String,
-	pub pro: KZGOCompletionCount,
-	pub tp: KZGOCompletionCount,
+pub mod players {
+	use serde::{Deserialize, Serialize};
+
+	use super::{ParamData, ResponseData};
+
+	#[derive(Debug, Clone, Serialize)]
+	pub struct Params {
+		pub name: Option<&'static str>,
+		pub steam_id: Option<&'static str>,
+		pub is_banned: Option<bool>,
+		pub total_records: Option<u32>,
+		pub ip: Option<&'static str>,
+		pub steamid64_list: Option<Vec<u64>>,
+		pub offset: Option<i32>,
+		pub limit: Option<u32>,
+	}
+
+	impl ParamData for Params {}
+
+	#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+	pub struct Response {
+		steamid64: String,
+		steam_id: String,
+		is_banned: bool,
+		total_records: u32,
+		name: String,
+	}
+
+	impl ResponseData for Response {}
+	impl ResponseData for Vec<Response> {}
+
+	impl Params {
+		pub fn default() -> Self {
+			Params {
+				name: None,
+				steam_id: None,
+				is_banned: None,
+				total_records: None,
+				ip: None,
+				steamid64_list: None,
+				offset: None,
+				limit: Some(1),
+			}
+		}
+	}
+}
+
+pub mod record_filters {
+	use serde::{Deserialize, Serialize};
+
+	use super::{ParamData, ResponseData};
+
+	#[derive(Debug, Clone, Serialize)]
+	pub enum Params {
+		Base(base::Params),
+		Distributions(distributions::Params),
+	}
+
+	impl ParamData for Params {}
+
+	#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+	pub enum Response {
+		Base(base::Response),
+		Distributions(distributions::Response),
+	}
+
+	impl ResponseData for Response {}
+	impl ResponseData for Vec<Response> {}
+
+	pub mod base {
+		use serde::{Deserialize, Serialize};
+
+		use crate::global_api::{ParamData, ResponseData};
+
+		#[derive(Debug, Clone, Serialize)]
+		pub struct Params {
+			pub ids: Option<Vec<u32>>,
+			pub map_ids: Option<Vec<u32>>,
+			pub stages: Option<Vec<u8>>,
+			pub mode_ids: Option<Vec<u8>>,
+			pub tickrates: Option<Vec<u8>>,
+			pub has_teleports: Option<bool>,
+			pub offset: Option<i32>,
+			pub limit: Option<u32>,
+		}
+
+		impl ParamData for Params {}
+
+		#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+		pub struct Response {
+			pub id: u32,
+			pub map_id: u16,
+			pub stage: u8,
+			pub mode_id: u8,
+			pub tickrate: u8,
+			pub has_teleports: bool,
+			pub created_on: String,
+			pub updated_by_id: String,
+		}
+
+		impl ResponseData for Response {}
+		impl ResponseData for Vec<Response> {}
+
+		impl Params {
+			pub fn default() -> Self {
+				Params {
+					ids: None,
+					map_ids: None,
+					stages: None,
+					mode_ids: None,
+					tickrates: None,
+					has_teleports: None,
+					offset: None,
+					limit: Some(1),
+				}
+			}
+		}
+	}
+
+	pub mod distributions {
+		use serde::{Deserialize, Serialize};
+
+		use crate::global_api::{ParamData, ResponseData};
+
+		#[derive(Debug, Clone, Serialize)]
+		pub struct Params {
+			pub ids: Option<Vec<u32>>,
+			pub map_ids: Option<Vec<u32>>,
+			pub stages: Option<Vec<u8>>,
+			pub mode_ids: Option<Vec<u8>>,
+			pub tickrates: Option<Vec<u8>>,
+			pub has_teleports: Option<bool>,
+			pub offset: Option<i32>,
+			pub limit: Option<u32>,
+		}
+
+		impl ParamData for Params {}
+
+		#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+		pub struct Response {
+			pub id: u32,
+			pub map_id: u16,
+			pub stage: u8,
+			pub mode_id: u8,
+			pub tickrate: u8,
+			pub has_teleports: bool,
+			pub created_on: String,
+			pub updated_by_id: String,
+		}
+
+		impl ResponseData for Response {}
+		impl ResponseData for Vec<Response> {}
+
+		impl Params {
+			pub fn default() -> Self {
+				Params {
+					ids: None,
+					map_ids: None,
+					stages: None,
+					mode_ids: None,
+					tickrates: None,
+					has_teleports: None,
+					offset: None,
+					limit: Some(1),
+				}
+			}
+		}
+	}
+}
+
+pub mod records {
+	use serde::{Deserialize, Serialize};
+
+	use super::{ParamData, ResponseData};
+
+	#[derive(Debug, Clone, Serialize)]
+	pub enum Params {
+		Place(place::Params),
+		Top(top::Params),
+		WorldRecords(world_records::Params),
+		Recent(recent::Params),
+		RecordFilter(record_filter::Params),
+		ReplayList(replay_list::Params),
+	}
+
+	impl ParamData for Params {}
+
+	#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+	pub enum Response {
+		Place(place::Response),
+		Top(top::Response),
+		WorldRecords(world_records::Response),
+		Recent(recent::Response),
+		RecordFilter(record_filter::Response),
+		ReplayList(replay_list::Response),
+	}
+
+	impl ResponseData for Response {}
+	impl ResponseData for Vec<Response> {}
+
+	pub mod place {
+		use serde::{Deserialize, Serialize};
+
+		use crate::global_api::{ParamData, ResponseData};
+
+		#[derive(Debug, Clone, Serialize)]
+		pub struct Params {
+			pub id: Option<u32>,
+		}
+
+		impl ParamData for Params {}
+
+		#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+		pub struct Response(u32);
+
+		impl ResponseData for Response {}
+		impl ResponseData for Vec<Response> {}
+
+		impl Params {
+			pub fn new(id: u32) -> Self {
+				Params { id: Some(id) }
+			}
+		}
+	}
+
+	pub mod top {
+		use serde::{Deserialize, Serialize};
+
+		use crate::global_api::{ParamData, ResponseData};
+
+		#[derive(Debug, Clone, Serialize)]
+		pub struct Params {
+			pub steam_id: Option<&'static str>,
+			pub server_id: Option<u32>,
+			pub steamid64: Option<u64>,
+			pub map_id: Option<u16>,
+			pub map_name: Option<&'static str>,
+			pub tickrate: Option<u8>,
+			pub overall: Option<bool>,
+			pub stage: Option<u8>,
+			pub modes_list_string: Option<&'static str>,
+			pub modes_list: Option<Vec<&'static str>>,
+			pub has_teleports: Option<bool>,
+			pub player_name: Option<&'static str>,
+			pub offset: Option<i32>,
+			pub limit: Option<u32>,
+		}
+
+		impl ParamData for Params {}
+
+		#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+		pub struct Response {
+			pub id: u32,
+			pub steamid64: String,
+			pub player_name: Option<String>,
+			pub steam_id: Option<String>,
+			pub server_id: u16,
+			pub map_id: u16,
+			pub stage: u8,
+			pub mode: String,
+			pub tickrate: u8,
+			pub time: f32,
+			pub teleports: u32,
+			pub created_on: String,
+			pub updated_on: String,
+			pub updated_by: u64,
+			pub record_filter_id: i32,
+			pub server_name: Option<String>,
+			pub map_name: String,
+			pub points: u16,
+			pub replay_id: u32,
+		}
+
+		impl ResponseData for Response {}
+		impl ResponseData for Vec<Response> {}
+
+		impl Params {
+			pub fn default() -> Self {
+				Params {
+					steam_id: None,
+					server_id: None,
+					steamid64: None,
+					map_id: None,
+					map_name: None,
+					tickrate: None,
+					overall: None,
+					stage: None,
+					modes_list_string: None,
+					modes_list: None,
+					has_teleports: None,
+					player_name: None,
+					offset: None,
+					limit: Some(1),
+				}
+			}
+		}
+	}
+
+	pub mod world_records {
+		use serde::{Deserialize, Serialize};
+
+		use crate::global_api::{ParamData, ResponseData};
+
+		#[allow(non_snake_case)]
+		#[derive(Debug, Clone, Serialize)]
+		pub struct Params {
+			pub ids: Option<Vec<u32>>,
+			pub map_ids: Option<Vec<u16>>,
+			pub stages: Option<Vec<u8>>,
+			pub mode_ids: Option<Vec<u8>>,
+			pub tickrates: Option<Vec<u8>>,
+			pub has_teleports: Option<bool>,
+			pub mapTag: Option<String>,
+			pub offset: Option<i32>,
+			pub limit: Option<u32>,
+		}
+
+		impl ParamData for Params {}
+
+		#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+		pub struct Response {
+			steamid64: String,
+			steam_id: Option<String>,
+			count: u32,
+			player_name: Option<String>,
+		}
+
+		impl ResponseData for Response {}
+		impl ResponseData for Vec<Response> {}
+
+		impl Params {
+			pub fn default() -> Self {
+				Params {
+					ids: None,
+					map_ids: None,
+					stages: None,
+					mode_ids: None,
+					tickrates: None,
+					has_teleports: None,
+					mapTag: None,
+					offset: None,
+					limit: Some(1),
+				}
+			}
+		}
+	}
+
+	pub mod recent {
+		use serde::{Deserialize, Serialize};
+
+		use crate::global_api::{ParamData, ResponseData};
+
+		#[derive(Debug, Clone, Serialize)]
+		pub struct Params {
+			pub steam_id: Option<&'static str>,
+			pub steamid64: Option<u64>,
+			pub map_id: Option<u16>,
+			pub map_name: Option<&'static str>,
+			pub has_teleports: Option<bool>,
+			pub tickrate: Option<u8>,
+			pub stage: Option<u8>,
+			pub modes_list_string: Option<&'static str>,
+			pub modes_list: Option<Vec<&'static str>>,
+			pub place_top_at_least: Option<u32>,
+			pub place_top_overall_at_least: Option<u32>,
+			pub created_since: Option<&'static str>,
+			pub offset: Option<i32>,
+			pub limit: Option<u32>,
+		}
+
+		impl ParamData for Params {}
+
+		#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+		pub struct Response {
+			pub id: u32,
+			pub steamid64: String,
+			pub player_name: Option<String>,
+			pub steam_id: Option<String>,
+			pub server_id: u16,
+			pub map_id: u16,
+			pub stage: u8,
+			pub mode: String,
+			pub tickrate: u8,
+			pub time: f32,
+			pub teleports: u32,
+			pub created_on: String,
+			pub updated_on: String,
+			pub updated_by: u64,
+			pub place: u32,
+			pub top_100: u8,
+			pub top_100_overall: u8,
+			pub server_name: Option<String>,
+			pub map_name: String,
+			pub points: u8,
+			pub record_filter_id: u32,
+			pub replay_id: u32,
+		}
+
+		impl ResponseData for Response {}
+		impl ResponseData for Vec<Response> {}
+
+		impl Params {
+			pub fn default() -> Self {
+				Params {
+					steam_id: None,
+					steamid64: None,
+					map_id: None,
+					map_name: None,
+					has_teleports: None,
+					tickrate: None,
+					stage: None,
+					modes_list_string: None,
+					modes_list: None,
+					place_top_at_least: None,
+					place_top_overall_at_least: None,
+					created_since: None,
+					offset: None,
+					limit: Some(1),
+				}
+			}
+		}
+	}
+
+	pub mod record_filter {
+		use serde::{Deserialize, Serialize};
+
+		use crate::global_api::{ParamData, ResponseData};
+
+		#[derive(Debug, Clone, Serialize)]
+		pub struct Params {
+			pub ids: Option<Vec<u32>>,
+			pub map_ids: Option<Vec<u16>>,
+			pub stages: Option<Vec<u8>>,
+			pub mode_ids: Option<Vec<u8>>,
+			pub tickrates: Option<Vec<u8>>,
+			pub has_teleports: Option<bool>,
+			pub offset: Option<i32>,
+			pub limit: Option<u32>,
+		}
+
+		impl ParamData for Params {}
+
+		#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+		pub struct Response {
+			pub record_id: u32,
+			pub place: u32,
+			pub top_100: u8,
+			pub top_100_overall: u8,
+			pub is_pb: bool,
+			pub total_in_category: i32,
+		}
+
+		impl ResponseData for Response {}
+		impl ResponseData for Vec<Response> {}
+
+		impl Params {
+			pub fn default() -> Self {
+				Params {
+					ids: None,
+					map_ids: None,
+					stages: None,
+					mode_ids: None,
+					tickrates: None,
+					has_teleports: None,
+					offset: None,
+					limit: Some(1),
+				}
+			}
+		}
+	}
+
+	pub mod replay_list {
+		use serde::{Deserialize, Serialize};
+
+		use crate::global_api::{ParamData, ResponseData};
+
+		#[derive(Debug, Clone, Serialize)]
+		pub struct Params {
+			pub offset: Option<i32>,
+			pub limit: Option<u32>,
+		}
+
+		impl ParamData for Params {}
+
+		#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+		pub struct Response {
+			pub id: u32,
+			pub steamid64: String,
+			pub server_id: u16,
+			pub record_filter_id: u32,
+			pub time: f32,
+			pub teleports: u32,
+			pub created_on: String,
+			pub updated_on: String,
+			pub updated_by: u64,
+			pub points: u16,
+			pub replay_id: u32,
+		}
+
+		impl ResponseData for Response {}
+		impl ResponseData for Vec<Response> {}
+
+		impl Params {
+			pub fn default() -> Self {
+				Params {
+					offset: None,
+					limit: Some(1),
+				}
+			}
+		}
+	}
 }
