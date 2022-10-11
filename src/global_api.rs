@@ -1,127 +1,9 @@
-#![allow(unused, dead_code)]
+#![allow(dead_code)]
 
-use serde::{de::DeserializeOwned, Serialize};
 pub const BASE_URL: &'static str = "https://kztimerglobal.com/api/v2/";
 
 pub trait ParamData {}
 pub trait ResponseData {}
-
-use crate::prelude::{Error, ErrorKind};
-
-async fn api_request<T, P>(route: &'static str, params: P, client: &reqwest::Client) -> Result<T, Error>
-where
-	T: DeserializeOwned + ResponseData,
-	P: Serialize + ParamData,
-{
-	match client.get(format!("{}{}", BASE_URL, route)).query(&params).send().await {
-		Ok(data) => match data.json::<T>().await {
-			Ok(json) => Ok(json),
-			Err(why) => Err(Error {
-				kind: ErrorKind::Parsing,
-				tldr: "Failed to parse JSON.",
-				raw: Some(why.to_string()),
-			}),
-		},
-		Err(why) => Err(Error {
-			kind: ErrorKind::GlobalAPI,
-			tldr: "GlobalAPI Request failed.",
-			raw: Some(why.to_string()),
-		}),
-	}
-}
-
-pub mod functions {
-	use crate::prelude::{Error, ErrorKind, MapIdentifier, Mode};
-
-	use super::{api_request, maps, modes, status};
-
-	pub async fn check_api(client: &reqwest::Client) -> Result<status::APIStatusShort, Error> {
-		match client
-			.get("https://status.global-api.com/api/v2/summary.json")
-			.send()
-			.await
-		{
-			Ok(data) => match data.json::<status::APIStatus>().await {
-				Ok(mut json) => Ok(status::APIStatusShort {
-					status: json.status.description,
-					frontend: json.components.remove(0).status,
-					backend: json.components.remove(0).status,
-				}),
-				Err(why) => Err(Error {
-					kind: ErrorKind::Parsing,
-					tldr: "Failed to parse JSON.",
-					raw: Some(why.to_string()),
-				}),
-			},
-			Err(why) => Err(Error {
-				kind: ErrorKind::GlobalAPI,
-				tldr: "GlobalAPI Request failed.",
-				raw: Some(why.to_string()),
-			}),
-		}
-	}
-
-	pub async fn get_maps(client: &reqwest::Client) -> Result<Vec<maps::Response>, Error> {
-		let mut params = maps::Params::default();
-		params.limit = Some(999);
-		params.is_validated = Some(true);
-
-		match api_request::<Vec<maps::Response>, maps::Params>("maps?", params, &client).await {
-			Ok(maps) => {
-				if maps.len() > 0 {
-					Ok(maps)
-				} else {
-					Err(Error {
-						kind: ErrorKind::GlobalAPI,
-						tldr: "seems like gc deleted all the maps lololol",
-						raw: None,
-					})
-				}
-			}
-			Err(why) => Err(why),
-		}
-	}
-
-	pub async fn get_map(map: MapIdentifier, client: &reqwest::Client) -> Result<maps::Response, Error> {
-		let params = match map {
-			MapIdentifier::Id(_) => {
-				return Err(Error {
-					kind: ErrorKind::InvalidInput,
-					tldr: "Please do not use an ID for this function.",
-					raw: None,
-				})
-			}
-			MapIdentifier::Name(name) => {
-				let mut temp = maps::Params::default();
-				temp.name = Some(name);
-				temp
-			}
-		};
-
-		match api_request::<Vec<maps::Response>, maps::Params>("maps?", params, client).await {
-			Ok(mut data) => {
-				if data.len() < 1 {
-					Err(Error {
-						kind: ErrorKind::GlobalAPI,
-						tldr: "This map does not exist.",
-						raw: None,
-					})
-				} else {
-					Ok(data.remove(0))
-				}
-			}
-			Err(why) => Err(why),
-		}
-	}
-
-	pub async fn get_modes(client: &reqwest::Client) -> Result<Vec<modes::Response>, Error> {
-		api_request::<Vec<modes::Response>, modes::name::Params>("modes?", modes::name::Params {}, client).await
-	}
-
-	pub async fn get_mode(mode: Mode, client: &reqwest::Client) -> Result<modes::Response, Error> {
-		api_request::<modes::Response, modes::name::Params>(mode.as_route(), modes::name::Params {}, &client).await
-	}
-}
 
 pub mod status {
 	use serde::{Deserialize, Serialize};
@@ -261,7 +143,7 @@ pub mod maps {
 
 	#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 	pub struct Response {
-		pub id: u32,
+		pub id: u16,
 		pub name: String,
 		pub filesize: u64,
 		pub validated: bool,
@@ -327,9 +209,9 @@ pub mod modes {
 	impl ResponseData for Vec<Response> {}
 
 	pub mod name {
-		use serde::{Deserialize, Serialize};
+		use serde::Serialize;
 
-		use crate::global_api::{ParamData, ResponseData};
+		use crate::global_api::ParamData;
 
 		#[derive(Debug, Clone, Serialize)]
 		pub struct Params {}
@@ -338,9 +220,9 @@ pub mod modes {
 	}
 
 	pub mod id {
-		use serde::{Deserialize, Serialize};
+		use serde::Serialize;
 
-		use crate::global_api::{ParamData, ResponseData};
+		use crate::global_api::ParamData;
 
 		#[derive(Debug, Clone, Serialize)]
 		pub struct Params {}
@@ -432,11 +314,11 @@ pub mod players {
 
 	#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 	pub struct Response {
-		steamid64: String,
-		steam_id: String,
-		is_banned: bool,
-		total_records: u32,
-		name: String,
+		pub steamid64: String,
+		pub steam_id: String,
+		pub is_banned: bool,
+		pub total_records: u32,
+		pub name: String,
 	}
 
 	impl ResponseData for Response {}
@@ -541,7 +423,7 @@ pub mod record_filters {
 			pub map_ids: Option<Vec<u32>>,
 			pub stages: Option<Vec<u8>>,
 			pub mode_ids: Option<Vec<u8>>,
-			pub tickrates: Option<Vec<u8>>,
+			pub tickrates: Option<u8>,
 			pub has_teleports: Option<bool>,
 			pub offset: Option<i32>,
 			pub limit: Option<u32>,
@@ -617,23 +499,15 @@ pub mod records {
 		use crate::global_api::{ParamData, ResponseData};
 
 		#[derive(Debug, Clone, Serialize)]
-		pub struct Params {
-			pub id: Option<u32>,
-		}
+		pub struct Params {}
 
 		impl ParamData for Params {}
 
 		#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-		pub struct Response(u32);
+		pub struct Response(u16);
 
 		impl ResponseData for Response {}
 		impl ResponseData for Vec<Response> {}
-
-		impl Params {
-			pub fn new(id: u32) -> Self {
-				Params { id: Some(id) }
-			}
-		}
 	}
 
 	pub mod top {
@@ -919,6 +793,50 @@ pub mod records {
 					offset: None,
 					limit: Some(1),
 				}
+			}
+		}
+	}
+}
+
+pub mod profile {
+	use crate::global_api::ParamData;
+	use crate::global_api::ResponseData;
+	use crate::prelude::Rank;
+	use serde::{Deserialize, Serialize};
+
+	#[derive(Debug, Clone, Serialize)]
+	pub struct Params {}
+
+	impl ParamData for Params {}
+
+	#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+	pub struct Response {
+		pub name: Option<String>,
+		pub steam_id: Option<String>,
+		pub steam_id64: Option<String>,
+		pub rank: Option<Rank>,
+		pub points: (u32, u32),
+		pub records: (u32, u32),
+		pub completion: [(u32, u32); 8],
+		pub completion_percentage: [(f32, f32); 8],
+		pub is_banned: Option<bool>,
+	}
+
+	impl ResponseData for Response {}
+	impl ResponseData for Vec<Response> {}
+
+	impl Response {
+		pub fn default() -> Self {
+			Response {
+				name: None,
+				steam_id: None,
+				steam_id64: None,
+				rank: None,
+				points: (0, 0),
+				records: (0, 0),
+				completion: [(0, 0); 8],
+				completion_percentage: [(0.0, 0.0); 8],
+				is_banned: None,
 			}
 		}
 	}

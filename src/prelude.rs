@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ErrorKind {
 	GlobalAPI,
+	KZGO,
 	Parsing,
 	InvalidInput,
 	Other,
@@ -38,7 +39,7 @@ impl SteamId {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum MapIdentifier {
 	Name(&'static str),
-	Id(u32),
+	Id(u16),
 }
 
 #[allow(non_camel_case_types)]
@@ -76,6 +77,14 @@ impl Mode {
 		}
 	}
 
+	pub fn as_id(&self) -> u8 {
+		match self {
+			&Mode::KZTimer => 200,
+			&Mode::SimpleKZ => 201,
+			&Mode::Vanilla => 202,
+		}
+	}
+
 	pub fn fancy(&self) -> &'static str {
 		match self {
 			&Mode::KZTimer => "KZTimer",
@@ -92,11 +101,11 @@ impl Mode {
 		}
 	}
 
-	pub fn as_route(&self) -> &'static str {
+	pub fn as_route(&self) -> String {
 		match self {
-			&Mode::KZTimer => "modes/name/kz_timer",
-			&Mode::SimpleKZ => "modes/name/kz_simple",
-			&Mode::Vanilla => "modes/name/kz_vanilla",
+			&Mode::KZTimer => String::from("modes/name/kz_timer"),
+			&Mode::SimpleKZ => String::from("modes/name/kz_simple"),
+			&Mode::Vanilla => String::from("modes/name/kz_vanilla"),
 		}
 	}
 
@@ -113,4 +122,157 @@ impl Mode {
 pub enum PlayerIdentifier {
 	Name(&'static str),
 	SteamId(SteamId),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub enum Rank {
+	Legend,
+	Master,
+	Pro,
+	Semipro,
+	ExpertPlus,
+	Expert,
+	ExpertMinus,
+	SkilledPlus,
+	Skilled,
+	SkilledMinus,
+	RegularPlus,
+	Regular,
+	RegularMinus,
+	CasualPlus,
+	Casual,
+	CasualMinus,
+	AmateurPlus,
+	Amateur,
+	AmateurMinus,
+	BeginnerPlus,
+	Beginner,
+	BeginnerMinus,
+	New,
+}
+
+impl Rank {
+	pub fn from_points(points: u32, mode: &Mode) -> Self {
+		match mode {
+			&Mode::KZTimer => {
+				if points > 1_000_000 {
+					return Rank::Legend;
+				} else if points > 800_000 {
+					return Rank::Master;
+				} else if points > 600_000 {
+					return Rank::Pro;
+				} else if points > 400_000 {
+					return Rank::Semipro;
+				} else if points > 250_000 {
+					return Rank::ExpertPlus;
+				} else if points > 230_000 {
+					return Rank::Expert;
+				} else if points > 200_000 {
+					return Rank::ExpertMinus;
+				} else if points > 150_000 {
+					return Rank::SkilledPlus;
+				} else if points > 120_000 {
+					return Rank::Skilled;
+				} else if points > 100_000 {
+					return Rank::SkilledMinus;
+				} else if points > 80_000 {
+					return Rank::RegularPlus;
+				} else if points > 70_000 {
+					return Rank::Regular;
+				} else if points > 60_000 {
+					return Rank::RegularMinus;
+				} else if points > 40_000 {
+					return Rank::CasualPlus;
+				} else if points > 30_000 {
+					return Rank::Casual;
+				} else if points > 20_000 {
+					return Rank::CasualMinus;
+				} else if points > 10_000 {
+					return Rank::AmateurPlus;
+				} else if points > 5_000 {
+					return Rank::Amateur;
+				} else if points > 2_000 {
+					return Rank::AmateurMinus;
+				} else if points > 1_000 {
+					return Rank::BeginnerPlus;
+				} else if points > 500 {
+					return Rank::Beginner;
+				} else if points > 0 {
+					return Rank::BeginnerMinus;
+				}
+			}
+
+			&Mode::SimpleKZ => {
+				if points > 800_000 {
+					return Rank::Legend;
+				} else if points > 500_000 {
+					return Rank::Master;
+				} else if points > 400_000 {
+					return Rank::Pro;
+				} else if points > 300_000 {
+					return Rank::Semipro;
+				} else if points > 250_000 {
+					return Rank::ExpertPlus;
+				} else if points > 230_000 {
+					return Rank::Expert;
+				} else if points > 200_000 {
+					return Rank::ExpertMinus;
+				} else if points > 150_000 {
+					return Rank::SkilledPlus;
+				}
+			}
+
+			&Mode::Vanilla => {
+				if points > 600_000 {
+					return Rank::Legend;
+				} else if points > 400_000 {
+					return Rank::Master;
+				} else if points > 300_00 {
+					return Rank::Pro;
+				} else if points > 250_000 {
+					return Rank::Semipro;
+				} else if points > 200_000 {
+					return Rank::ExpertPlus;
+				} else if points > 180_000 {
+					return Rank::Expert;
+				} else if points > 160_000 {
+					return Rank::ExpertMinus;
+				} else if points > 140_000 {
+					return Rank::SkilledPlus;
+				}
+			}
+		}
+
+		if points > 120_000 {
+			return Rank::Skilled;
+		} else if points > 100_000 {
+			return Rank::SkilledMinus;
+		} else if points > 80_000 {
+			return Rank::RegularPlus;
+		} else if points > 70_000 {
+			return Rank::Regular;
+		} else if points > 60_000 {
+			return Rank::RegularMinus;
+		} else if points > 40_000 {
+			return Rank::CasualPlus;
+		} else if points > 30_000 {
+			return Rank::Casual;
+		} else if points > 20_000 {
+			return Rank::CasualMinus;
+		} else if points > 10_000 {
+			return Rank::AmateurPlus;
+		} else if points > 5_000 {
+			return Rank::Amateur;
+		} else if points > 2_000 {
+			return Rank::AmateurMinus;
+		} else if points > 1_000 {
+			return Rank::BeginnerPlus;
+		} else if points > 500 {
+			return Rank::Beginner;
+		} else if points > 0 {
+			return Rank::BeginnerMinus;
+		} else {
+			return Rank::New;
+		}
+	}
 }
