@@ -76,6 +76,15 @@ impl Mode {
 		}
 	}
 
+	pub fn from(input: String) -> Self {
+		match input.as_str() {
+			"KZTimer" | "kz_timer" | "KZT" | "kzt" => Mode::KZTimer,
+			"SimpleKZ" | "kz_simple" | "SKZ" | "skz" => Mode::SimpleKZ,
+			"Vanilla" | "kz_vanilla" | "VNL" | "vnl" => Mode::Vanilla,
+			_ => Mode::KZTimer,
+		}
+	}
+
 	pub fn from_id(input: u8) -> Self {
 		match input {
 			200 => Mode::KZTimer,
