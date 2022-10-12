@@ -126,7 +126,7 @@ pub mod functions {
 		match map {
 			MapIdentifier::Name(name) => {
 				for map in map_list {
-					if map.name.contains(name) {
+					if map.name.contains(&name.to_lowercase()) {
 						return Ok(map.to_owned());
 					}
 				}
