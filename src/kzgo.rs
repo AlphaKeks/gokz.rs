@@ -41,7 +41,7 @@ pub mod completion {
 				Err(why) => {
 					return Err(Error {
 						kind: ErrorKind::Parsing,
-						tldr: "Failed to parse JSON.",
+						tldr: String::from("Failed to parse JSON."),
 						raw: Some(why.to_string()),
 					})
 				}
@@ -49,7 +49,7 @@ pub mod completion {
 			Err(why) => {
 				return Err(Error {
 					kind: ErrorKind::KZGO,
-					tldr: "KZ:GO API Request failed.",
+					tldr: String::from("KZ:GO API Request failed."),
 					raw: Some(why.to_string()),
 				})
 			}

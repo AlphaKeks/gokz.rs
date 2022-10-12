@@ -28,13 +28,16 @@ pub mod functions {
 				Ok(json) => Ok(json),
 				Err(why) => Err(Error {
 					kind: ErrorKind::Parsing,
-					tldr: "Failed to parse JSON.",
-					raw: Some(why.to_string()),
+					tldr: String::from("Failed to parse JSON."),
+					raw: match why.status() {
+						Some(status) => Some(status.to_string()),
+						None => Some(why.to_string()),
+					},
 				}),
 			},
 			Err(why) => Err(Error {
 				kind: ErrorKind::GlobalAPI,
-				tldr: "GlobalAPI Request failed.",
+				tldr: String::from("GlobalAPI Request failed."),
 				raw: Some(why.to_string()),
 			}),
 		}
@@ -54,13 +57,13 @@ pub mod functions {
 				}),
 				Err(why) => Err(Error {
 					kind: ErrorKind::Parsing,
-					tldr: "Failed to parse JSON.",
+					tldr: String::from("Failed to parse JSON."),
 					raw: Some(why.to_string()),
 				}),
 			},
 			Err(why) => Err(Error {
 				kind: ErrorKind::GlobalAPI,
-				tldr: "GlobalAPI Request failed.",
+				tldr: String::from("GlobalAPI Request failed."),
 				raw: Some(why.to_string()),
 			}),
 		}
@@ -78,7 +81,7 @@ pub mod functions {
 				} else {
 					Err(Error {
 						kind: ErrorKind::GlobalAPI,
-						tldr: "seems like gc deleted all the maps lololol",
+						tldr: String::from("seems like gc deleted all the maps lololol"),
 						raw: None,
 					})
 				}
@@ -92,13 +95,13 @@ pub mod functions {
 			MapIdentifier::Id(_) => {
 				return Err(Error {
 					kind: ErrorKind::InvalidInput,
-					tldr: "Please do not use an ID for this function.",
+					tldr: String::from("Please do not use an ID for this function."),
 					raw: None,
 				})
 			}
 			MapIdentifier::Name(name) => {
 				let mut temp = maps::Params::default();
-				temp.name = Some(name);
+				temp.name = Some(name.to_owned());
 				temp
 			}
 		};
@@ -108,7 +111,7 @@ pub mod functions {
 				if data.len() < 1 {
 					Err(Error {
 						kind: ErrorKind::GlobalAPI,
-						tldr: "This map does not exist.",
+						tldr: String::from("This map does not exist."),
 						raw: None,
 					})
 				} else {
@@ -139,7 +142,7 @@ pub mod functions {
 
 		Err(Error {
 			kind: ErrorKind::InvalidInput,
-			tldr: "This map is not global.",
+			tldr: String::from("This map is not global."),
 			raw: None,
 		})
 	}
@@ -160,7 +163,7 @@ pub mod functions {
 		let mut params = players::Params::default();
 
 		match player_identifier {
-			PlayerIdentifier::Name(name) => params.name = Some(name),
+			PlayerIdentifier::Name(name) => params.name = Some(name.to_owned()),
 			PlayerIdentifier::SteamId(steam_id) => params.steam_id = Some(steam_id.to_string()),
 		}
 
@@ -169,7 +172,7 @@ pub mod functions {
 				if players.len() < 1 {
 					Err(Error {
 						kind: ErrorKind::InvalidInput,
-						tldr: "No players found.",
+						tldr: String::from("No players found."),
 						raw: None,
 					})
 				} else {
@@ -193,10 +196,10 @@ pub mod functions {
 		params.stage = Some(course);
 		params.has_teleports = Some(runtype);
 		params.limit = Some(1);
-		params.modes_list_string = Some(mode.as_str());
+		params.modes_list_string = Some(mode.as_str().to_owned());
 
 		match map {
-			MapIdentifier::Name(name) => params.map_name = Some(name),
+			MapIdentifier::Name(name) => params.map_name = Some(name.to_owned()),
 			MapIdentifier::Id(id) => params.map_id = Some(id.to_owned()),
 		}
 
@@ -211,7 +214,7 @@ pub mod functions {
 				if records.len() < 1 {
 					Err(Error {
 						kind: ErrorKind::InvalidInput,
-						tldr: "No records found.",
+						tldr: String::from("No records found."),
 						raw: None,
 					})
 				} else {
@@ -235,10 +238,10 @@ pub mod functions {
 		params.stage = Some(course);
 		params.has_teleports = Some(runtype);
 		params.limit = Some(100);
-		params.modes_list_string = Some(mode.as_str());
+		params.modes_list_string = Some(mode.as_str().to_owned());
 
 		match map {
-			MapIdentifier::Name(name) => params.map_name = Some(name),
+			MapIdentifier::Name(name) => params.map_name = Some(name.to_owned()),
 			MapIdentifier::Id(id) => params.map_id = Some(id.to_owned()),
 		}
 
@@ -253,7 +256,7 @@ pub mod functions {
 				if records.len() < 1 {
 					Err(Error {
 						kind: ErrorKind::InvalidInput,
-						tldr: "No records found.",
+						tldr: String::from("No records found."),
 						raw: None,
 					})
 				} else {
@@ -277,16 +280,16 @@ pub mod functions {
 		params.tickrate = Some(128);
 		params.stage = Some(course);
 		params.has_teleports = Some(runtype);
-		params.modes_list_string = Some(mode.as_str());
+		params.modes_list_string = Some(mode.as_str().to_owned());
 		params.limit = Some(1);
 
 		match player_identifier {
-			PlayerIdentifier::Name(name) => params.player_name = Some(name),
+			PlayerIdentifier::Name(name) => params.player_name = Some(name.to_owned()),
 			PlayerIdentifier::SteamId(steam_id) => params.steam_id = Some(steam_id.to_string()),
 		}
 
 		match map {
-			MapIdentifier::Name(name) => params.map_name = Some(name),
+			MapIdentifier::Name(name) => params.map_name = Some(name.to_owned()),
 			MapIdentifier::Id(id) => params.map_id = Some(id.to_owned()),
 		}
 
@@ -301,7 +304,7 @@ pub mod functions {
 				if records.len() < 1 {
 					Err(Error {
 						kind: ErrorKind::InvalidInput,
-						tldr: "No records found.",
+						tldr: String::from("No records found."),
 						raw: None,
 					})
 				} else {
@@ -322,13 +325,13 @@ pub mod functions {
 		let mut params = records::top::Params::default();
 
 		params.tickrate = Some(128);
-		params.modes_list_string = Some(mode.as_str());
+		params.modes_list_string = Some(mode.as_str().to_owned());
 		params.stage = Some(course);
 		params.has_teleports = Some(runtype);
 		params.limit = Some(9999);
 
 		match player_identifier {
-			PlayerIdentifier::Name(name) => params.player_name = Some(name),
+			PlayerIdentifier::Name(name) => params.player_name = Some(name.to_owned()),
 			PlayerIdentifier::SteamId(steam_id) => params.steam_id = Some(steam_id.to_string()),
 		}
 
@@ -345,7 +348,7 @@ pub mod functions {
 				if records.len() < 1 {
 					Err(Error {
 						kind: ErrorKind::InvalidInput,
-						tldr: "No records found.",
+						tldr: String::from("No records found."),
 						raw: None,
 					})
 				} else {
@@ -388,7 +391,7 @@ pub mod functions {
 		if records.len() < 1 {
 			return Err(Error {
 				kind: ErrorKind::InvalidInput,
-				tldr: "No records found.",
+				tldr: String::from("No records found."),
 				raw: None,
 			});
 		}
@@ -401,7 +404,7 @@ pub mod functions {
 				Err(why) => {
 					return Err(Error {
 						kind: ErrorKind::Parsing,
-						tldr: "Failed to parse date.",
+						tldr: String::from("Failed to parse date."),
 						raw: Some(why.to_string()),
 					})
 				}
@@ -523,7 +526,7 @@ pub mod functions {
 		if tp.len() == 0 && pro.len() == 0 {
 			return Err(Error {
 				kind: ErrorKind::InvalidInput,
-				tldr: "This player has no records.",
+				tldr: String::from("This player has no records."),
 				raw: None,
 			});
 		}
@@ -651,7 +654,7 @@ mod function_tests {
 		let client = Client::new();
 
 		let lionheart = MapIdentifier::Id(992);
-		let lionharder = MapIdentifier::Name("kz_lionharder");
+		let lionharder = MapIdentifier::Name(String::from("kz_lionharder"));
 
 		match get_map(&lionheart, &client).await {
 			Ok(map) => println!("Unexpected success: {}", map.name),
@@ -670,9 +673,9 @@ mod function_tests {
 
 		let global_maps = get_maps(&client).await.unwrap();
 
-		let lionheart = MapIdentifier::Name("kz_lionheart");
+		let lionheart = MapIdentifier::Name(String::from("kz_lionheart"));
 		let lionharder = MapIdentifier::Id(992);
-		let fake_map = MapIdentifier::Name("kz_fjerwiotgj3r9og");
+		let fake_map = MapIdentifier::Name(String::from("kz_fjerwiotgj3r9og"));
 		let fake_map2 = MapIdentifier::Id(42069);
 
 		match is_global(&lionheart, &global_maps).await {
@@ -735,15 +738,15 @@ mod function_tests {
 		let client = Client::new();
 
 		let players = [
-			PlayerIdentifier::Name("AlphaKeks"),
+			PlayerIdentifier::Name(String::from("AlphaKeks")),
 			PlayerIdentifier::SteamId(SteamId(String::from("STEAM_1:1:161178172"))),
-			PlayerIdentifier::Name("racist75"),
+			PlayerIdentifier::Name(String::from("racist75")),
 			PlayerIdentifier::SteamId(SteamId(String::from("STEAM_1:1:152337044"))),
-			PlayerIdentifier::Name("𝘨𝘰𝘴ℎℎℎℎℎℎℎ"),
+			PlayerIdentifier::Name(String::from("𝘨𝘰𝘴ℎℎℎℎℎℎℎ")),
 			PlayerIdentifier::SteamId(SteamId(String::from("STEAM_1:0:165881949"))),
-			PlayerIdentifier::Name("charlieeilrahc"),
+			PlayerIdentifier::Name(String::from("charlieeilrahc")),
 			PlayerIdentifier::SteamId(SteamId(String::from("STEAM_1:0:46898346"))),
-			PlayerIdentifier::Name("Fob"),
+			PlayerIdentifier::Name(String::from("Fob")),
 			PlayerIdentifier::SteamId(SteamId(String::from("STEAM_1:1:96787045"))),
 		];
 
@@ -759,8 +762,8 @@ mod function_tests {
 	async fn get_wr_test() {
 		let client = Client::new();
 
-		let lionharder = MapIdentifier::Name("kz_lionharder");
-		let kiwiterror = MapIdentifier::Name("kz_kiwiterror");
+		let lionharder = MapIdentifier::Name(String::from("kz_lionharder"));
+		let kiwiterror = MapIdentifier::Name(String::from("kz_kiwiterror"));
 
 		if let Err(why) = get_wr(&lionharder, &Mode::KZTimer, 0, true, &client).await {
 			panic!("Fail: {:#?}", why);
@@ -796,11 +799,11 @@ mod function_tests {
 		let client = Client::new();
 
 		let maps = [
-			MapIdentifier::Name("kz_kiwiterror"),
-			MapIdentifier::Name("kz_lionharder"),
-			MapIdentifier::Name("kz_erratum_v2"),
-			MapIdentifier::Name("kz_beginnerblock_go"),
-			MapIdentifier::Name("kz_hitech"),
+			MapIdentifier::Name(String::from("kz_kiwiterror")),
+			MapIdentifier::Name(String::from("kz_lionharder")),
+			MapIdentifier::Name(String::from("kz_erratum_v2")),
+			MapIdentifier::Name(String::from("kz_beginnerblock_go")),
+			MapIdentifier::Name(String::from("kz_hitech")),
 		];
 
 		for map in maps {
@@ -818,24 +821,23 @@ mod function_tests {
 		let player = PlayerIdentifier::SteamId(SteamId(String::from("STEAM_1:1:161178172")));
 		let mode = Mode::SimpleKZ;
 
-		match get_pb(&player, &MapIdentifier::Name("kz_lionharder"), &mode, 0, true, &client).await {
-			Ok(rec) => println!("Success: {:#?}", rec.time),
-			Err(why) => panic!("Fail: {:#?}", why),
-		}
-
-		match get_pb(&player, &MapIdentifier::Name("kz_lionharder"), &mode, 0, false, &client).await {
-			Ok(rec) => println!("Success: {:#?}", rec.time),
-			Err(why) => panic!("Fail: {:#?}", why),
-		}
-
-		match get_pb(&player, &MapIdentifier::Name("kz_erratum_v2"), &mode, 0, true, &client).await {
+		match get_pb(
+			&player,
+			&MapIdentifier::Name(String::from("kz_lionharder")),
+			&mode,
+			0,
+			true,
+			&client,
+		)
+		.await
+		{
 			Ok(rec) => println!("Success: {:#?}", rec.time),
 			Err(why) => panic!("Fail: {:#?}", why),
 		}
 
 		match get_pb(
 			&player,
-			&MapIdentifier::Name("kz_spacemario_h"),
+			&MapIdentifier::Name(String::from("kz_lionharder")),
 			&mode,
 			0,
 			false,
@@ -847,12 +849,58 @@ mod function_tests {
 			Err(why) => panic!("Fail: {:#?}", why),
 		}
 
-		match get_pb(&player, &MapIdentifier::Name("kz_lionheart"), &mode, 0, true, &client).await {
+		match get_pb(
+			&player,
+			&MapIdentifier::Name(String::from("kz_erratum_v2")),
+			&mode,
+			0,
+			true,
+			&client,
+		)
+		.await
+		{
 			Ok(rec) => println!("Success: {:#?}", rec.time),
 			Err(why) => panic!("Fail: {:#?}", why),
 		}
 
-		match get_pb(&player, &MapIdentifier::Name("kz_hitech"), &mode, 0, false, &client).await {
+		match get_pb(
+			&player,
+			&MapIdentifier::Name(String::from("kz_spacemario_h")),
+			&mode,
+			0,
+			false,
+			&client,
+		)
+		.await
+		{
+			Ok(rec) => println!("Success: {:#?}", rec.time),
+			Err(why) => panic!("Fail: {:#?}", why),
+		}
+
+		match get_pb(
+			&player,
+			&MapIdentifier::Name(String::from("kz_lionheart")),
+			&mode,
+			0,
+			true,
+			&client,
+		)
+		.await
+		{
+			Ok(rec) => println!("Success: {:#?}", rec.time),
+			Err(why) => panic!("Fail: {:#?}", why),
+		}
+
+		match get_pb(
+			&player,
+			&MapIdentifier::Name(String::from("kz_hitech")),
+			&mode,
+			0,
+			false,
+			&client,
+		)
+		.await
+		{
 			Ok(rec) => println!("Success: {:#?}", rec.time),
 			Err(why) => panic!("Fail: {:#?}", why),
 		}
@@ -863,17 +911,17 @@ mod function_tests {
 		let client = Client::new();
 
 		let players = [
-			PlayerIdentifier::Name("AlphaKeks"),
+			PlayerIdentifier::Name(String::from("AlphaKeks")),
 			PlayerIdentifier::SteamId(SteamId(String::from("STEAM_1:1:161178172"))),
-			PlayerIdentifier::Name("racist75"),
+			PlayerIdentifier::Name(String::from("racist75")),
 			PlayerIdentifier::SteamId(SteamId(String::from("STEAM_1:1:152337044"))),
-			PlayerIdentifier::Name("𝘨𝘰𝘴ℎℎℎℎℎℎℎ"),
+			PlayerIdentifier::Name(String::from("𝘨𝘰𝘴ℎℎℎℎℎℎℎ")),
 			PlayerIdentifier::SteamId(SteamId(String::from("STEAM_1:0:165881949"))),
-			PlayerIdentifier::Name("charlieeilrahc"),
+			PlayerIdentifier::Name(String::from("charlieeilrahc")),
 			PlayerIdentifier::SteamId(SteamId(String::from("STEAM_1:0:46898346"))),
 			// TODO: fob gives 2 different results for some reason
 			// (and they're both wrong lol)
-			PlayerIdentifier::Name("Fob"),
+			PlayerIdentifier::Name(String::from("Fob")),
 			PlayerIdentifier::SteamId(SteamId(String::from("STEAM_1:1:96787045"))),
 		];
 
@@ -895,15 +943,15 @@ mod function_tests {
 		let client = Client::new();
 
 		let players = [
-			PlayerIdentifier::Name("AlphaKeks"),
+			PlayerIdentifier::Name(String::from("AlphaKeks")),
 			PlayerIdentifier::SteamId(SteamId(String::from("STEAM_1:1:161178172"))),
-			PlayerIdentifier::Name("racist75"),
+			PlayerIdentifier::Name(String::from("racist75")),
 			PlayerIdentifier::SteamId(SteamId(String::from("STEAM_1:1:152337044"))),
-			PlayerIdentifier::Name("𝘨𝘰𝘴ℎℎℎℎℎℎℎ"),
+			PlayerIdentifier::Name(String::from("𝘨𝘰𝘴ℎℎℎℎℎℎℎ")),
 			PlayerIdentifier::SteamId(SteamId(String::from("STEAM_1:0:165881949"))),
-			PlayerIdentifier::Name("charlieeilrahc"),
+			PlayerIdentifier::Name(String::from("charlieeilrahc")),
 			PlayerIdentifier::SteamId(SteamId(String::from("STEAM_1:0:46898346"))),
-			PlayerIdentifier::Name("Fob"),
+			PlayerIdentifier::Name(String::from("Fob")),
 			PlayerIdentifier::SteamId(SteamId(String::from("STEAM_1:1:96787045"))),
 		];
 
@@ -929,8 +977,8 @@ mod function_tests {
 		let client = Client::new();
 
 		let lionharder_pb = get_pb(
-			&PlayerIdentifier::Name("AlphaKeks"),
-			&MapIdentifier::Name("kz_lionharder"),
+			&PlayerIdentifier::Name(String::from("AlphaKeks")),
+			&MapIdentifier::Name(String::from("kz_lionharder")),
 			&Mode::SimpleKZ,
 			0,
 			true,
@@ -960,15 +1008,15 @@ mod function_tests {
 		let client = Client::new();
 
 		let players = [
-			PlayerIdentifier::Name("AlphaKeks"),
+			PlayerIdentifier::Name(String::from("AlphaKeks")),
 			PlayerIdentifier::SteamId(SteamId(String::from("STEAM_1:1:161178172"))),
-			PlayerIdentifier::Name("racist75"),
+			PlayerIdentifier::Name(String::from("racist75")),
 			PlayerIdentifier::SteamId(SteamId(String::from("STEAM_1:1:152337044"))),
-			PlayerIdentifier::Name("𝘨𝘰𝘴ℎℎℎℎℎℎℎ"),
+			PlayerIdentifier::Name(String::from("𝘨𝘰𝘴ℎℎℎℎℎℎℎ")),
 			PlayerIdentifier::SteamId(SteamId(String::from("STEAM_1:0:165881949"))),
-			PlayerIdentifier::Name("charlieeilrahc"),
+			PlayerIdentifier::Name(String::from("charlieeilrahc")),
 			PlayerIdentifier::SteamId(SteamId(String::from("STEAM_1:0:46898346"))),
-			PlayerIdentifier::Name("Fob"),
+			PlayerIdentifier::Name(String::from("Fob")),
 			PlayerIdentifier::SteamId(SteamId(String::from("STEAM_1:1:96787045"))),
 		];
 
@@ -990,15 +1038,15 @@ mod function_tests {
 		let client = Client::new();
 
 		let players = [
-			// PlayerIdentifier::Name("AlphaKeks"),
-			// PlayerIdentifier::SteamId(SteamId(String::from("STEAM_1:1:161178172"))),
-			// PlayerIdentifier::Name("racist75"),
-			// PlayerIdentifier::SteamId(SteamId(String::from("STEAM_1:1:152337044"))),
-			// PlayerIdentifier::Name("𝘨𝘰𝘴ℎℎℎℎℎℎℎ"),
-			// PlayerIdentifier::SteamId(SteamId(String::from("STEAM_1:0:165881949"))),
-			// PlayerIdentifier::Name("charlieeilrahc"),
-			// PlayerIdentifier::SteamId(SteamId(String::from("STEAM_1:0:46898346"))),
-			PlayerIdentifier::Name("Fob"),
+			PlayerIdentifier::Name(String::from("AlphaKeks")),
+			PlayerIdentifier::SteamId(SteamId(String::from(String::from("STEAM_1:1:161178172")))),
+			PlayerIdentifier::Name(String::from("racist75")),
+			PlayerIdentifier::SteamId(SteamId(String::from(String::from("STEAM_1:1:152337044")))),
+			PlayerIdentifier::Name(String::from("𝘨𝘰𝘴ℎℎℎℎℎℎℎ")),
+			PlayerIdentifier::SteamId(SteamId(String::from(String::from("STEAM_1:0:165881949")))),
+			PlayerIdentifier::Name(String::from("charlieeilrahc")),
+			PlayerIdentifier::SteamId(SteamId(String::from(String::from("STEAM_1:0:46898346")))),
+			PlayerIdentifier::Name(String::from("Fob")),
 			PlayerIdentifier::SteamId(SteamId(String::from("STEAM_1:1:96787045"))),
 		];
 

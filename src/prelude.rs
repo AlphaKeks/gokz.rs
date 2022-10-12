@@ -15,7 +15,7 @@ pub enum ErrorKind {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Error {
 	pub kind: ErrorKind,
-	pub tldr: &'static str,
+	pub tldr: String,
 	pub raw: Option<String>,
 }
 
@@ -54,7 +54,7 @@ impl SteamId {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum MapIdentifier {
-	Name(&'static str),
+	Name(String),
 	Id(u16),
 }
 
@@ -101,19 +101,19 @@ impl Mode {
 		}
 	}
 
-	pub fn fancy(&self) -> &'static str {
+	pub fn fancy(&self) -> String {
 		match self {
-			&Mode::KZTimer => "KZTimer",
-			&Mode::SimpleKZ => "SimpleKZ",
-			&Mode::Vanilla => "Vanilla",
+			&Mode::KZTimer => String::from("KZTimer"),
+			&Mode::SimpleKZ => String::from("SimpleKZ"),
+			&Mode::Vanilla => String::from("Vanilla"),
 		}
 	}
 
-	pub fn fancy_short(&self) -> &'static str {
+	pub fn fancy_short(&self) -> String {
 		match self {
-			&Mode::KZTimer => "KZT",
-			&Mode::SimpleKZ => "SKZ",
-			&Mode::Vanilla => "VNL",
+			&Mode::KZTimer => String::from("KZT"),
+			&Mode::SimpleKZ => String::from("SKZ"),
+			&Mode::Vanilla => String::from("VNL"),
 		}
 	}
 
@@ -125,18 +125,18 @@ impl Mode {
 		}
 	}
 
-	pub fn as_id_route(&self) -> &'static str {
+	pub fn as_id_route(&self) -> String {
 		match self {
-			&Mode::KZTimer => "modes/id/200",
-			&Mode::SimpleKZ => "modes/id/201",
-			&Mode::Vanilla => "modes/id/200",
+			&Mode::KZTimer => String::from("modes/id/200"),
+			&Mode::SimpleKZ => String::from("modes/id/201"),
+			&Mode::Vanilla => String::from("modes/id/200"),
 		}
 	}
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum PlayerIdentifier {
-	Name(&'static str),
+	Name(String),
 	SteamId(SteamId),
 }
 
