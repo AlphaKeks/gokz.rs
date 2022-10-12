@@ -505,7 +505,7 @@ pub mod records {
 		impl ParamData for Params {}
 
 		#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-		pub struct Response(u16);
+		pub struct Response(pub u16);
 
 		impl ResponseData for Response {}
 		impl ResponseData for Vec<Response> {}
