@@ -16,7 +16,7 @@ pub mod functions {
 		maps, modes, players, profile, record_filters, records, status, ParamData, ResponseData, BASE_URL,
 	};
 	use crate::kzgo;
-	use crate::prelude::{Error, ErrorKind, MapIdentifier, Mode, PlayerIdentifier, Rank};
+	use crate::prelude::{Error, ErrorKind, MapIdentifier, Mode, PlayerIdentifier, Rank, SteamId};
 
 	async fn api_request<T, P>(route: String, params: P, client: &reqwest::Client) -> Result<T, Error>
 	where
@@ -64,31 +64,6 @@ pub mod functions {
 				raw: Some(why.to_string()),
 			}),
 		}
-	}
-
-	pub async fn is_global(map: MapIdentifier, map_list: &Vec<maps::Response>) -> Result<maps::Response, Error> {
-		match map {
-			MapIdentifier::Name(name) => {
-				for map in map_list {
-					if map.name.contains(&name) {
-						return Ok(map.to_owned());
-					}
-				}
-			}
-			MapIdentifier::Id(id) => {
-				for map in map_list {
-					if map.id == id {
-						return Ok(map.to_owned());
-					}
-				}
-			}
-		}
-
-		Err(Error {
-			kind: ErrorKind::InvalidInput,
-			tldr: "This map is not global.",
-			raw: None,
-		})
 	}
 
 	pub async fn get_maps(client: &reqwest::Client) -> Result<Vec<maps::Response>, Error> {
@@ -144,6 +119,31 @@ pub mod functions {
 		}
 	}
 
+	pub async fn is_global(map: &MapIdentifier, map_list: &Vec<maps::Response>) -> Result<maps::Response, Error> {
+		match map {
+			MapIdentifier::Name(name) => {
+				for map in map_list {
+					if map.name.contains(name) {
+						return Ok(map.to_owned());
+					}
+				}
+			}
+			MapIdentifier::Id(id) => {
+				for map in map_list {
+					if &map.id == id {
+						return Ok(map.to_owned());
+					}
+				}
+			}
+		}
+
+		Err(Error {
+			kind: ErrorKind::InvalidInput,
+			tldr: "This map is not global.",
+			raw: None,
+		})
+	}
+
 	pub async fn get_modes(client: &reqwest::Client) -> Result<Vec<modes::Response>, Error> {
 		api_request::<Vec<modes::Response>, modes::name::Params>(String::from("modes?"), modes::name::Params {}, client)
 			.await
@@ -161,7 +161,7 @@ pub mod functions {
 
 		match player_identifier {
 			PlayerIdentifier::Name(name) => params.name = Some(name),
-			PlayerIdentifier::SteamId(steam_id) => params.steam_id = Some(steam_id.val),
+			PlayerIdentifier::SteamId(steam_id) => params.steam_id = Some(steam_id.to_string()),
 		}
 
 		match api_request::<Vec<players::Response>, players::Params>(String::from("players?"), params, client).await {
@@ -234,7 +234,7 @@ pub mod functions {
 		params.tickrate = Some(128);
 		params.stage = Some(course);
 		params.has_teleports = Some(runtype);
-		params.limit = Some(1);
+		params.limit = Some(100);
 		params.modes_list_string = Some(mode.as_str());
 
 		match map {
@@ -282,7 +282,7 @@ pub mod functions {
 
 		match player_identifier {
 			PlayerIdentifier::Name(name) => params.player_name = Some(name),
-			PlayerIdentifier::SteamId(steam_id) => params.steam_id = Some(steam_id.val),
+			PlayerIdentifier::SteamId(steam_id) => params.steam_id = Some(steam_id.to_string()),
 		}
 
 		match map {
@@ -329,7 +329,7 @@ pub mod functions {
 
 		match player_identifier {
 			PlayerIdentifier::Name(name) => params.player_name = Some(name),
-			PlayerIdentifier::SteamId(steam_id) => params.steam_id = Some(steam_id.val),
+			PlayerIdentifier::SteamId(steam_id) => params.steam_id = Some(steam_id.to_string()),
 		}
 
 		let global_maps: Vec<String> = (get_maps(client).await?).into_iter().map(|m| m.name).collect();
@@ -431,15 +431,15 @@ pub mod functions {
 		mode: &Mode,
 		runtype: bool,
 		client: &reqwest::Client,
-	) -> Result<Vec<record_filters::distributions::Response>, Error> {
-		let mut params = record_filters::distributions::Params::default();
-		params.mode_ids = Some(vec![mode.as_id()]);
+	) -> Result<Vec<record_filters::base::Response>, Error> {
+		let mut params = record_filters::base::Params::default();
+		params.mode_ids = Some(mode.as_id());
 		params.has_teleports = Some(runtype);
-		params.stages = Some(vec![0]);
+		params.stages = Some(0);
 		params.tickrates = Some(128);
 		params.limit = Some(9999);
 
-		api_request::<Vec<record_filters::distributions::Response>, record_filters::distributions::Params>(
+		api_request::<Vec<record_filters::base::Response>, record_filters::base::Params>(
 			String::from("record_filters?"),
 			params,
 			client,
@@ -494,12 +494,13 @@ pub mod functions {
 	) -> Result<profile::Response, Error> {
 		let mut player = profile::Response::default();
 
-		if let Ok(res) = get_player(player_identifier, &client).await {
-			player.name = Some(res.name);
-			player.steam_id = Some(res.steam_id);
-			player.steam_id64 = Some(res.steamid64);
-			player.is_banned = Some(res.is_banned);
-		}
+		let player_api = get_player(player_identifier, &client).await?;
+
+		let player_identifier = PlayerIdentifier::SteamId(SteamId(player_api.steam_id.clone()));
+		player.name = Some(player_api.name);
+		player.steam_id = Some(player_api.steam_id);
+		player.steam_id64 = Some(player_api.steamid64);
+		player.is_banned = Some(player_api.is_banned);
 
 		let mut global_maps = vec![HashMap::new(), HashMap::new()];
 
@@ -511,8 +512,12 @@ pub mod functions {
 		}
 
 		let (tp, pro) = (
-			get_times(player_identifier, mode, 0, true, &client).await?,
-			get_times(player_identifier, mode, 0, false, &client).await?,
+			get_times(&player_identifier, mode, 0, true, &client)
+				.await
+				.unwrap_or(vec![]),
+			get_times(&player_identifier, mode, 0, false, &client)
+				.await
+				.unwrap_or(vec![]),
 		);
 
 		if tp.len() == 0 && pro.len() == 0 {
@@ -605,160 +610,328 @@ pub mod functions {
 
 #[cfg(test)]
 mod function_tests {
+	use reqwest::Client;
+
 	use crate::{
-		functions::*,
-		prelude::{MapIdentifier, Mode},
+		functions::{
+			check_api, get_filter_dist, get_map, get_maps, get_maptop, get_mode, get_modes, get_pb, get_place,
+			get_player, get_profile, get_recent, get_times, get_unfinished, get_wr, is_global,
+		},
+		prelude::{MapIdentifier, Mode, PlayerIdentifier, SteamId},
 	};
+
+	// #[tokio::test]
+	// async fn _test() {
+	// 	let client = Client::new();
+	//
+	// }
 
 	#[tokio::test]
 	async fn check_api_test() {
-		let client = reqwest::Client::new();
+		let client = Client::new();
 
 		match check_api(&client).await {
-			Ok(res) => println!("Success: {:#?}", res),
-			Err(err) => println!("Fail: {:#?}", err),
+			Ok(status) => println!("Success: {:#?}", status),
+			Err(why) => panic!("Fail: {:#?}", why),
 		}
 	}
 
 	#[tokio::test]
 	async fn get_maps_test() {
-		let client = reqwest::Client::new();
+		let client = Client::new();
 
 		match get_maps(&client).await {
-			Ok(res) => println!("Success: Got {} maps.", res.len()),
-			Err(err) => println!("Fail: {:#?}", err),
+			Ok(maps) => println!("Success: {} maps", maps.len()),
+			Err(why) => panic!("Fail: {:#?}", why),
 		}
 	}
 
 	#[tokio::test]
 	async fn get_map_test() {
-		let client = reqwest::Client::new();
+		let client = Client::new();
 
-		let lionharder_name1 = MapIdentifier::Name("kz_lionharder");
-		let lionharder_name2 = MapIdentifier::Name("lionHard");
-		let lionharder_id = MapIdentifier::Id(992);
-		let erratum_name = MapIdentifier::Name("kz_erratum_v2");
+		let lionheart = MapIdentifier::Id(992);
+		let lionharder = MapIdentifier::Name("kz_lionharder");
 
-		run(lionharder_name1, &client).await;
-		run(lionharder_name2, &client).await;
-		run(lionharder_id, &client).await;
-		run(erratum_name, &client).await;
+		match get_map(&lionheart, &client).await {
+			Ok(map) => println!("Unexpected success: {}", map.name),
+			Err(why) => println!("Error (expected): {}", why.tldr),
+		}
 
-		async fn run(map: MapIdentifier, client: &reqwest::Client) {
-			match get_map(&map, client).await {
-				Ok(res) => println!("Success: {:#?}", res),
-				Err(err) => println!("Fail: {:#?}", err),
-			}
+		match get_map(&lionharder, &client).await {
+			Ok(map) => assert_eq!(map.name, String::from("kz_lionharder")),
+			Err(why) => panic!("Fail: {:#?}", why),
 		}
 	}
 
 	#[tokio::test]
 	async fn is_global_test() {
-		let client = reqwest::Client::new();
+		let client = Client::new();
 
-		let maps = get_maps(&client).await.unwrap();
+		let global_maps = get_maps(&client).await.unwrap();
 
-		match is_global(MapIdentifier::Name("kz_lionharder"), &maps).await {
-			Ok(map) => println!("Success: {:#?}", map),
-			Err(err) => println!("Fail: {:#?}", err),
+		let lionheart = MapIdentifier::Name("kz_lionheart");
+		let lionharder = MapIdentifier::Id(992);
+		let fake_map = MapIdentifier::Name("kz_fjerwiotgj3r9og");
+		let fake_map2 = MapIdentifier::Id(42069);
+
+		match is_global(&lionheart, &global_maps).await {
+			Ok(map) => println!("Success: {} is global.", map.name),
+			Err(why) => panic!("Fail: {:#?}", why),
 		}
 
-		match is_global(MapIdentifier::Id(992), &maps).await {
-			Ok(map) => println!("Success: {:#?}", map),
-			Err(err) => println!("Fail: {:#?}", err),
+		match is_global(&lionharder, &global_maps).await {
+			Ok(map) => println!("Success: {} is global.", map.name),
+			Err(why) => panic!("Fail: {:#?}", why),
 		}
 
-		match is_global(MapIdentifier::Name("kz_penisman"), &maps).await {
-			Ok(map) => println!("The fuck: {:#?}", map),
-			Err(err) => println!("Success (hopefully): {:#?}", err),
+		match is_global(&fake_map, &global_maps).await {
+			Ok(map) => println!("Unexpected Success: {}", map.name),
+			Err(why) => println!("Error (expected): {}", why.tldr),
 		}
 
-		match is_global(MapIdentifier::Id(42069), &maps).await {
-			Ok(map) => println!("The fuck: {:#?}", map),
-			Err(err) => println!("Success (hopefully): {:#?}", err),
-		}
-
-		match is_global(MapIdentifier::Id(0), &maps).await {
-			Ok(map) => println!("The fuck: {:#?}", map),
-			Err(err) => println!("Success (hopefully): {:#?}", err),
-		}
-
-		match is_global(MapIdentifier::Id(1), &maps).await {
-			Ok(map) => println!("The fuck: {:#?}", map),
-			Err(err) => println!("Success (hopefully): {:#?}", err),
+		match is_global(&fake_map2, &global_maps).await {
+			Ok(map) => println!("Unexpected Success: {}", map.name),
+			Err(why) => println!("Error (expected): {}", why.tldr),
 		}
 	}
 
 	#[tokio::test]
 	async fn get_modes_test() {
-		let client = reqwest::Client::new();
+		let client = Client::new();
 
 		match get_modes(&client).await {
-			Ok(modes) => println!("Success: {:#?}", modes),
-			Err(why) => println!("Fail: {:#?}", why),
+			Ok(modes) => assert_eq!(3, modes.len()),
+			Err(why) => panic!("Fail: {:#?}", why),
 		}
 	}
 
 	#[tokio::test]
 	async fn get_mode_test() {
-		let client = reqwest::Client::new();
+		let client = Client::new();
 
-		match get_mode(&Mode::KZTimer, &client).await {
-			Ok(mode) => {
-				assert_eq!(200, mode.id);
-				println!("Success: {:#?}", mode);
-			}
-			Err(why) => println!("Fail: {:#?}", why),
+		let kzt = Mode::KZTimer;
+		let skz = Mode::SimpleKZ;
+		let vnl = Mode::Vanilla;
+
+		match get_mode(&kzt, &client).await {
+			Ok(mode) => assert_eq!(200, mode.id),
+			Err(why) => panic!("Fail: {:#?}", why),
 		}
 
-		match get_mode(&Mode::SimpleKZ, &client).await {
-			Ok(mode) => {
-				assert_eq!(201, mode.id);
-				println!("Success: {:#?}", mode);
-			}
-			Err(why) => println!("Fail: {:#?}", why),
+		match get_mode(&skz, &client).await {
+			Ok(mode) => assert_eq!(201, mode.id),
+			Err(why) => panic!("Fail: {:#?}", why),
 		}
 
-		match get_mode(&Mode::Vanilla, &client).await {
-			Ok(mode) => {
-				assert_eq!(202, mode.id);
-				println!("Success: {:#?}", mode);
-			}
-			Err(why) => println!("Fail: {:#?}", why),
+		match get_mode(&vnl, &client).await {
+			Ok(mode) => assert_eq!(202, mode.id),
+			Err(why) => panic!("Fail: {:#?}", why),
 		}
 	}
 
 	#[tokio::test]
 	async fn get_player_test() {
-		let client = reqwest::Client::new();
+		let client = Client::new();
 
-		// match get_player(crate::prelude::PlayerIdentifier::Name("AlphaKeks"), &client).await {
-		// 	Ok(player) => println!("Success: {:#?}", player),
-		// 	Err(why) => println!("Fail: {:#?}", why),
-		// }
+		let players = [
+			PlayerIdentifier::Name("AlphaKeks"),
+			PlayerIdentifier::SteamId(SteamId(String::from("STEAM_1:1:161178172"))),
+			PlayerIdentifier::Name("racist75"),
+			PlayerIdentifier::SteamId(SteamId(String::from("STEAM_1:1:152337044"))),
+			PlayerIdentifier::Name("𝘨𝘰𝘴ℎℎℎℎℎℎℎ"),
+			PlayerIdentifier::SteamId(SteamId(String::from("STEAM_1:0:165881949"))),
+			PlayerIdentifier::Name("charlieeilrahc"),
+			PlayerIdentifier::SteamId(SteamId(String::from("STEAM_1:0:46898346"))),
+			PlayerIdentifier::Name("Fob"),
+			PlayerIdentifier::SteamId(SteamId(String::from("STEAM_1:1:96787045"))),
+		];
 
-		let result = match get_player(&crate::prelude::PlayerIdentifier::Name("AlphaKeks"), &client).await {
-			Ok(player) => player,
-			Err(why) => return println!("Fail: {:#?}", why),
-		};
-
-		assert_eq!("76561198282622073", result.steamid64);
+		for player in players {
+			match get_player(&player, &client).await {
+				Ok(result) => println!("Got player: {}", result.name),
+				Err(why) => panic!("Fail: {:#?}", why),
+			}
+		}
 	}
 
 	#[tokio::test]
 	async fn get_wr_test() {
-		let _client = reqwest::Client::new();
+		let client = Client::new();
 
-		todo!("write this");
+		let lionharder = MapIdentifier::Name("kz_lionharder");
+		let kiwiterror = MapIdentifier::Name("kz_kiwiterror");
+
+		if let Err(why) = get_wr(&lionharder, &Mode::KZTimer, 0, true, &client).await {
+			panic!("Fail: {:#?}", why);
+		}
+
+		if let Err(why) = get_wr(&lionharder, &Mode::SimpleKZ, 0, true, &client).await {
+			panic!("Fail: {:#?}", why);
+		}
+
+		if let Ok(wtf) = get_wr(&lionharder, &Mode::Vanilla, 0, true, &client).await {
+			panic!("the hell: {:#?}", wtf);
+		}
+
+		if let Err(why) = get_wr(&lionharder, &Mode::KZTimer, 1, true, &client).await {
+			panic!("Fail: {:#?}", why);
+		}
+
+		if let Err(why) = get_wr(&lionharder, &Mode::SimpleKZ, 1, true, &client).await {
+			panic!("Fail: {:#?}", why);
+		}
+
+		if let Ok(wtf) = get_wr(&lionharder, &Mode::Vanilla, 1, true, &client).await {
+			panic!("the hell: {:#?}", wtf);
+		}
+
+		if let Ok(wtf) = get_wr(&kiwiterror, &Mode::Vanilla, 0, false, &client).await {
+			panic!("the hell: {:#?}", wtf);
+		}
+	}
+
+	#[tokio::test]
+	async fn get_maptop_test() {
+		let client = Client::new();
+
+		let maps = [
+			MapIdentifier::Name("kz_kiwiterror"),
+			MapIdentifier::Name("kz_lionharder"),
+			MapIdentifier::Name("kz_erratum_v2"),
+			MapIdentifier::Name("kz_beginnerblock_go"),
+			MapIdentifier::Name("kz_hitech"),
+		];
+
+		for map in maps {
+			match get_maptop(&map, &Mode::KZTimer, 0, true, &client).await {
+				Ok(recs) => println!("Got {} records.", recs.len()),
+				Err(why) => panic!("Fail: {:#?}", why),
+			}
+		}
+	}
+
+	#[tokio::test]
+	async fn get_pb_test() {
+		let client = Client::new();
+
+		let player = PlayerIdentifier::SteamId(SteamId(String::from("STEAM_1:1:161178172")));
+		let mode = Mode::SimpleKZ;
+
+		match get_pb(&player, &MapIdentifier::Name("kz_lionharder"), &mode, 0, true, &client).await {
+			Ok(rec) => println!("Success: {:#?}", rec.time),
+			Err(why) => panic!("Fail: {:#?}", why),
+		}
+
+		match get_pb(&player, &MapIdentifier::Name("kz_lionharder"), &mode, 0, false, &client).await {
+			Ok(rec) => println!("Success: {:#?}", rec.time),
+			Err(why) => panic!("Fail: {:#?}", why),
+		}
+
+		match get_pb(&player, &MapIdentifier::Name("kz_erratum_v2"), &mode, 0, true, &client).await {
+			Ok(rec) => println!("Success: {:#?}", rec.time),
+			Err(why) => panic!("Fail: {:#?}", why),
+		}
+
+		match get_pb(
+			&player,
+			&MapIdentifier::Name("kz_spacemario_h"),
+			&mode,
+			0,
+			false,
+			&client,
+		)
+		.await
+		{
+			Ok(rec) => println!("Success: {:#?}", rec.time),
+			Err(why) => panic!("Fail: {:#?}", why),
+		}
+
+		match get_pb(&player, &MapIdentifier::Name("kz_lionheart"), &mode, 0, true, &client).await {
+			Ok(rec) => println!("Success: {:#?}", rec.time),
+			Err(why) => panic!("Fail: {:#?}", why),
+		}
+
+		match get_pb(&player, &MapIdentifier::Name("kz_hitech"), &mode, 0, false, &client).await {
+			Ok(rec) => println!("Success: {:#?}", rec.time),
+			Err(why) => panic!("Fail: {:#?}", why),
+		}
 	}
 
 	#[tokio::test]
 	async fn get_times_test() {
-		let client = reqwest::Client::new();
+		let client = Client::new();
 
-		let result = get_times(
-			&crate::prelude::PlayerIdentifier::Name("AlphaKeks"),
-			&Mode::Vanilla,
+		let players = [
+			PlayerIdentifier::Name("AlphaKeks"),
+			PlayerIdentifier::SteamId(SteamId(String::from("STEAM_1:1:161178172"))),
+			PlayerIdentifier::Name("racist75"),
+			PlayerIdentifier::SteamId(SteamId(String::from("STEAM_1:1:152337044"))),
+			PlayerIdentifier::Name("𝘨𝘰𝘴ℎℎℎℎℎℎℎ"),
+			PlayerIdentifier::SteamId(SteamId(String::from("STEAM_1:0:165881949"))),
+			PlayerIdentifier::Name("charlieeilrahc"),
+			PlayerIdentifier::SteamId(SteamId(String::from("STEAM_1:0:46898346"))),
+			// TODO: fob gives 2 different results for some reason
+			// (and they're both wrong lol)
+			PlayerIdentifier::Name("Fob"),
+			PlayerIdentifier::SteamId(SteamId(String::from("STEAM_1:1:96787045"))),
+		];
+
+		for player in players {
+			match get_times(&player, &Mode::SimpleKZ, 0, true, &client).await {
+				Ok(recs) => println!(
+					"{:?} ({:?}) has {} SKZ TP records.",
+					&recs[0].player_name,
+					&recs[0].steam_id,
+					recs.len()
+				),
+				Err(why) => panic!("Fail: {:#?}", why),
+			}
+		}
+	}
+
+	#[tokio::test]
+	async fn get_recent_test() {
+		let client = Client::new();
+
+		let players = [
+			PlayerIdentifier::Name("AlphaKeks"),
+			PlayerIdentifier::SteamId(SteamId(String::from("STEAM_1:1:161178172"))),
+			PlayerIdentifier::Name("racist75"),
+			PlayerIdentifier::SteamId(SteamId(String::from("STEAM_1:1:152337044"))),
+			PlayerIdentifier::Name("𝘨𝘰𝘴ℎℎℎℎℎℎℎ"),
+			PlayerIdentifier::SteamId(SteamId(String::from("STEAM_1:0:165881949"))),
+			PlayerIdentifier::Name("charlieeilrahc"),
+			PlayerIdentifier::SteamId(SteamId(String::from("STEAM_1:0:46898346"))),
+			PlayerIdentifier::Name("Fob"),
+			PlayerIdentifier::SteamId(SteamId(String::from("STEAM_1:1:96787045"))),
+		];
+
+		for player in players {
+			match get_recent(&player, &client).await {
+				Ok(recent) => {
+					println!(
+						"{:?}'s recent: {} ({} {}) - {}",
+						&player,
+						&recent.map_name,
+						&recent.mode,
+						if &recent.teleports > &0 { "TP" } else { "PRO" },
+						&recent.time
+					);
+				}
+				Err(why) => panic!("Fail: {:#?}", why),
+			}
+		}
+	}
+
+	#[tokio::test]
+	async fn get_place_test() {
+		let client = Client::new();
+
+		let lionharder_pb = get_pb(
+			&PlayerIdentifier::Name("AlphaKeks"),
+			&MapIdentifier::Name("kz_lionharder"),
+			&Mode::SimpleKZ,
 			0,
 			true,
 			&client,
@@ -766,21 +939,74 @@ mod function_tests {
 		.await
 		.unwrap();
 
-		println!("records: {}", result.len());
+		match get_place(&lionharder_pb, &client).await {
+			Ok(place) => println!("Success: {:#?}", place),
+			Err(why) => panic!("Fail: {:#?}", why),
+		}
+	}
+
+	#[tokio::test]
+	async fn get_filter_dist_test() {
+		let client = Client::new();
+
+		match get_filter_dist(&Mode::SimpleKZ, true, &client).await {
+			Ok(result) => println!("Success: {:#?}", result),
+			Err(why) => panic!("Fail: {:#?}", why),
+		}
+	}
+
+	#[tokio::test]
+	async fn get_unfinished_test() {
+		let client = Client::new();
+
+		let players = [
+			PlayerIdentifier::Name("AlphaKeks"),
+			PlayerIdentifier::SteamId(SteamId(String::from("STEAM_1:1:161178172"))),
+			PlayerIdentifier::Name("racist75"),
+			PlayerIdentifier::SteamId(SteamId(String::from("STEAM_1:1:152337044"))),
+			PlayerIdentifier::Name("𝘨𝘰𝘴ℎℎℎℎℎℎℎ"),
+			PlayerIdentifier::SteamId(SteamId(String::from("STEAM_1:0:165881949"))),
+			PlayerIdentifier::Name("charlieeilrahc"),
+			PlayerIdentifier::SteamId(SteamId(String::from("STEAM_1:0:46898346"))),
+			PlayerIdentifier::Name("Fob"),
+			PlayerIdentifier::SteamId(SteamId(String::from("STEAM_1:1:96787045"))),
+		];
+
+		for player in players {
+			match get_unfinished(&player, &Mode::SimpleKZ, true, Some(4), &client).await {
+				Ok(maps) => println!(
+					"{:?} still needs to finish {} tier 4 maps in skz tp: {:?}",
+					&player,
+					maps.len(),
+					maps
+				),
+				Err(why) => panic!("Fail: {:#?}", why),
+			}
+		}
 	}
 
 	#[tokio::test]
 	async fn get_profile_test() {
-		let client = reqwest::Client::new();
+		let client = Client::new();
 
-		let result = get_profile(
-			&crate::prelude::PlayerIdentifier::Name("AlphaKeks"),
-			&Mode::SimpleKZ,
-			&client,
-		)
-		.await
-		.unwrap();
+		let players = [
+			// PlayerIdentifier::Name("AlphaKeks"),
+			// PlayerIdentifier::SteamId(SteamId(String::from("STEAM_1:1:161178172"))),
+			// PlayerIdentifier::Name("racist75"),
+			// PlayerIdentifier::SteamId(SteamId(String::from("STEAM_1:1:152337044"))),
+			// PlayerIdentifier::Name("𝘨𝘰𝘴ℎℎℎℎℎℎℎ"),
+			// PlayerIdentifier::SteamId(SteamId(String::from("STEAM_1:0:165881949"))),
+			// PlayerIdentifier::Name("charlieeilrahc"),
+			// PlayerIdentifier::SteamId(SteamId(String::from("STEAM_1:0:46898346"))),
+			PlayerIdentifier::Name("Fob"),
+			PlayerIdentifier::SteamId(SteamId(String::from("STEAM_1:1:96787045"))),
+		];
 
-		println!("{:#?}", result);
+		for player in players {
+			match get_profile(&player, &Mode::KZTimer, &client).await {
+				Ok(profile) => println!("Success ({:?}): {:?}", player, profile.completion),
+				Err(why) => panic!("Fail: {:#?} ({:#?})", why, player),
+			}
+		}
 	}
 }

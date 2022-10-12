@@ -68,7 +68,7 @@ pub mod bans {
 		pub is_expired: Option<bool>,
 		pub ip: Option<&'static str>,
 		pub steamid64: Option<&'static str>,
-		pub steam_id: Option<&'static str>,
+		pub steam_id: Option<String>,
 		pub notes_contains: Option<&'static str>,
 		pub stats_contains: Option<&'static str>,
 		pub server_id: Option<u32>,
@@ -301,7 +301,7 @@ pub mod players {
 	#[derive(Debug, Clone, Serialize)]
 	pub struct Params {
 		pub name: Option<&'static str>,
-		pub steam_id: Option<&'static str>,
+		pub steam_id: Option<String>,
 		pub is_banned: Option<bool>,
 		pub total_records: Option<u32>,
 		pub ip: Option<&'static str>,
@@ -369,11 +369,11 @@ pub mod record_filters {
 
 		#[derive(Debug, Clone, Serialize)]
 		pub struct Params {
-			pub ids: Option<Vec<u32>>,
-			pub map_ids: Option<Vec<u32>>,
-			pub stages: Option<Vec<u8>>,
-			pub mode_ids: Option<Vec<u8>>,
-			pub tickrates: Option<Vec<u8>>,
+			pub ids: Option<u32>,
+			pub map_ids: Option<u32>,
+			pub stages: Option<u8>,
+			pub mode_ids: Option<u8>,
+			pub tickrates: Option<u8>,
 			pub has_teleports: Option<bool>,
 			pub offset: Option<i32>,
 			pub limit: Option<u32>,
@@ -433,13 +433,14 @@ pub mod record_filters {
 
 		#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 		pub struct Response {
-			pub id: u32,
-			pub map_id: u16,
-			pub stage: u8,
-			pub mode_id: u8,
-			pub tickrate: u8,
-			pub has_teleports: bool,
+			pub record_filter_id: u32,
+			pub c: f32,
+			pub d: f32,
+			pub loc: f32,
+			pub scale: f32,
+			pub top_scale: f32,
 			pub created_on: String,
+			pub updated_on: String,
 			pub updated_by_id: String,
 		}
 
@@ -517,7 +518,7 @@ pub mod records {
 
 		#[derive(Debug, Clone, Serialize)]
 		pub struct Params {
-			pub steam_id: Option<&'static str>,
+			pub steam_id: Option<String>,
 			pub server_id: Option<u32>,
 			pub steamid64: Option<u64>,
 			pub map_id: Option<u16>,
@@ -639,7 +640,7 @@ pub mod records {
 
 		#[derive(Debug, Clone, Serialize)]
 		pub struct Params {
-			pub steam_id: Option<&'static str>,
+			pub steam_id: Option<String>,
 			pub steamid64: Option<u64>,
 			pub map_id: Option<u16>,
 			pub map_name: Option<&'static str>,

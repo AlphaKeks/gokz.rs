@@ -1,6 +1,8 @@
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 
+use crate::functions::get_player;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum ErrorKind {
 	GlobalAPI,
@@ -18,21 +20,35 @@ pub struct Error {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SteamId {
-	pub val: &'static str,
-}
+pub struct SteamId(pub String);
 
 impl SteamId {
-	pub fn test(&self) -> bool {
+	pub fn test(input: &'static str) -> bool {
 		let regex = Regex::new(r"STEAM_[0-1]:[0-1]:[0-9]+");
 
 		if let Ok(r) = regex {
-			if let Some(_) = r.find(self.val) {
+			if let Some(_) = r.find(input) {
 				return true;
 			}
 		}
 
 		false
+	}
+
+	pub fn to_string(&self) -> String {
+		match self {
+			SteamId(steam_id) => steam_id.to_owned(),
+		}
+	}
+
+	pub async fn get(input: &PlayerIdentifier, client: &reqwest::Client) -> Result<Self, Error> {
+		match input {
+			PlayerIdentifier::SteamId(steam_id) => Ok(steam_id.to_owned()),
+			PlayerIdentifier::Name(_) => match get_player(input, client).await {
+				Ok(player) => Ok(SteamId(player.steam_id)),
+				Err(why) => Err(why),
+			},
+		}
 	}
 }
 
