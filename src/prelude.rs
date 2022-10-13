@@ -300,4 +300,33 @@ impl Rank {
 			return Rank::New;
 		}
 	}
+
+	pub fn to_string(&self) -> String {
+		(match self {
+			Rank::Legend => "Legend",
+			Rank::Master => "Master",
+			Rank::Pro => "Pro",
+			Rank::Semipro => "Semipro",
+			Rank::ExpertPlus => "Expert+",
+			Rank::Expert => "Expert",
+			Rank::ExpertMinus => "Expert-",
+			Rank::SkilledPlus => "Skilled+",
+			Rank::Skilled => "Skilled",
+			Rank::SkilledMinus => "Skilled-",
+			Rank::RegularPlus => "Regular+",
+			Rank::Regular => "Regular",
+			Rank::RegularMinus => "Regular+",
+			Rank::CasualPlus => "Casual+",
+			Rank::Casual => "Casual",
+			Rank::CasualMinus => "Casual-",
+			Rank::AmateurPlus => "Amateur+",
+			Rank::Amateur => "Amateur",
+			Rank::AmateurMinus => "Amateur-",
+			Rank::BeginnerPlus => "Beginner+",
+			Rank::Beginner => "Beginner",
+			Rank::BeginnerMinus => "Beginner-",
+			Rank::New => "New",
+		})
+		.to_owned()
+	}
 }
