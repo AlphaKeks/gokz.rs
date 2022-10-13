@@ -620,6 +620,7 @@ mod function_tests {
 			check_api, get_filter_dist, get_map, get_maps, get_maptop, get_mode, get_modes, get_pb, get_place,
 			get_player, get_profile, get_recent, get_times, get_unfinished, get_wr, is_global,
 		},
+		kzgo,
 		prelude::{MapIdentifier, Mode, PlayerIdentifier, SteamId},
 	};
 
@@ -1055,6 +1056,16 @@ mod function_tests {
 				Ok(profile) => println!("Success ({:?}): {:?}", player, profile.completion),
 				Err(why) => panic!("Fail: {:#?} ({:#?})", why, player),
 			}
+		}
+	}
+
+	#[tokio::test]
+	async fn kzgo_map_test() {
+		let client = Client::new();
+
+		match kzgo::maps::get_map(&MapIdentifier::Name(String::from("kz_lionharder")), &client).await {
+			Ok(map) => println!("Success: {:#?}", map),
+			Err(why) => panic!("Fail: {:#?}", why),
 		}
 	}
 }

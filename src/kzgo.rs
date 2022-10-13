@@ -56,3 +56,57 @@ pub mod completion {
 		}
 	}
 }
+
+pub mod maps {
+	use serde::{Deserialize, Serialize};
+
+	use crate::prelude::*;
+
+	#[allow(non_snake_case)]
+	#[derive(Debug, Serialize, Deserialize)]
+	pub struct Map {
+		pub _id: String,
+		pub name: String,
+		pub id: u16,
+		pub tier: u8,
+		pub workshopId: String,
+		pub bonuses: u8,
+		pub sp: bool,
+		pub vp: bool,
+		pub mapperNames: Vec<String>,
+		pub mapperIds: Vec<String>,
+		pub date: String,
+	}
+
+	pub async fn get_map(map: &MapIdentifier, client: &reqwest::Client) -> Result<Map, Error> {
+		let map = match map {
+			MapIdentifier::Name(name) => name,
+			MapIdentifier::Id(_) => {
+				return Err(Error {
+					kind: ErrorKind::InvalidInput,
+					tldr: String::from("Please do not use an ID for this function."),
+					raw: None,
+				})
+			}
+		};
+		match client.get(format!("https://kzgo.eu/api/maps/{}", map)).send().await {
+			Ok(data) => match data.json::<Map>().await {
+				Ok(json) => return Ok(json),
+				Err(why) => {
+					return Err(Error {
+						kind: ErrorKind::Parsing,
+						tldr: String::from("Failed to parse JSON."),
+						raw: Some(why.to_string()),
+					})
+				}
+			},
+			Err(why) => {
+				return Err(Error {
+					kind: ErrorKind::KZGO,
+					tldr: String::from("KZ:GO API Request failed."),
+					raw: Some(why.to_string()),
+				})
+			}
+		}
+	}
+}
