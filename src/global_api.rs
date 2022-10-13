@@ -370,7 +370,7 @@ pub mod record_filters {
 		#[derive(Debug, Clone, Serialize)]
 		pub struct Params {
 			pub ids: Option<u32>,
-			pub map_ids: Option<u32>,
+			pub map_ids: Option<u16>,
 			pub stages: Option<u8>,
 			pub mode_ids: Option<u8>,
 			pub tickrates: Option<u8>,

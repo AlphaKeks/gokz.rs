@@ -450,6 +450,32 @@ pub mod functions {
 		.await
 	}
 
+	pub async fn get_filters(
+		map: &MapIdentifier,
+		client: &reqwest::Client,
+	) -> Result<Vec<record_filters::base::Response>, Error> {
+		let mut params = record_filters::base::Params::default();
+		params.map_ids = match map {
+			MapIdentifier::Id(id) => Some(id.to_owned()),
+			MapIdentifier::Name(_) => {
+				return Err(Error {
+					kind: ErrorKind::InvalidInput,
+					tldr: String::from("Please use an ID for this function."),
+					raw: None,
+				})
+			}
+		};
+		params.tickrates = Some(128);
+		params.limit = Some(9999);
+
+		api_request::<Vec<record_filters::base::Response>, record_filters::base::Params>(
+			String::from("record_filters?"),
+			params,
+			client,
+		)
+		.await
+	}
+
 	pub async fn get_unfinished(
 		player_identifier: &PlayerIdentifier,
 		mode: &Mode,
@@ -617,8 +643,8 @@ mod function_tests {
 
 	use crate::{
 		functions::{
-			check_api, get_filter_dist, get_map, get_maps, get_maptop, get_mode, get_modes, get_pb, get_place,
-			get_player, get_profile, get_recent, get_times, get_unfinished, get_wr, is_global,
+			check_api, get_filter_dist, get_filters, get_map, get_maps, get_maptop, get_mode, get_modes, get_pb,
+			get_place, get_player, get_profile, get_recent, get_times, get_unfinished, get_wr, is_global,
 		},
 		kzgo,
 		prelude::{MapIdentifier, Mode, PlayerIdentifier, SteamId},
@@ -1000,6 +1026,16 @@ mod function_tests {
 
 		match get_filter_dist(&Mode::SimpleKZ, true, &client).await {
 			Ok(result) => println!("Success: {:#?}", result),
+			Err(why) => panic!("Fail: {:#?}", why),
+		}
+	}
+
+	#[tokio::test]
+	async fn get_filters_test() {
+		let client = Client::new();
+
+		match get_filters(&MapIdentifier::Id(992), &client).await {
+			Ok(filters) => println!("Success: {:#?}", filters),
 			Err(why) => panic!("Fail: {:#?}", why),
 		}
 	}
