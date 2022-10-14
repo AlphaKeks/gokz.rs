@@ -647,7 +647,7 @@ mod function_tests {
 			get_place, get_player, get_profile, get_recent, get_times, get_unfinished, get_wr, is_global,
 		},
 		kzgo,
-		prelude::{MapIdentifier, Mode, PlayerIdentifier, SteamId},
+		prelude::{MapIdentifier, Mode, PlayerIdentifier, Rank, SteamId},
 	};
 
 	// #[tokio::test]
@@ -655,6 +655,13 @@ mod function_tests {
 	// 	let client = Client::new();
 	//
 	// }
+
+	#[tokio::test]
+	async fn h_test() {
+		let rank = Rank::from_points(45924, &Mode::Vanilla);
+
+		println!("{:#?}", rank);
+	}
 
 	#[tokio::test]
 	async fn check_api_test() {

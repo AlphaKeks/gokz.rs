@@ -252,7 +252,7 @@ impl Rank {
 					return Rank::Legend;
 				} else if points > 400_000 {
 					return Rank::Master;
-				} else if points > 300_00 {
+				} else if points > 300_000 {
 					return Rank::Pro;
 				} else if points > 250_000 {
 					return Rank::Semipro;
