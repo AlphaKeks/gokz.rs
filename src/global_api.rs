@@ -9,50 +9,40 @@ pub mod status {
 	use serde::{Deserialize, Serialize};
 
 	#[derive(Debug, Serialize, Deserialize)]
-	pub struct APIStatusShort {
-		pub status: String,
-		pub frontend: String,
-		pub backend: String,
+	pub struct ConditionResult {
+		pub condition: String,
+		pub success: bool,
 	}
 
 	#[derive(Debug, Serialize, Deserialize)]
-	pub struct APIStatusPage {
-		pub id: String,
-		pub name: String,
-		pub url: String,
-		pub time_zone: String,
-		pub updated_at: String,
+	#[serde(rename_all = "camelCase")]
+	pub struct StatusResult {
+		pub status: u16,
+		pub hostname: String,
+		pub duration: u32,
+		pub condition_results: Vec<ConditionResult>,
+		pub success: bool,
+		pub timestamp: String,
 	}
 
 	#[derive(Debug, Serialize, Deserialize)]
-	pub struct APIStatusComponent {
-		pub id: String,
-		pub name: String,
-		pub status: String,
-		pub created_at: String,
-		pub updated_at: String,
-		pub position: i32,
-		pub description: String,
-		pub showcase: bool,
-		pub start_date: Option<String>,
-		pub group_id: Option<String>,
-		pub group: bool,
-		pub only_show_if_degraded: bool,
-	}
-
-	#[derive(Debug, Serialize, Deserialize)]
-	pub struct APIStatusStatus {
-		pub indicator: String,
-		pub description: String,
+	pub struct StatusEvent {
+		pub r#type: String,
+		pub timestamp: String,
 	}
 
 	#[derive(Debug, Serialize, Deserialize)]
 	pub struct APIStatus {
-		pub page: APIStatusPage,
-		pub components: Vec<APIStatusComponent>,
-		pub incidents: Vec<Option<String>>,
-		pub scheduled_maintenances: Vec<Option<String>>,
-		pub status: APIStatusStatus,
+		pub name: String,
+		pub key: String,
+		pub results: Vec<StatusResult>,
+		pub events: Vec<StatusEvent>,
+	}
+
+	#[derive(Debug, Serialize, Deserialize)]
+	pub struct APIStatusFancy {
+		pub successful_responses: u8,
+		pub fast_responses: u8,
 	}
 }
 

@@ -1,6 +1,6 @@
 [package]
 name = "gokz_rs"
-version = "0.4.7"
+version = "0.5.0"
 edition = "2021"
 description = "Rust wrapper for the CS:GO KZ GlobalAPI"
 license-file = "./LICENSE"

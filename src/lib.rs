@@ -12,6 +12,7 @@ pub mod functions {
 	use serde::de::DeserializeOwned;
 	use serde::Serialize;
 
+	use crate::global_api::status::APIStatusFancy;
 	use crate::global_api::{
 		maps, modes, players, profile, record_filters, records, status, ParamData, ResponseData, BASE_URL,
 	};
@@ -43,18 +44,31 @@ pub mod functions {
 		}
 	}
 
-	pub async fn check_api(client: &reqwest::Client) -> Result<status::APIStatusShort, Error> {
+	pub async fn check_api(client: &reqwest::Client) -> Result<status::APIStatusFancy, Error> {
 		match client
-			.get("https://status.global-api.com/api/v2/summary.json")
+			.get("https://health.global-api.com/api/v1/endpoints/_globalapi/statuses?page=1")
 			.send()
 			.await
 		{
 			Ok(data) => match data.json::<status::APIStatus>().await {
-				Ok(mut json) => Ok(status::APIStatusShort {
-					status: json.status.description,
-					frontend: json.components.remove(0).status,
-					backend: json.components.remove(0).status,
-				}),
+				Ok(json) => {
+					let mut status = APIStatusFancy {
+						successful_responses: 0,
+						fast_responses: 0,
+					};
+
+					for res in &json.results[0..10] {
+						if res.condition_results[0].success {
+							status.successful_responses += 1;
+						}
+
+						if res.condition_results[1].success {
+							status.fast_responses += 1;
+						}
+					}
+
+					Ok(status)
+				}
 				Err(why) => Err(Error {
 					kind: ErrorKind::Parsing,
 					tldr: String::from("Failed to parse JSON."),
