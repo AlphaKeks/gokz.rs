@@ -1,65 +1,64 @@
-use regex::Regex;
-use serde::{Deserialize, Serialize};
-
-use crate::functions::get_player;
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
+/// All possible kinds of errors that this crate can produce.
+#[derive(Debug)]
 pub enum ErrorKind {
 	GlobalAPI,
 	KZGO,
 	Parsing,
-	InvalidInput,
+	Input,
+	NoData,
 	Other,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+/// The default Error type for this crate. Every fallible function in this
+/// crate should return this type of error.
+#[derive(Debug)]
 pub struct Error {
 	pub kind: ErrorKind,
+	pub origin: String,
 	pub tldr: String,
 	pub raw: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct SteamId(pub String);
+/// A Steam ID as [defined by Valve](https://developer.valvesoftware.com/wiki/SteamID).
+/// It's a unique identifier for a [Steam](https://steamcommunity.com/) account.
+///
+/// # Examples
+/// [My Account](https://steamcommunity.com/profiles/76561198282622073)'s Steam ID is `STEAM_1:1:161178172`
+#[derive(Debug)]
+pub struct SteamID(pub String);
 
-impl SteamId {
-	pub fn test(input: &'static str) -> bool {
-		let regex = Regex::new(r"STEAM_[0-1]:[0-1]:[0-9]+");
+impl<'a> SteamID {
+	/// A function to test whether a String is a [`SteamID`] or not.
+	///
+	/// # Examples
+	/// ```rust
+	/// let steam_id = "STEAM_1:1:161178172";
+	/// let not_steam_id = "some random text";
+	///
+	/// assert_eq!(true, SteamID::test(steam_id));
+	/// assert_ne!(true, SteamID::test(not_steam_id));
+	/// ```
+	pub fn test(input: &'a str) -> bool {
+		let regex = regex::Regex::new(r"STEAM_[0-1]:[0-1]:[0-9]+");
 
-		if let Ok(r) = regex {
-			if let Some(_) = r.find(input) {
+		if let Ok(regex) = regex {
+			if let Some(_) = regex.find(input) {
 				return true;
 			}
 		}
 
-		false
-	}
-
-	pub fn to_string(&self) -> String {
-		match self {
-			SteamId(steam_id) => steam_id.to_owned(),
-		}
-	}
-
-	pub async fn get(input: &PlayerIdentifier, client: &reqwest::Client) -> Result<Self, Error> {
-		match input {
-			PlayerIdentifier::SteamId(steam_id) => Ok(steam_id.to_owned()),
-			PlayerIdentifier::Name(_) => match get_player(input, client).await {
-				Ok(player) => Ok(SteamId(player.steam_id)),
-				Err(why) => Err(why),
-			},
-		}
+		return false;
 	}
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum MapIdentifier {
-	Name(String),
-	Id(u16),
+impl ToString for SteamID {
+	fn to_string(&self) -> String {
+		self.0.to_owned()
+	}
 }
 
-#[allow(non_camel_case_types)]
-#[derive(Debug, Clone, Serialize, Deserialize)]
+/// All 3 GOKZ modes
+#[derive(Debug)]
 pub enum Mode {
 	KZTimer,
 	SimpleKZ,
@@ -67,30 +66,48 @@ pub enum Mode {
 }
 
 impl Mode {
-	pub fn from_str(input: &'static str) -> Self {
-		match input {
-			"KZTimer" | "kz_timer" | "KZT" | "kzt" => Mode::KZTimer,
-			"SimpleKZ" | "kz_simple" | "SKZ" | "skz" => Mode::SimpleKZ,
-			"Vanilla" | "kz_vanilla" | "VNL" | "vnl" => Mode::Vanilla,
-			_ => Mode::KZTimer,
+	/// Each of the 3 modes has an associated ID. Because you cannot limit
+	/// function parameters to specific values, we need to restrict it as much
+	/// as possible and return a Result.
+	pub fn from_id(id: u8) -> Result<Self, Error> {
+		match id {
+			200 => Ok(Mode::KZTimer),
+			201 => Ok(Mode::SimpleKZ),
+			202 => Ok(Mode::Vanilla),
+			_ => Err(Error {
+				kind: ErrorKind::Input,
+				origin: String::from("gokz_rs::prelude::Mode::from_id"),
+				tldr: String::from("Cannot convert an invalid ID to a mode."),
+				raw: None,
+			}),
 		}
 	}
 
-	pub fn from(input: String) -> Self {
-		match input.as_str() {
-			"KZTimer" | "kz_timer" | "KZT" | "kzt" => Mode::KZTimer,
-			"SimpleKZ" | "kz_simple" | "SKZ" | "skz" => Mode::SimpleKZ,
-			"Vanilla" | "kz_vanilla" | "VNL" | "vnl" => Mode::Vanilla,
-			_ => Mode::KZTimer,
+	/// Each of the 3 modes has an associated ID. This function will output
+	/// the correct ID based on its input.
+	pub fn as_id(&self) -> u8 {
+		match self {
+			&Mode::KZTimer => 200,
+			&Mode::SimpleKZ => 201,
+			&Mode::Vanilla => 202,
 		}
 	}
 
-	pub fn from_id(input: u8) -> Self {
-		match input {
-			200 => Mode::KZTimer,
-			201 => Mode::SimpleKZ,
-			202 => Mode::Vanilla,
-			_ => Mode::KZTimer,
+	/// The most commonly used way of displaying a mode in written form.
+	pub fn fancy(&self) -> String {
+		match self {
+			&Mode::KZTimer => String::from("KZTimer"),
+			&Mode::SimpleKZ => String::from("SimpleKZ"),
+			&Mode::Vanilla => String::from("Vanilla"),
+		}
+	}
+
+	/// The most commonly used abbreviation for each mode.
+	pub fn fancy_short(&self) -> String {
+		match self {
+			&Mode::KZTimer => String::from("KZT"),
+			&Mode::SimpleKZ => String::from("SKZ"),
+			&Mode::Vanilla => String::from("VNL"),
 		}
 	}
 
@@ -101,55 +118,52 @@ impl Mode {
 			&Mode::Vanilla => "kz_vanilla",
 		}
 	}
+}
 
-	pub fn as_id(&self) -> u8 {
-		match self {
-			&Mode::KZTimer => 200,
-			&Mode::SimpleKZ => 201,
-			&Mode::Vanilla => 202,
-		}
-	}
+impl std::str::FromStr for Mode {
+	type Err = Error;
 
-	pub fn fancy(&self) -> String {
-		match self {
-			&Mode::KZTimer => String::from("KZTimer"),
-			&Mode::SimpleKZ => String::from("SimpleKZ"),
-			&Mode::Vanilla => String::from("Vanilla"),
-		}
-	}
-
-	pub fn fancy_short(&self) -> String {
-		match self {
-			&Mode::KZTimer => String::from("KZT"),
-			&Mode::SimpleKZ => String::from("SKZ"),
-			&Mode::Vanilla => String::from("VNL"),
-		}
-	}
-
-	pub fn as_route(&self) -> String {
-		match self {
-			&Mode::KZTimer => String::from("modes/name/kz_timer"),
-			&Mode::SimpleKZ => String::from("modes/name/kz_simple"),
-			&Mode::Vanilla => String::from("modes/name/kz_vanilla"),
-		}
-	}
-
-	pub fn as_id_route(&self) -> String {
-		match self {
-			&Mode::KZTimer => String::from("modes/id/200"),
-			&Mode::SimpleKZ => String::from("modes/id/201"),
-			&Mode::Vanilla => String::from("modes/id/200"),
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		match s.to_lowercase().as_str() {
+			"kz_timer" | "kztimer" | "kzt" => Ok(Mode::KZTimer),
+			"kz_simple" | "simplekz" | "skz" => Ok(Mode::SimpleKZ),
+			"kz_vanilla" | "vanilla" | "vnl" => Ok(Mode::Vanilla),
+			_ => Err(Error {
+				kind: ErrorKind::Input,
+				origin: String::from("gokz_rs::prelude::Mode::from_str"),
+				tldr: String::from("Invalid Input."),
+				raw: None,
+			}),
 		}
 	}
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+impl ToString for Mode {
+	fn to_string(&self) -> String {
+		match self {
+			&Mode::KZTimer => String::from("kz_timer"),
+			&Mode::SimpleKZ => String::from("kz_simple"),
+			&Mode::Vanilla => String::from("kz_vanilla"),
+		}
+	}
+}
+
+/// All possible ways of representing a KZ map to the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2)
+#[derive(Debug)]
+pub enum MapIdentifier {
+	Name(String),
+	ID(u16),
+}
+
+/// All possible ways of representing a player to the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2)
+#[derive(Debug)]
 pub enum PlayerIdentifier {
 	Name(String),
-	SteamId(SteamId),
+	SteamID(SteamID),
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+/// All Ranks a player can have
+#[derive(Debug)]
 pub enum Rank {
 	Legend,
 	Master,
@@ -177,6 +191,8 @@ pub enum Rank {
 }
 
 impl Rank {
+	/// Each [`Mode`] has different thresholds for ranks. This function will
+	/// construct a [`Rank`] based on an amount of points and a specific [`Mode`].
 	pub fn from_points(points: u32, mode: &Mode) -> Self {
 		match mode {
 			&Mode::KZTimer => {
@@ -224,6 +240,8 @@ impl Rank {
 					return Rank::Beginner;
 				} else if points > 0 {
 					return Rank::BeginnerMinus;
+				} else {
+					return Rank::New;
 				}
 			}
 
@@ -244,6 +262,36 @@ impl Rank {
 					return Rank::ExpertMinus;
 				} else if points > 150_000 {
 					return Rank::SkilledPlus;
+				} else if points > 120_000 {
+					return Rank::Skilled;
+				} else if points > 100_000 {
+					return Rank::SkilledMinus;
+				} else if points > 80_000 {
+					return Rank::RegularPlus;
+				} else if points > 70_000 {
+					return Rank::Regular;
+				} else if points > 60_000 {
+					return Rank::RegularMinus;
+				} else if points > 40_000 {
+					return Rank::CasualPlus;
+				} else if points > 30_000 {
+					return Rank::Casual;
+				} else if points > 20_000 {
+					return Rank::CasualMinus;
+				} else if points > 10_000 {
+					return Rank::AmateurPlus;
+				} else if points > 5_000 {
+					return Rank::Amateur;
+				} else if points > 2_000 {
+					return Rank::AmateurMinus;
+				} else if points > 1_000 {
+					return Rank::BeginnerPlus;
+				} else if points > 500 {
+					return Rank::Beginner;
+				} else if points > 0 {
+					return Rank::BeginnerMinus;
+				} else {
+					return Rank::New;
 				}
 			}
 
@@ -264,44 +312,44 @@ impl Rank {
 					return Rank::ExpertMinus;
 				} else if points > 140_000 {
 					return Rank::SkilledPlus;
+				} else if points > 120_000 {
+					return Rank::Skilled;
+				} else if points > 100_000 {
+					return Rank::SkilledMinus;
+				} else if points > 80_000 {
+					return Rank::RegularPlus;
+				} else if points > 70_000 {
+					return Rank::Regular;
+				} else if points > 60_000 {
+					return Rank::RegularMinus;
+				} else if points > 40_000 {
+					return Rank::CasualPlus;
+				} else if points > 30_000 {
+					return Rank::Casual;
+				} else if points > 20_000 {
+					return Rank::CasualMinus;
+				} else if points > 10_000 {
+					return Rank::AmateurPlus;
+				} else if points > 5_000 {
+					return Rank::Amateur;
+				} else if points > 2_000 {
+					return Rank::AmateurMinus;
+				} else if points > 1_000 {
+					return Rank::BeginnerPlus;
+				} else if points > 500 {
+					return Rank::Beginner;
+				} else if points > 0 {
+					return Rank::BeginnerMinus;
+				} else {
+					return Rank::New;
 				}
 			}
 		}
-
-		if points > 120_000 {
-			return Rank::Skilled;
-		} else if points > 100_000 {
-			return Rank::SkilledMinus;
-		} else if points > 80_000 {
-			return Rank::RegularPlus;
-		} else if points > 70_000 {
-			return Rank::Regular;
-		} else if points > 60_000 {
-			return Rank::RegularMinus;
-		} else if points > 40_000 {
-			return Rank::CasualPlus;
-		} else if points > 30_000 {
-			return Rank::Casual;
-		} else if points > 20_000 {
-			return Rank::CasualMinus;
-		} else if points > 10_000 {
-			return Rank::AmateurPlus;
-		} else if points > 5_000 {
-			return Rank::Amateur;
-		} else if points > 2_000 {
-			return Rank::AmateurMinus;
-		} else if points > 1_000 {
-			return Rank::BeginnerPlus;
-		} else if points > 500 {
-			return Rank::Beginner;
-		} else if points > 0 {
-			return Rank::BeginnerMinus;
-		} else {
-			return Rank::New;
-		}
 	}
+}
 
-	pub fn to_string(&self) -> String {
+impl ToString for Rank {
+	fn to_string(&self) -> String {
 		(match self {
 			Rank::Legend => "Legend",
 			Rank::Master => "Master",
