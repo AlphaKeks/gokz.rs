@@ -1,5 +1,5 @@
 #[derive(Debug, serde::Serialize)]
-/// All possible parameters for the `/bans` route.
+/// All possible parameters for the `/bans` route
 pub struct Params {
 	pub ban_types: Option<String>,
 	pub ban_types_list: Option<Vec<String>>,
@@ -31,7 +31,7 @@ impl Default for Params {
 			created_since: None,
 			updated_since: None,
 			offset: None,
-			limit: Some(1),
+			limit: Some(99),
 		}
 	}
 }
@@ -39,6 +39,7 @@ impl Default for Params {
 impl super::IsParams for Params {}
 
 #[derive(Debug, serde::Deserialize)]
+/// The shape of the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2)'s response on the `/bans` route
 pub struct Response {
 	pub id: u32,
 	pub ban_type: String,

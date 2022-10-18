@@ -2,6 +2,7 @@
 use crate::prelude::*;
 
 pub mod bans;
+pub mod maps;
 
 const BASE_URL: &'static str = "https://kztimerglobal.com/api/v2";
 trait IsResponse {}
@@ -53,7 +54,6 @@ pub async fn get_bans(
 ) -> Result<Vec<bans::Response>, Error> {
 	let params = bans::Params {
 		steam_id: Some(steam_id.0),
-		limit: Some(99),
 		..Default::default()
 	};
 
@@ -75,25 +75,57 @@ pub async fn get_bans(
 }
 
 #[cfg(test)]
-mod tests {
-	use crate::prelude::*;
+#[tokio::test]
+async fn get_bans_test() {
+	let client = reqwest::Client::new();
 
-	#[tokio::test]
-	async fn get_ban_test() {
-		let client = reqwest::Client::new();
+	let no_bans = SteamID(String::from("STEAM_1:0:165881949"));
 
-		let no_bans = SteamID(String::from("STEAM_1:0:165881949"));
+	match get_bans(no_bans, &client).await {
+		Err(why) => println!("Test successful: {:#?}", why),
+		Ok(bans) => panic!("Test failed: {:#?}", bans),
+	}
 
-		match super::get_bans(no_bans, &client).await {
-			Err(why) => println!("Test successful: {:#?}", why),
-			Ok(bans) => panic!("Test failed: {:#?}", bans),
+	let bans = SteamID(String::from("STEAM_1:1:161178172"));
+
+	match get_bans(bans, &client).await {
+		Err(why) => panic!("Test failed: {:#?}", why),
+		Ok(bans) => println!("Test successful: {:#?}", bans),
+	}
+}
+
+/// This function will request [all maps](`crate::global_api::bans::Response`) from the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2) which are marked as `validated` and return them.
+/// If there are no maps the function will return an [`Error`]. (very unlikely)
+pub async fn get_maps(client: &reqwest::Client) -> Result<Vec<maps::Response>, Error> {
+	let params = maps::Params {
+		is_validated: Some(true),
+		..Default::default()
+	};
+
+	match api_request::<Vec<maps::Response>, maps::Params>("/maps?", params, client).await {
+		Err(why) => Err(why),
+		Ok(maps) => {
+			if maps.len() < 1 {
+				Err(Error {
+					kind: ErrorKind::GlobalAPI,
+					origin: String::from("gokz_rs::global_api::get_maps"),
+					tldr: String::from("No maps found."),
+					raw: None,
+				})
+			} else {
+				Ok(maps)
+			}
 		}
+	}
+}
 
-		let bans = SteamID(String::from("STEAM_1:1:161178172"));
+#[cfg(test)]
+#[tokio::test]
+async fn get_maps_test() {
+	let client = reqwest::Client::new();
 
-		match super::get_bans(bans, &client).await {
-			Err(why) => panic!("Test failed: {:#?}", why),
-			Ok(bans) => println!("Test successful: {:#?}", bans),
-		}
+	match get_maps(&client).await {
+		Err(why) => panic!("Test failed: {:#?}", why),
+		Ok(maps) => println!("Test successful: {} maps", maps.len()),
 	}
 }
