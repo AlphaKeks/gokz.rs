@@ -24,7 +24,7 @@ pub struct Error {
 ///
 /// # Examples
 /// [My Account](https://steamcommunity.com/profiles/76561198282622073)'s Steam ID is `STEAM_1:1:161178172`
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct SteamID(pub String);
 
 impl<'a> SteamID {
@@ -149,21 +149,21 @@ impl ToString for Mode {
 }
 
 /// All possible ways of representing a KZ map to the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2)
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum MapIdentifier {
 	Name(String),
 	ID(u16),
 }
 
 /// All possible ways of representing a player to the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2)
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum PlayerIdentifier {
 	Name(String),
 	SteamID(SteamID),
 }
 
 /// All Ranks a player can have
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Rank {
 	Legend,
 	Master,

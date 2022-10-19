@@ -1,3 +1,7 @@
+pub fn get_url() -> String {
+	String::from("maps?")
+}
+
 #[derive(Debug, serde::Serialize)]
 /// All possible parameters for the `/maps` route
 pub struct Params {

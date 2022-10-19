@@ -1,3 +1,7 @@
+pub fn get_url() -> String {
+	String::from("bans?")
+}
+
 #[derive(Debug, serde::Serialize)]
 /// All possible parameters for the `/bans` route
 pub struct Params {
