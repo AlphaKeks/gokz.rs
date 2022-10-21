@@ -29,7 +29,7 @@ impl Default for Params {
 			map_id: None,
 			map_name: None,
 			has_teleports: None,
-			tickrate: None,
+			tickrate: Some(128),
 			stage: None,
 			modes_list_string: None,
 			modes_list: None,
@@ -44,7 +44,7 @@ impl Default for Params {
 
 impl super::super::super::IsParams for Params {}
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, serde::Deserialize, Clone)]
 /// The shape of the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2)'s response on the `/records/top/recent` route
 pub struct Response {
 	pub id: u32,

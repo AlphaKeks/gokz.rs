@@ -32,7 +32,7 @@ impl Default for Params {
 			steamid64: None,
 			map_id: None,
 			map_name: None,
-			tickrate: None,
+			tickrate: Some(128),
 			overall: None,
 			stage: None,
 			modes_list_string: None,
@@ -47,7 +47,7 @@ impl Default for Params {
 
 impl super::super::IsParams for Params {}
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, serde::Deserialize, Clone)]
 /// The shape of the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2)'s response on the `/records/top` route
 pub struct Response {
 	pub id: u32,

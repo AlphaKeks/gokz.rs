@@ -9,12 +9,12 @@ pub struct Params {
 	pub average_greater_than: Option<u32>,
 	pub rating_greater_than: Option<u32>,
 	pub finishes_greater_than: Option<u32>,
-	pub steamid64s: Option<Vec<u64>>,
-	pub record_filter_ids: Option<Vec<u32>>,
-	pub map_ids: Option<Vec<u16>>,
-	pub stages: Option<Vec<u8>>,
-	pub mode_ids: Option<Vec<u8>>,
-	pub tickrates: Option<Vec<u8>>,
+	pub steamid64s: Option<u64>,
+	pub record_filter_ids: Option<u32>,
+	pub map_ids: Option<u16>,
+	pub stages: Option<u8>,
+	pub mode_ids: Option<u8>,
+	pub tickrates: Option<u8>,
 	pub has_teleports: Option<bool>,
 	#[serde(rename = "camelCase")]
 	pub map_tag: Option<String>,
@@ -34,7 +34,7 @@ impl Default for Params {
 			map_ids: None,
 			stages: None,
 			mode_ids: None,
-			tickrates: None,
+			tickrates: Some(128),
 			has_teleports: None,
 			map_tag: None,
 			offset: None,
@@ -45,7 +45,7 @@ impl Default for Params {
 
 impl super::IsParams for Params {}
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, serde::Deserialize, Clone)]
 /// The shape of the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2)'s response on the `/player_ranks` route
 pub struct Response {
 	pub points: u32,

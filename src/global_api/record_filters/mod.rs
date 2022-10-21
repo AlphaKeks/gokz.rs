@@ -22,7 +22,7 @@ impl Default for Params {
 			map_ids: None,
 			stages: None,
 			mode_ids: None,
-			tickrates: None,
+			tickrates: Some(128),
 			has_teleports: None,
 			offset: None,
 			limit: None,
@@ -32,7 +32,7 @@ impl Default for Params {
 
 impl super::IsParams for Params {}
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, serde::Deserialize, Clone)]
 /// The shape of the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2)'s response on the `/record_filters` route
 pub struct Response {
 	pub id: u32,

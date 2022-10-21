@@ -5,11 +5,11 @@ pub fn get_url() -> String {
 #[derive(Debug, serde::Serialize)]
 /// All possible parameters for the `/records/top/world_records` route
 pub struct Params {
-	pub ids: Option<Vec<u32>>,
-	pub map_ids: Option<Vec<u16>>,
-	pub stages: Option<Vec<u8>>,
-	pub mode_ids: Option<Vec<u8>>,
-	pub tickrates: Option<Vec<u8>>,
+	pub ids: Option<u32>,
+	pub map_ids: Option<u16>,
+	pub stages: Option<u8>,
+	pub mode_ids: Option<u8>,
+	pub tickrates: Option<u8>,
 	pub has_teleports: Option<bool>,
 	#[serde(rename = "camelCase")]
 	pub map_tag: Option<String>,
@@ -24,7 +24,7 @@ impl Default for Params {
 			map_ids: None,
 			stages: None,
 			mode_ids: None,
-			tickrates: None,
+			tickrates: Some(128),
 			has_teleports: None,
 			map_tag: None,
 			offset: None,
@@ -35,7 +35,7 @@ impl Default for Params {
 
 impl super::super::super::IsParams for Params {}
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, serde::Deserialize, Clone)]
 /// The shape of the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2)'s response on the `/records/top/world_records` route
 pub struct Response {
 	steamid64: String,

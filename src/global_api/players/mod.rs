@@ -32,7 +32,7 @@ impl Default for Params {
 
 impl super::IsParams for Params {}
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, serde::Deserialize, Clone)]
 /// The shape of the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2)'s response on the `/players` route
 pub struct Response {
 	pub steamid64: String,
