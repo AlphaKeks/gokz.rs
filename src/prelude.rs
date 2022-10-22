@@ -1,5 +1,5 @@
 /// All possible kinds of errors that this crate can produce.
-#[derive(Debug)]
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub enum ErrorKind {
 	GlobalAPI,
 	KZGO,
@@ -11,7 +11,7 @@ pub enum ErrorKind {
 
 /// The default Error type for this crate. Every fallible function in this
 /// crate should return this type of error.
-#[derive(Debug)]
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub struct Error {
 	pub kind: ErrorKind,
 	pub origin: String,
@@ -24,7 +24,7 @@ pub struct Error {
 ///
 /// # Examples
 /// [My Account](https://steamcommunity.com/profiles/76561198282622073)'s Steam ID is `STEAM_1:1:161178172`
-#[derive(Debug, Clone)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
 pub struct SteamID(pub String);
 
 impl<'a> SteamID {
@@ -58,7 +58,7 @@ impl ToString for SteamID {
 }
 
 /// All 3 GOKZ modes
-#[derive(Debug)]
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
 pub enum Mode {
 	KZTimer,
 	SimpleKZ,
@@ -149,21 +149,21 @@ impl ToString for Mode {
 }
 
 /// All possible ways of representing a KZ map to the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2)
-#[derive(Debug, Clone)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
 pub enum MapIdentifier {
 	Name(String),
 	ID(u16),
 }
 
 /// All possible ways of representing a player to the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2)
-#[derive(Debug, Clone)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
 pub enum PlayerIdentifier {
 	Name(String),
 	SteamID(SteamID),
 }
 
 /// All Ranks a player can have
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
 pub enum Rank {
 	Legend,
 	Master,
