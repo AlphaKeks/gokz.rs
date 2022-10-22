@@ -4,16 +4,16 @@ use crate::prelude::*;
 #[derive(Debug, serde::Deserialize, Clone)]
 pub struct Response {
 	pub _id: Option<String>,
-	name: Option<String>,
-	id: Option<u16>,
-	tier: Option<u8>,
-	workshopId: Option<String>,
-	bonuses: Option<u8>,
-	sp: Option<bool>,
-	vp: Option<bool>,
-	mapperNames: Option<Vec<String>>,
-	mapperIds: Option<Vec<String>>,
-	date: Option<String>,
+	pub name: Option<String>,
+	pub id: Option<u16>,
+	pub tier: Option<u8>,
+	pub workshopId: Option<String>,
+	pub bonuses: Option<u8>,
+	pub sp: Option<bool>,
+	pub vp: Option<bool>,
+	pub mapperNames: Option<Vec<String>>,
+	pub mapperIds: Option<Vec<String>>,
+	pub date: Option<String>,
 }
 
 /// This function will make an API request to KZ:GO to gather data about a specified map
