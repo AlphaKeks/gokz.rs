@@ -163,7 +163,7 @@ pub enum PlayerIdentifier {
 }
 
 /// All Ranks a player can have
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub enum Rank {
 	Legend,
 	Master,
