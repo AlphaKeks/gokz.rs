@@ -6,7 +6,7 @@ pub fn get_url() -> String {
 /// All possible parameters for the `/record_filters` route
 pub struct Params {
 	pub ids: Option<u32>,
-	pub map_ids: Option<u16>,
+	pub map_ids: Option<i16>,
 	pub stages: Option<u8>,
 	pub mode_ids: Option<u8>,
 	pub tickrates: Option<u8>,
@@ -36,7 +36,7 @@ impl super::IsParams for Params {}
 /// The shape of the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2)'s response on the `/record_filters` route
 pub struct Response {
 	pub id: u32,
-	pub map_id: u16,
+	pub map_id: i16,
 	pub stage: u8,
 	pub mode_id: u8,
 	pub tickrate: u8,
