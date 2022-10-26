@@ -152,7 +152,7 @@ impl ToString for Mode {
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
 pub enum MapIdentifier {
 	Name(String),
-	ID(u16),
+	ID(i16),
 }
 
 /// All possible ways of representing a player to the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2)

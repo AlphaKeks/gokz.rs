@@ -447,7 +447,7 @@ pub async fn get_unfinished(
 	client: &reqwest::Client,
 ) -> Result<Vec<String>, Error> {
 	let doable = get_filter_dist(mode, runtype, &client).await?;
-	let completed: Vec<u16> = (get_times(player_identifier, mode, runtype, 0, client).await?)
+	let completed: Vec<i16> = (get_times(player_identifier, mode, runtype, 0, client).await?)
 		.into_iter()
 		.map(|rec| rec.map_id)
 		.collect();
@@ -1070,7 +1070,7 @@ async fn is_global_test() -> Result<(), Error> {
 
 	let global_maps = get_maps(&client).await?;
 
-	match is_global(&MapIdentifier::ID(42069), &global_maps).await {
+	match is_global(&MapIdentifier::ID(1337), &global_maps).await {
 		Ok(what) => panic!("KZ really did come far, huh?\n{:#?}", what),
 		Err(why) => println!("Test successfully failed: {:#?}", why),
 	}
