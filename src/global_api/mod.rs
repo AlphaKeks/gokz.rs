@@ -64,7 +64,10 @@ pub async fn get_bans(
 	};
 
 	match api_request::<Vec<bans::Response>, bans::Params>(&bans::get_url(), params, client).await {
-		Err(why) => Err(why),
+		Err(why) => Err(Error {
+			origin: String::from("gokz_rs::global_api::get_bans"),
+			..why
+		}),
 		Ok(response) => {
 			if response.len() < 1 {
 				Err(Error {
@@ -109,7 +112,10 @@ pub async fn get_maps(client: &reqwest::Client) -> Result<Vec<maps::Response>, E
 	};
 
 	match api_request::<Vec<maps::Response>, maps::Params>(&maps::get_url(), params, client).await {
-		Err(why) => Err(why),
+		Err(why) => Err(Error {
+			origin: String::from("gokz_rs::global_api::get_maps"),
+			..why
+		}),
 		Ok(maps) => {
 			if maps.len() < 1 {
 				Err(Error {
@@ -154,7 +160,10 @@ pub async fn get_map(
 	}
 
 	match api_request::<Vec<maps::Response>, maps::Params>(&maps::get_url(), params, client).await {
-		Err(why) => Err(why),
+		Err(why) => Err(Error {
+			origin: String::from("gokz_rs::global_api::get_map"),
+			..why
+		}),
 		Ok(mut maps) => {
 			if maps.len() < 1 {
 				Err(Error {
@@ -196,7 +205,10 @@ pub async fn get_modes(client: &reqwest::Client) -> Result<Vec<modes::Response>,
 	)
 	.await
 	{
-		Err(why) => Err(why),
+		Err(why) => Err(Error {
+			origin: String::from("gokz_rs::global_api::get_modes"),
+			..why
+		}),
 		Ok(modes) => {
 			if modes.len() < 1 {
 				Err(Error {
@@ -230,12 +242,19 @@ async fn get_modes_test() {
 /// think in the very unlikely case of modes changing their names, the modes
 /// will keep their IDs.
 pub async fn get_mode(mode: &Mode, client: &reqwest::Client) -> Result<modes::Response, Error> {
-	api_request::<modes::Response, modes::Params>(
+	match api_request::<modes::Response, modes::Params>(
 		&modes::id::get_url(mode),
 		modes::Params::default(),
 		client,
 	)
 	.await
+	{
+		Err(why) => Err(Error {
+			origin: String::from("gokz_rs::global_api::get_mode"),
+			..why
+		}),
+		Ok(mode) => Ok(mode),
+	}
 }
 
 #[cfg(test)]
@@ -300,7 +319,10 @@ pub async fn get_player(
 	)
 	.await
 	{
-		Err(why) => Err(why),
+		Err(why) => Err(Error {
+			origin: String::from("gokz_rs::global_api::get_player"),
+			..why
+		}),
 		Ok(mut players) => {
 			if players.len() < 1 {
 				Err(Error {
@@ -355,12 +377,19 @@ pub async fn get_filters(
 		&MapIdentifier::ID(map_id) => params.map_ids = Some(map_id),
 	}
 
-	api_request::<Vec<record_filters::Response>, record_filters::Params>(
+	match api_request::<Vec<record_filters::Response>, record_filters::Params>(
 		&record_filters::get_url(),
 		params,
 		client,
 	)
 	.await
+	{
+		Err(why) => Err(Error {
+			origin: String::from("gokz_rs::global_api::get_filters"),
+			..why
+		}),
+		Ok(filters) => Ok(filters),
+	}
 }
 
 #[cfg(test)]
@@ -394,12 +423,19 @@ pub async fn get_filter_dist(
 		..Default::default()
 	};
 
-	api_request::<Vec<record_filters::Response>, record_filters::Params>(
+	match api_request::<Vec<record_filters::Response>, record_filters::Params>(
 		&record_filters::get_url(),
 		params,
 		client,
 	)
 	.await
+	{
+		Err(why) => Err(Error {
+			origin: String::from("gokz_rs::global_api::get_filter_dist"),
+			..why
+		}),
+		Ok(filters) => Ok(filters),
+	}
 }
 
 /// This function will request [all maps](`crate::global_api::record_filters::Response`) from the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2) that haven't been finished by a given [player](`crate::global_api::players::Response`) and return them.
@@ -465,17 +501,17 @@ async fn get_unfinished_test() {
 	}
 
 	match get_unfinished(
-		&PlayerIdentifier::SteamID(SteamID(String::from("STEAM_1:0:46898346"))),
+		&PlayerIdentifier::SteamID(SteamID(String::from("STEAM_1:0:135486492"))),
 		&Mode::SimpleKZ,
-		true,
-		Some(2),
+		false,
+		None,
 		&client,
 	)
 	.await
 	{
 		Err(why) => panic!("Test failed: {:#?}", why),
 		Ok(maps) => println!(
-			"Test successful: {} maps left (charlie, skz, tp, t2)",
+			"Test successful: {} maps left (jucci, kzt, pro)",
 			maps.len()
 		),
 	}
@@ -525,7 +561,10 @@ pub async fn get_wr(
 	)
 	.await
 	{
-		Err(why) => Err(why),
+		Err(why) => Err(Error {
+			origin: String::from("gokz_rs::global_api::get_wr"),
+			..why
+		}),
 		Ok(mut records) => {
 			if records.len() < 1 {
 				Err(Error {
@@ -599,7 +638,10 @@ pub async fn get_pb(
 	)
 	.await
 	{
-		Err(why) => Err(why),
+		Err(why) => Err(Error {
+			origin: String::from("gokz_rs::global_api::get_pb"),
+			..why
+		}),
 		Ok(mut records) => {
 			if records.len() < 1 {
 				Err(Error {
@@ -678,7 +720,10 @@ pub async fn get_maptop(
 	)
 	.await
 	{
-		Err(why) => Err(why),
+		Err(why) => Err(Error {
+			origin: String::from("gokz_rs::global_api::get_maptop"),
+			..why
+		}),
 		Ok(records) => {
 			if records.len() < 1 {
 				Err(Error {
@@ -746,12 +791,19 @@ pub async fn get_times(
 		PlayerIdentifier::SteamID(steam_id) => params.steam_id = Some(steam_id.to_string()),
 	}
 
-	api_request::<Vec<records::top::Response>, records::top::Params>(
+	match api_request::<Vec<records::top::Response>, records::top::Params>(
 		&records::top::get_url(),
 		params,
 		client,
 	)
 	.await
+	{
+		Err(why) => Err(Error {
+			origin: String::from("gokz_rs::global_api::get_times"),
+			..why
+		}),
+		Ok(records) => Ok(records),
+	}
 }
 
 #[cfg(test)]
@@ -884,12 +936,19 @@ pub async fn get_place(
 	record_id: &u32,
 	client: &reqwest::Client,
 ) -> Result<records::place::Response, Error> {
-	api_request::<records::place::Response, records::place::Params>(
+	match api_request::<records::place::Response, records::place::Params>(
 		&records::place::get_url(record_id),
 		records::place::Params::default(),
 		client,
 	)
 	.await
+	{
+		Err(why) => Err(Error {
+			origin: String::from("gokz_rs::global_api::get_place"),
+			..why
+		}),
+		Ok(place) => Ok(place),
+	}
 }
 
 #[cfg(test)]
