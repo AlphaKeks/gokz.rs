@@ -5,7 +5,7 @@ pub fn get_url() -> String {
 #[derive(Debug, serde::Serialize)]
 /// All possible parameters for the `/maps` route
 pub struct Params {
-	pub id: Option<u16>,
+	pub id: Option<i16>,
 	pub name: Option<String>,
 	pub larger_than_filesize: Option<u32>,
 	pub smaller_than_filesize: Option<u32>,
@@ -39,7 +39,7 @@ impl super::IsParams for Params {}
 #[derive(Debug, serde::Deserialize, Clone)]
 /// The shape of the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2)'s response on the `/maps` route
 pub struct Response {
-	pub id: u16,
+	pub id: i16,
 	pub name: String,
 	pub filesize: u64,
 	pub validated: bool,

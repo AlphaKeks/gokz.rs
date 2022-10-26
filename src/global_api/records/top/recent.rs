@@ -7,7 +7,7 @@ pub fn get_url() -> String {
 pub struct Params {
 	pub steam_id: Option<String>,
 	pub steamid64: Option<u64>,
-	pub map_id: Option<u16>,
+	pub map_id: Option<i16>,
 	pub map_name: Option<String>,
 	pub has_teleports: Option<bool>,
 	pub tickrate: Option<u8>,
@@ -52,7 +52,7 @@ pub struct Response {
 	pub player_name: Option<String>,
 	pub steam_id: Option<String>,
 	pub server_id: u16,
-	pub map_id: u16,
+	pub map_id: i16,
 	pub stage: u8,
 	pub mode: String,
 	pub tickrate: u8,

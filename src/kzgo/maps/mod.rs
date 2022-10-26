@@ -5,7 +5,7 @@ use crate::prelude::*;
 pub struct Response {
 	pub _id: Option<String>,
 	pub name: Option<String>,
-	pub id: Option<u16>,
+	pub id: Option<i16>,
 	pub tier: Option<u8>,
 	pub workshopId: Option<String>,
 	pub bonuses: Option<u8>,
