@@ -243,7 +243,7 @@ impl Rank {
 				} else {
 					return Rank::New;
 				}
-			}
+			},
 
 			&Mode::SimpleKZ => {
 				if points > 800_000 {
@@ -293,7 +293,7 @@ impl Rank {
 				} else {
 					return Rank::New;
 				}
-			}
+			},
 
 			&Mode::Vanilla => {
 				if points > 600_000 {
@@ -343,7 +343,7 @@ impl Rank {
 				} else {
 					return Rank::New;
 				}
-			}
+			},
 		}
 	}
 }

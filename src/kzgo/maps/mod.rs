@@ -45,7 +45,7 @@ pub async fn get_map(
 				tldr: String::from("KZ:GO API request failed."),
 				raw: Some(why.to_string()),
 			})
-		}
+		},
 		Ok(data) => match data.json::<Response>().await {
 			Err(why) => {
 				return Err(Error {
@@ -54,7 +54,7 @@ pub async fn get_map(
 					tldr: String::from("Failed to parse JSON."),
 					raw: Some(why.to_string()),
 				})
-			}
+			},
 			Ok(json) => Ok(json),
 		},
 	}

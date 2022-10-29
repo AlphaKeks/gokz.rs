@@ -33,12 +33,8 @@ pub async fn get_profile(
 	}
 	tier_maps[1] = tier_maps[0].clone();
 
-	let tp = get_times(player_identifier, mode, true, 0, client)
-		.await
-		.unwrap_or(vec![]);
-	let pro = get_times(player_identifier, mode, false, 0, client)
-		.await
-		.unwrap_or(vec![]);
+	let tp = get_times(player_identifier, mode, true, 0, client).await.unwrap_or(vec![]);
+	let pro = get_times(player_identifier, mode, false, 0, client).await.unwrap_or(vec![]);
 
 	if tp.len() == 0 && pro.len() == 0 {
 		return Err(Error {
@@ -49,11 +45,7 @@ pub async fn get_profile(
 		});
 	}
 
-	let x = if tp.len() > pro.len() {
-		tp.len()
-	} else {
-		pro.len()
-	};
+	let x = if tp.len() > pro.len() { tp.len() } else { pro.len() };
 
 	for i in 0..x {
 		if tp.len() > i {
@@ -138,12 +130,8 @@ pub async fn get_profile(
 async fn get_profile_test() {
 	let client = reqwest::Client::new();
 
-	match get_profile(
-		&PlayerIdentifier::Name(String::from("AlphaKeks")),
-		&Mode::SimpleKZ,
-		&client,
-	)
-	.await
+	match get_profile(&PlayerIdentifier::Name(String::from("AlphaKeks")), &Mode::SimpleKZ, &client)
+		.await
 	{
 		Err(why) => panic!("Test failed: {:#?}", why),
 		Ok(player) => println!("Test successful: {:#?}", player),

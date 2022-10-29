@@ -11,10 +11,7 @@ pub struct Params {
 
 impl Default for Params {
 	fn default() -> Self {
-		Params {
-			offset: None,
-			limit: Some(1),
-		}
+		Params { offset: None, limit: Some(1) }
 	}
 }
 

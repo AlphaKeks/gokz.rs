@@ -58,16 +58,10 @@ pub async fn get_bans(
 	steam_id: SteamID,
 	client: &reqwest::Client,
 ) -> Result<Vec<bans::Response>, Error> {
-	let params = bans::Params {
-		steam_id: Some(steam_id.0),
-		..Default::default()
-	};
+	let params = bans::Params { steam_id: Some(steam_id.0), ..Default::default() };
 
 	match api_request::<Vec<bans::Response>, bans::Params>(&bans::get_url(), params, client).await {
-		Err(why) => Err(Error {
-			origin: String::from("gokz_rs::global_api::get_bans"),
-			..why
-		}),
+		Err(why) => Err(Error { origin: String::from("gokz_rs::global_api::get_bans"), ..why }),
 		Ok(response) => {
 			if response.len() < 1 {
 				Err(Error {
@@ -79,7 +73,7 @@ pub async fn get_bans(
 			} else {
 				Ok(response)
 			}
-		}
+		},
 	}
 }
 
@@ -106,16 +100,10 @@ async fn get_bans_test() {
 /// This function will request [all maps](`crate::global_api::maps::Response`) from the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2) which are marked as `validated` and return them.
 /// If there are no maps the function will return an [`Error`]. (very unlikely)
 pub async fn get_maps(client: &reqwest::Client) -> Result<Vec<maps::Response>, Error> {
-	let params = maps::Params {
-		is_validated: Some(true),
-		..Default::default()
-	};
+	let params = maps::Params { is_validated: Some(true), ..Default::default() };
 
 	match api_request::<Vec<maps::Response>, maps::Params>(&maps::get_url(), params, client).await {
-		Err(why) => Err(Error {
-			origin: String::from("gokz_rs::global_api::get_maps"),
-			..why
-		}),
+		Err(why) => Err(Error { origin: String::from("gokz_rs::global_api::get_maps"), ..why }),
 		Ok(maps) => {
 			if maps.len() < 1 {
 				Err(Error {
@@ -127,7 +115,7 @@ pub async fn get_maps(client: &reqwest::Client) -> Result<Vec<maps::Response>, E
 			} else {
 				Ok(maps)
 			}
-		}
+		},
 	}
 }
 
@@ -148,11 +136,8 @@ pub async fn get_map(
 	map_identifier: &MapIdentifier,
 	client: &reqwest::Client,
 ) -> Result<maps::Response, Error> {
-	let mut params = maps::Params {
-		is_validated: Some(true),
-		limit: Some(1),
-		..Default::default()
-	};
+	let mut params =
+		maps::Params { is_validated: Some(true), limit: Some(1), ..Default::default() };
 
 	match map_identifier {
 		MapIdentifier::ID(map_id) => params.id = Some(*map_id),
@@ -160,10 +145,7 @@ pub async fn get_map(
 	}
 
 	match api_request::<Vec<maps::Response>, maps::Params>(&maps::get_url(), params, client).await {
-		Err(why) => Err(Error {
-			origin: String::from("gokz_rs::global_api::get_map"),
-			..why
-		}),
+		Err(why) => Err(Error { origin: String::from("gokz_rs::global_api::get_map"), ..why }),
 		Ok(mut maps) => {
 			if maps.len() < 1 {
 				Err(Error {
@@ -175,7 +157,7 @@ pub async fn get_map(
 			} else {
 				Ok(maps.remove(0))
 			}
-		}
+		},
 	}
 }
 
@@ -205,10 +187,7 @@ pub async fn get_modes(client: &reqwest::Client) -> Result<Vec<modes::Response>,
 	)
 	.await
 	{
-		Err(why) => Err(Error {
-			origin: String::from("gokz_rs::global_api::get_modes"),
-			..why
-		}),
+		Err(why) => Err(Error { origin: String::from("gokz_rs::global_api::get_modes"), ..why }),
 		Ok(modes) => {
 			if modes.len() < 1 {
 				Err(Error {
@@ -220,7 +199,7 @@ pub async fn get_modes(client: &reqwest::Client) -> Result<Vec<modes::Response>,
 			} else {
 				Ok(modes)
 			}
-		}
+		},
 	}
 }
 
@@ -249,10 +228,7 @@ pub async fn get_mode(mode: &Mode, client: &reqwest::Client) -> Result<modes::Re
 	)
 	.await
 	{
-		Err(why) => Err(Error {
-			origin: String::from("gokz_rs::global_api::get_mode"),
-			..why
-		}),
+		Err(why) => Err(Error { origin: String::from("gokz_rs::global_api::get_mode"), ..why }),
 		Ok(mode) => Ok(mode),
 	}
 }
@@ -319,10 +295,7 @@ pub async fn get_player(
 	)
 	.await
 	{
-		Err(why) => Err(Error {
-			origin: String::from("gokz_rs::global_api::get_player"),
-			..why
-		}),
+		Err(why) => Err(Error { origin: String::from("gokz_rs::global_api::get_player"), ..why }),
 		Ok(mut players) => {
 			if players.len() < 1 {
 				Err(Error {
@@ -334,7 +307,7 @@ pub async fn get_player(
 			} else {
 				Ok(players.remove(0))
 			}
-		}
+		},
 	}
 }
 
@@ -373,7 +346,7 @@ pub async fn get_filters(
 				tldr: String::from("Please only use IDs for this function."),
 				raw: None,
 			})
-		}
+		},
 		&MapIdentifier::ID(map_id) => params.map_ids = Some(map_id),
 	}
 
@@ -384,10 +357,7 @@ pub async fn get_filters(
 	)
 	.await
 	{
-		Err(why) => Err(Error {
-			origin: String::from("gokz_rs::global_api::get_filters"),
-			..why
-		}),
+		Err(why) => Err(Error { origin: String::from("gokz_rs::global_api::get_filters"), ..why }),
 		Ok(filters) => Ok(filters),
 	}
 }
@@ -430,10 +400,9 @@ pub async fn get_filter_dist(
 	)
 	.await
 	{
-		Err(why) => Err(Error {
-			origin: String::from("gokz_rs::global_api::get_filter_dist"),
-			..why
-		}),
+		Err(why) => {
+			Err(Error { origin: String::from("gokz_rs::global_api::get_filter_dist"), ..why })
+		},
 		Ok(filters) => Ok(filters),
 	}
 }
@@ -467,11 +436,8 @@ pub async fn get_unfinished(
 			&& (match tier {
 				Some(x) => &map.difficulty == &x,
 				None => true,
-			}) && (if runtype {
-			!&map.name.starts_with("kzpro_")
-		} else {
-			true
-		}) {
+			}) && (if runtype { !&map.name.starts_with("kzpro_") } else { true })
+		{
 			uncompleted.push(map.name);
 		}
 	}
@@ -494,10 +460,7 @@ async fn get_unfinished_test() {
 	.await
 	{
 		Err(why) => panic!("Test failed: {:#?}", why),
-		Ok(maps) => println!(
-			"Test successful: {} maps left (alphakeks, skz, tp, t7)",
-			maps.len()
-		),
+		Ok(maps) => println!("Test successful: {} maps left (alphakeks, skz, tp, t7)", maps.len()),
 	}
 
 	match get_unfinished(
@@ -510,10 +473,7 @@ async fn get_unfinished_test() {
 	.await
 	{
 		Err(why) => panic!("Test failed: {:#?}", why),
-		Ok(maps) => println!(
-			"Test successful: {} maps left (jucci, kzt, pro)",
-			maps.len()
-		),
+		Ok(maps) => println!("Test successful: {} maps left (jucci, kzt, pro)", maps.len()),
 	}
 
 	match get_unfinished(
@@ -526,10 +486,7 @@ async fn get_unfinished_test() {
 	.await
 	{
 		Err(why) => panic!("Test failed: {:#?}", why),
-		Ok(maps) => println!(
-			"Test successful: {} maps left (charlie, skz, tp, t7)",
-			maps.len()
-		),
+		Ok(maps) => println!("Test successful: {} maps left (charlie, skz, tp, t7)", maps.len()),
 	}
 }
 
@@ -561,10 +518,7 @@ pub async fn get_wr(
 	)
 	.await
 	{
-		Err(why) => Err(Error {
-			origin: String::from("gokz_rs::global_api::get_wr"),
-			..why
-		}),
+		Err(why) => Err(Error { origin: String::from("gokz_rs::global_api::get_wr"), ..why }),
 		Ok(mut records) => {
 			if records.len() < 1 {
 				Err(Error {
@@ -576,7 +530,7 @@ pub async fn get_wr(
 			} else {
 				Ok(records.remove(0))
 			}
-		}
+		},
 	}
 }
 
@@ -638,10 +592,7 @@ pub async fn get_pb(
 	)
 	.await
 	{
-		Err(why) => Err(Error {
-			origin: String::from("gokz_rs::global_api::get_pb"),
-			..why
-		}),
+		Err(why) => Err(Error { origin: String::from("gokz_rs::global_api::get_pb"), ..why }),
 		Ok(mut records) => {
 			if records.len() < 1 {
 				Err(Error {
@@ -653,7 +604,7 @@ pub async fn get_pb(
 			} else {
 				Ok(records.remove(0))
 			}
-		}
+		},
 	}
 }
 
@@ -720,10 +671,7 @@ pub async fn get_maptop(
 	)
 	.await
 	{
-		Err(why) => Err(Error {
-			origin: String::from("gokz_rs::global_api::get_maptop"),
-			..why
-		}),
+		Err(why) => Err(Error { origin: String::from("gokz_rs::global_api::get_maptop"), ..why }),
 		Ok(records) => {
 			if records.len() < 1 {
 				Err(Error {
@@ -735,7 +683,7 @@ pub async fn get_maptop(
 			} else {
 				Ok(records)
 			}
-		}
+		},
 	}
 }
 
@@ -754,18 +702,12 @@ async fn get_maptop_test() {
 	.await
 	{
 		Err(why) => panic!("Test failed: {:#?}", why),
-		Ok(maptop) => println!(
-			"Test successful: {} records (lionharder, skz, pro)",
-			maptop.len()
-		),
+		Ok(maptop) => println!("Test successful: {} records (lionharder, skz, pro)", maptop.len()),
 	}
 
 	match get_maptop(&MapIdentifier::ID(992), &Mode::KZTimer, true, 0, &client).await {
 		Err(why) => panic!("Test failed: {:#?}", why),
-		Ok(maptop) => println!(
-			"Test successful: {} records (lionharder, kzt, tp)",
-			maptop.len()
-		),
+		Ok(maptop) => println!("Test successful: {} records (lionharder, kzt, tp)", maptop.len()),
 	}
 }
 
@@ -798,10 +740,7 @@ pub async fn get_times(
 	)
 	.await
 	{
-		Err(why) => Err(Error {
-			origin: String::from("gokz_rs::global_api::get_times"),
-			..why
-		}),
+		Err(why) => Err(Error { origin: String::from("gokz_rs::global_api::get_times"), ..why }),
 		Ok(records) => Ok(records),
 	}
 }
@@ -881,7 +820,7 @@ pub async fn get_recent(
 					tldr: String::from("Failed to convert date."),
 					raw: Some(why.to_string()),
 				})
-			}
+			},
 			Ok(date) => date,
 		};
 
@@ -923,7 +862,7 @@ async fn get_recent_test() {
 					if &recent.teleports > &0 { "TP" } else { "PRO" },
 					&recent.time
 				);
-			}
+			},
 			Err(why) => panic!("Fail: {:#?}", why),
 		}
 	}
@@ -943,10 +882,7 @@ pub async fn get_place(
 	)
 	.await
 	{
-		Err(why) => Err(Error {
-			origin: String::from("gokz_rs::global_api::get_place"),
-			..why
-		}),
+		Err(why) => Err(Error { origin: String::from("gokz_rs::global_api::get_place"), ..why }),
 		Ok(place) => Ok(place),
 	}
 }
@@ -967,10 +903,9 @@ async fn get_place_test() -> Result<(), Error> {
 	.await?;
 
 	match get_place(&lionharder_pb.id, &client).await {
-		Ok(place) => println!(
-			"Test successful: AlphaKeks is #{} on kz_lionharder (SKZ PRO).",
-			place.0
-		),
+		Ok(place) => {
+			println!("Test successful: AlphaKeks is #{} on kz_lionharder (SKZ PRO).", place.0)
+		},
 		Err(why) => panic!("Test failed: {:#?}", why),
 	}
 
@@ -997,10 +932,7 @@ pub async fn health_check(client: &reqwest::Client) -> Result<health::Fancy, Err
 				raw: Some(why.to_string()),
 			}),
 			Ok(parsed_response) => {
-				let mut result = health::Fancy {
-					successful_responses: 0,
-					fast_responses: 0,
-				};
+				let mut result = health::Fancy { successful_responses: 0, fast_responses: 0 };
 
 				for res in &parsed_response.results[0..10] {
 					if res.condition_results[0].success {
@@ -1013,7 +945,7 @@ pub async fn health_check(client: &reqwest::Client) -> Result<health::Fancy, Err
 				}
 
 				Ok(result)
-			}
+			},
 		},
 	}
 }
@@ -1045,14 +977,14 @@ pub async fn is_global(
 					return Ok(map.to_owned());
 				}
 			}
-		}
+		},
 		MapIdentifier::ID(map_id) => {
 			for map in map_list {
 				if &map.id == map_id {
 					return Ok(map.to_owned());
 				}
 			}
-		}
+		},
 	}
 
 	return Err(Error {
@@ -1080,12 +1012,7 @@ async fn is_global_test() -> Result<(), Error> {
 		Ok(map) => println!("Test successfull: {:#?}", map),
 	}
 
-	match is_global(
-		&MapIdentifier::Name(String::from("kz_lionHARDer")),
-		&global_maps,
-	)
-	.await
-	{
+	match is_global(&MapIdentifier::Name(String::from("kz_lionHARDer")), &global_maps).await {
 		Err(why) => panic!("Test failed: {:#?}", why),
 		Ok(map) => println!("Test successfull: {:#?}", map),
 	}
