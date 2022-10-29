@@ -770,32 +770,22 @@ pub async fn get_recent(
 	player: &PlayerIdentifier,
 	client: &reqwest::Client,
 ) -> Result<records::top::Response, Error> {
-	let mut records = {
-		let modes = [Mode::KZTimer, Mode::SimpleKZ, Mode::Vanilla];
-		let mut records = vec![];
-
-		(join_all([
-			get_times(player, &modes[0], true, 0, client),
-			get_times(player, &modes[0], false, 0, client),
-			get_times(player, &modes[1], true, 0, client),
-			get_times(player, &modes[1], false, 0, client),
-			get_times(player, &modes[2], true, 0, client),
-			get_times(player, &modes[2], false, 0, client),
-		]) // get all records from a player
-		.await)
-			.into_iter()
-			.for_each(|res| {
-				// loop over the 6 requests
-				if let Ok(recs) = res {
-					for rec in recs {
-						// loop over all records in each request
-						records.push(rec);
-					}
-				}
-			});
-
-		records // resulting vec with ALL the records
-	};
+	// get all records from a player
+	// this needs to be very specific or the GlobalAPI won't give accurate results
+	let modes = [Mode::KZTimer, Mode::SimpleKZ, Mode::Vanilla];
+	let mut records = (join_all([
+		get_times(player, &modes[0], true, 0, client),
+		get_times(player, &modes[0], false, 0, client),
+		get_times(player, &modes[1], true, 0, client),
+		get_times(player, &modes[1], false, 0, client),
+		get_times(player, &modes[2], true, 0, client),
+		get_times(player, &modes[2], false, 0, client),
+	])
+	.await)
+		.into_iter() // Vec<Result<Vec<Response>, Error>>
+		.filter_map(|result| result.ok()) // filter out errors
+		.flatten() // flatten into single Vec
+		.collect::<Vec<_>>(); // Vec<Response, Error>
 
 	if records.len() < 1 {
 		return Err(Error {
@@ -806,7 +796,8 @@ pub async fn get_recent(
 		});
 	}
 
-	let mut recent = (0, 0); // store the most recent pb as (unix_timestamp, index)
+	// store the most recent pb as (unix_timestamp, index)
+	let mut recent = (0, 0);
 
 	for i in 1..records.len() {
 		let date = match chrono::NaiveDateTime::parse_from_str(
@@ -830,7 +821,8 @@ pub async fn get_recent(
 		}
 	}
 
-	Ok(records.remove(recent.1)) // return most recent pb using index
+	// return most recent pb using index
+	Ok(records.remove(recent.1))
 }
 
 #[cfg(test)]
