@@ -61,7 +61,7 @@ pub async fn get_bans(
 	let params = bans::Params { steam_id: Some(steam_id.0), ..Default::default() };
 
 	match api_request::<Vec<bans::Response>, bans::Params>(&bans::get_url(), params, client).await {
-		Err(why) => Err(Error { origin: String::from("gokz_rs::global_api::get_bans"), ..why }),
+		Err(why) => Err(Error { origin: why.origin + " > gokz_rs::global_api::get_bans", ..why }),
 		Ok(response) => {
 			if response.len() < 1 {
 				Err(Error {
@@ -103,7 +103,7 @@ pub async fn get_maps(client: &reqwest::Client) -> Result<Vec<maps::Response>, E
 	let params = maps::Params { is_validated: Some(true), ..Default::default() };
 
 	match api_request::<Vec<maps::Response>, maps::Params>(&maps::get_url(), params, client).await {
-		Err(why) => Err(Error { origin: String::from("gokz_rs::global_api::get_maps"), ..why }),
+		Err(why) => Err(Error { origin: why.origin + " > gokz_rs::global_api::get_maps", ..why }),
 		Ok(maps) => {
 			if maps.len() < 1 {
 				Err(Error {
@@ -145,7 +145,7 @@ pub async fn get_map(
 	}
 
 	match api_request::<Vec<maps::Response>, maps::Params>(&maps::get_url(), params, client).await {
-		Err(why) => Err(Error { origin: String::from("gokz_rs::global_api::get_map"), ..why }),
+		Err(why) => Err(Error { origin: why.origin + " > gokz_rs::global_api::get_map", ..why }),
 		Ok(mut maps) => {
 			if maps.len() < 1 {
 				Err(Error {
@@ -187,7 +187,7 @@ pub async fn get_modes(client: &reqwest::Client) -> Result<Vec<modes::Response>,
 	)
 	.await
 	{
-		Err(why) => Err(Error { origin: String::from("gokz_rs::global_api::get_modes"), ..why }),
+		Err(why) => Err(Error { origin: why.origin + " > gokz_rs::global_api::get_modes", ..why }),
 		Ok(modes) => {
 			if modes.len() < 1 {
 				Err(Error {
@@ -228,7 +228,7 @@ pub async fn get_mode(mode: &Mode, client: &reqwest::Client) -> Result<modes::Re
 	)
 	.await
 	{
-		Err(why) => Err(Error { origin: String::from("gokz_rs::global_api::get_mode"), ..why }),
+		Err(why) => Err(Error { origin: why.origin + " > gokz_rs::global_api::get_mode", ..why }),
 		Ok(mode) => Ok(mode),
 	}
 }
@@ -295,7 +295,7 @@ pub async fn get_player(
 	)
 	.await
 	{
-		Err(why) => Err(Error { origin: String::from("gokz_rs::global_api::get_player"), ..why }),
+		Err(why) => Err(Error { origin: why.origin + " > gokz_rs::global_api::get_player", ..why }),
 		Ok(mut players) => {
 			if players.len() < 1 {
 				Err(Error {
@@ -357,7 +357,9 @@ pub async fn get_filters(
 	)
 	.await
 	{
-		Err(why) => Err(Error { origin: String::from("gokz_rs::global_api::get_filters"), ..why }),
+		Err(why) => {
+			Err(Error { origin: why.origin + " > gokz_rs::global_api::get_filters", ..why })
+		},
 		Ok(filters) => Ok(filters),
 	}
 }
@@ -401,7 +403,7 @@ pub async fn get_filter_dist(
 	.await
 	{
 		Err(why) => {
-			Err(Error { origin: String::from("gokz_rs::global_api::get_filter_dist"), ..why })
+			Err(Error { origin: why.origin + " > gokz_rs::global_api::get_filter_dist", ..why })
 		},
 		Ok(filters) => Ok(filters),
 	}
@@ -518,7 +520,7 @@ pub async fn get_wr(
 	)
 	.await
 	{
-		Err(why) => Err(Error { origin: String::from("gokz_rs::global_api::get_wr"), ..why }),
+		Err(why) => Err(Error { origin: why.origin + " > gokz_rs::global_api::get_wr", ..why }),
 		Ok(mut records) => {
 			if records.len() < 1 {
 				Err(Error {
@@ -592,7 +594,7 @@ pub async fn get_pb(
 	)
 	.await
 	{
-		Err(why) => Err(Error { origin: String::from("gokz_rs::global_api::get_pb"), ..why }),
+		Err(why) => Err(Error { origin: why.origin + " > gokz_rs::global_api::get_pb", ..why }),
 		Ok(mut records) => {
 			if records.len() < 1 {
 				Err(Error {
@@ -671,7 +673,7 @@ pub async fn get_maptop(
 	)
 	.await
 	{
-		Err(why) => Err(Error { origin: String::from("gokz_rs::global_api::get_maptop"), ..why }),
+		Err(why) => Err(Error { origin: why.origin + " > gokz_rs::global_api::get_maptop", ..why }),
 		Ok(records) => {
 			if records.len() < 1 {
 				Err(Error {
@@ -740,7 +742,7 @@ pub async fn get_times(
 	)
 	.await
 	{
-		Err(why) => Err(Error { origin: String::from("gokz_rs::global_api::get_times"), ..why }),
+		Err(why) => Err(Error { origin: why.origin + " > gokz_rs::global_api::get_times", ..why }),
 		Ok(records) => Ok(records),
 	}
 }
@@ -874,7 +876,7 @@ pub async fn get_place(
 	)
 	.await
 	{
-		Err(why) => Err(Error { origin: String::from("gokz_rs::global_api::get_place"), ..why }),
+		Err(why) => Err(Error { origin: why.origin + " > gokz_rs::global_api::get_place", ..why }),
 		Ok(place) => Ok(place),
 	}
 }
