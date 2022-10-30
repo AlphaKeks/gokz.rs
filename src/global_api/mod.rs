@@ -1020,19 +1020,18 @@ async fn is_global_test() -> Result<(), Error> {
 }
 
 /// Returns download link to the replay of a given replay_id or an [`Error`]
-pub async fn get_replay(
-	replay_id: u32,
-	client: &reqwest::Client,
-) -> Result<records::replay::replay_id::Response, Error> {
-	match api_request::<records::replay::replay_id::Response, records::replay::replay_id::Params>(
-		&records::replay::replay_id::get_url(replay_id),
-		records::replay::replay_id::Params::default(),
-		client,
-	)
-	.await
-	{
-		Ok(link) => Ok(link),
-		Err(why) => Err(Error { origin: why.origin + " > gokz_rs::global_api::get_replay", ..why }),
+pub async fn get_replay(replay_id: u32) -> Result<String, Error> {
+	match replay_id {
+		0 => Err(Error {
+			kind: ErrorKind::NoData,
+			origin: String::from("gokz_rs::global_api::get_replay"),
+			tldr: String::from("`replay_id` is 0."),
+			raw: None,
+		}),
+		replay_id => {
+			// https://kztimerglobal.com/api/v2/records/replay/{replay_id}
+			Ok(crate::global_api::get_url() + &records::replay::replay_id::get_url(replay_id))
+		},
 	}
 }
 
@@ -1041,8 +1040,9 @@ pub async fn get_replay(
 async fn get_replay_test() -> Result<(), Error> {
 	let client = reqwest::Client::new();
 
-	let test_wr = get_wr(
-		&MapIdentifier::Name(String::from("kz_slide_isnt_kz")),
+	let eventide_pb = get_pb(
+		&PlayerIdentifier::Name(String::from("AlphaKeks")),
+		&MapIdentifier::Name(String::from("kz_eventide")),
 		&Mode::SimpleKZ,
 		false,
 		0,
@@ -1050,13 +1050,9 @@ async fn get_replay_test() -> Result<(), Error> {
 	)
 	.await?;
 
-	if test_wr.replay_id == 0 {
-		panic!("replay_id is 0.");
-	}
-
-	match get_replay(test_wr.replay_id, &client).await {
+	match get_replay(eventide_pb.replay_id).await {
 		Err(why) => panic!("Test failed: {:#?}", why),
-		Ok(link) => println!("Test successful: {}", link.0),
+		Ok(link) => println!("Test successful: {}", link),
 	};
 
 	Ok(())
