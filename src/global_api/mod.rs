@@ -787,7 +787,7 @@ pub async fn get_recent(
 		.into_iter() // Vec<Result<Vec<Response>, Error>>
 		.filter_map(|result| result.ok()) // filter out errors
 		.flatten() // flatten into single Vec
-		.collect::<Vec<_>>(); // Vec<Response, Error>
+		.collect::<Vec<_>>(); // Vec<Response>
 
 	if records.len() < 1 {
 		return Err(Error {
@@ -801,9 +801,9 @@ pub async fn get_recent(
 	// store the most recent pb as (unix_timestamp, index)
 	let mut recent = (0, 0);
 
-	for i in 1..records.len() {
+	for i in 0..records.len() {
 		let date = match chrono::NaiveDateTime::parse_from_str(
-			&records[i].updated_on,
+			&records[i].created_on,
 			"%Y-%m-%dT%H:%M:%S",
 		) {
 			Err(why) => {
