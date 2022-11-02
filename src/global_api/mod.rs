@@ -12,6 +12,7 @@ pub mod players;
 pub mod record_filters;
 pub mod records;
 
+/// Constructs the base API route for the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2).
 fn get_url() -> String {
 	String::from("https://kztimerglobal.com/api/v2/")
 }
@@ -19,11 +20,7 @@ fn get_url() -> String {
 trait IsResponse {}
 trait IsParams {}
 
-/// The base function that everything else relies on. Every function in this
-/// module will at some point call this base function to call the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2).
-///
-/// [`api_request`] will try to make an HTTPS request to the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2) and
-/// parse the response into a struct.
+/// Makes an HTTPS GET request using a [`reqwest::Client`] and parses the response into a struct.
 async fn api_request<'a, T, P>(
 	route: &'a str,
 	params: P,
@@ -34,45 +31,49 @@ where
 	P: serde::Serialize + IsParams,
 {
 	match client.get(get_url() + route).query(&params).send().await {
-		Err(why) => Err(Error {
-			kind: ErrorKind::GlobalAPI,
-			origin: String::from("gokz_rs::global_api::api_request"),
-			tldr: String::from("GlobalAPI request failed."),
-			raw: Some(why.to_string()),
-		}),
 		Ok(response) => match response.json::<T>().await {
-			Err(why) => Err(Error {
-				kind: ErrorKind::Parsing,
+			Ok(parsed_response) => return Ok(parsed_response),
+			Err(why) => {
+				return Err(Error {
+					kind: ErrorKind::Parsing,
+					origin: String::from("gokz_rs::global_api::api_request"),
+					tldr: String::from("Failed to parse JSON."),
+					raw: Some(why.to_string()),
+				})
+			},
+		},
+		Err(why) => {
+			return Err(Error {
+				kind: ErrorKind::GlobalAPI,
 				origin: String::from("gokz_rs::global_api::api_request"),
-				tldr: String::from("Failed to parse JSON."),
+				tldr: String::from("GlobalAPI request failed."),
 				raw: Some(why.to_string()),
-			}),
-			Ok(parsed_response) => Ok(parsed_response),
+			})
 		},
 	}
 }
 
-/// This function will request [all of a player's bans](`crate::global_api::bans::Response`) from the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2) and return them.
-/// If there are no bans the function will return an [`Error`].
+/// Will make an API request for all ban records of a given player, identified by their [`SteamID`].
 pub async fn get_bans(
 	steam_id: SteamID,
 	client: &reqwest::Client,
 ) -> Result<Vec<bans::Response>, Error> {
 	let params = bans::Params { steam_id: Some(steam_id.0), ..Default::default() };
-
-	match api_request::<Vec<bans::Response>, bans::Params>(&bans::get_url(), params, client).await {
-		Err(why) => Err(Error { origin: why.origin + " > gokz_rs::global_api::get_bans", ..why }),
+	match api_request::<Vec<bans::Response>, _>(&bans::get_url(), params, client).await {
 		Ok(response) => {
-			if response.len() < 1 {
-				Err(Error {
+			if response.len() > 0 {
+				return Ok(response);
+			} else {
+				return Err(Error {
 					kind: ErrorKind::NoData,
 					origin: String::from("gokz_rs::global_api::get_ban"),
 					tldr: String::from("No bans found."),
 					raw: None,
-				})
-			} else {
-				Ok(response)
+				});
 			}
+		},
+		Err(why) => {
+			return Err(Error { origin: why.origin + " > gokz_rs::global_api::get_bans", ..why })
 		},
 	}
 }
@@ -97,24 +98,26 @@ async fn get_bans_test() {
 	}
 }
 
-/// This function will request [all maps](`crate::global_api::maps::Response`) from the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2) which are marked as `validated` and return them.
-/// If there are no maps the function will return an [`Error`]. (very unlikely)
+/// Will make an API request for all global maps. Since the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2) contains more maps than
+/// actually valid / "global" maps, this function will ensure to only request maps marked as
+/// `validated`.
 pub async fn get_maps(client: &reqwest::Client) -> Result<Vec<maps::Response>, Error> {
 	let params = maps::Params { is_validated: Some(true), ..Default::default() };
-
-	match api_request::<Vec<maps::Response>, maps::Params>(&maps::get_url(), params, client).await {
-		Err(why) => Err(Error { origin: why.origin + " > gokz_rs::global_api::get_maps", ..why }),
+	match api_request::<Vec<maps::Response>, _>(&maps::get_url(), params, client).await {
 		Ok(maps) => {
-			if maps.len() < 1 {
-				Err(Error {
+			if maps.len() > 0 {
+				return Ok(maps);
+			} else {
+				return Err(Error {
 					kind: ErrorKind::GlobalAPI,
 					origin: String::from("gokz_rs::global_api::get_maps"),
 					tldr: String::from("No maps found."),
 					raw: None,
-				})
-			} else {
-				Ok(maps)
+				});
 			}
+		},
+		Err(why) => {
+			return Err(Error { origin: why.origin + " > gokz_rs::global_api::get_maps", ..why })
 		},
 	}
 }
@@ -130,8 +133,7 @@ async fn get_maps_test() {
 	}
 }
 
-/// This function will request [a specific map](`crate::global_api::maps::Response`) from the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2) marked as `validated` and return it.
-/// If there is no map the function will return an [`Error`].
+/// Will request info about a specified map from the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2).
 pub async fn get_map(
 	map_identifier: &MapIdentifier,
 	client: &reqwest::Client,
@@ -144,19 +146,21 @@ pub async fn get_map(
 		MapIdentifier::Name(map_name) => params.name = Some(map_name.to_owned()),
 	}
 
-	match api_request::<Vec<maps::Response>, maps::Params>(&maps::get_url(), params, client).await {
-		Err(why) => Err(Error { origin: why.origin + " > gokz_rs::global_api::get_map", ..why }),
+	match api_request::<Vec<maps::Response>, _>(&maps::get_url(), params, client).await {
 		Ok(mut maps) => {
-			if maps.len() < 1 {
-				Err(Error {
-					kind: ErrorKind::GlobalAPI,
+			if maps.len() > 0 {
+				return Ok(maps.remove(0));
+			} else {
+				return Err(Error {
+					kind: ErrorKind::Input,
 					origin: String::from("gokz_rs::global_api::get_map"),
 					tldr: String::from("This map is not global."),
 					raw: None,
-				})
-			} else {
-				Ok(maps.remove(0))
+				});
 			}
+		},
+		Err(why) => {
+			return Err(Error { origin: why.origin + " > gokz_rs::global_api::get_map", ..why })
 		},
 	}
 }
@@ -177,28 +181,29 @@ async fn get_map_test() {
 	}
 }
 
-/// This function will request [all modes](`crate::global_api::modes::Response`) from the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2) and return them.
-/// If there are no modes the function will return an [`Error`]. (very unlikely)
+/// Will request all 3 [Modes](`crate::prelude::Mode`) from the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2).
 pub async fn get_modes(client: &reqwest::Client) -> Result<Vec<modes::Response>, Error> {
-	match api_request::<Vec<modes::Response>, modes::Params>(
+	match api_request::<Vec<modes::Response>, _>(
 		&modes::get_url(),
 		modes::Params::default(),
 		client,
 	)
 	.await
 	{
-		Err(why) => Err(Error { origin: why.origin + " > gokz_rs::global_api::get_modes", ..why }),
 		Ok(modes) => {
-			if modes.len() < 1 {
-				Err(Error {
+			if modes.len() > 0 {
+				return Ok(modes);
+			} else {
+				return Err(Error {
 					kind: ErrorKind::NoData,
 					origin: String::from("gokz_rs::global_api::get_modes"),
 					tldr: String::from("No modes found."),
 					raw: None,
-				})
-			} else {
-				Ok(modes)
+				});
 			}
+		},
+		Err(why) => {
+			return Err(Error { origin: why.origin + " > gokz_rs::global_api::get_modes", ..why })
 		},
 	}
 }
@@ -214,22 +219,22 @@ async fn get_modes_test() {
 	}
 }
 
-/// This function will request [a specific mode](`crate::global_api::modes::Response`) from the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2) and return it.
-/// If there is no mode the function will return an [`Error`]. (very unlikely)
+/// Will request a single mode from the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2).
 ///
-/// Although it doesn't really matter whether an ID or a Name is used here, I
-/// think in the very unlikely case of modes changing their names, the modes
-/// will keep their IDs.
+/// Note: You could either use a name or an id for this, it technically does not matter. I chose to
+/// use an id.
 pub async fn get_mode(mode: &Mode, client: &reqwest::Client) -> Result<modes::Response, Error> {
-	match api_request::<modes::Response, modes::Params>(
+	match api_request::<modes::Response, _>(
 		&modes::id::get_url(mode),
 		modes::Params::default(),
 		client,
 	)
 	.await
 	{
-		Err(why) => Err(Error { origin: why.origin + " > gokz_rs::global_api::get_mode", ..why }),
-		Ok(mode) => Ok(mode),
+		Ok(mode) => return Ok(mode),
+		Err(why) => {
+			return Err(Error { origin: why.origin + " > gokz_rs::global_api::get_mode", ..why })
+		},
 	}
 }
 
@@ -254,29 +259,23 @@ async fn get_mode_test() {
 	}
 }
 
-/* TODO: figure out what this is for and implement it correctly
+/* TODO: figure out what this is for and implement it correctly */
+// pub async fn get_player_ranks(
+// 	mode: &Mode,
+// 	limit: u32,
+// 	client: &reqwest::Client,
+// ) -> Result<player_ranks::Response, Error> {
+// 	let params = player_ranks::Params {
+// 		mode_ids: Some(vec![mode.as_id()]),
+// 		limit: Some(limit),
+// 		..Default::default()
+// 	};
+//
+// 	api_request::<player_ranks::Response, player_ranks::Params>(player_ranks::ROUTE, params, client)
+// 		.await
+// }
 
-/// This function will request [data](`crate::global_api::player_ranks::Response`) from the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2) and return it.
-/// If there is no data the function will return an [`Error`].
-pub async fn get_player_ranks(
-	mode: &Mode,
-	limit: u32,
-	client: &reqwest::Client,
-) -> Result<player_ranks::Response, Error> {
-	let params = player_ranks::Params {
-		mode_ids: Some(vec![mode.as_id()]),
-		limit: Some(limit),
-		..Default::default()
-	};
-
-	api_request::<player_ranks::Response, player_ranks::Params>(player_ranks::ROUTE, params, client)
-		.await
-}
-
-*/
-
-/// This function will request [a player](`crate::global_api::players::Response`) from the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2) and return it.
-/// If there is no mode the function will return an [`Error`].
+/// Will request info about a player from the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2).
 pub async fn get_player(
 	player: &PlayerIdentifier,
 	client: &reqwest::Client,
@@ -286,27 +285,24 @@ pub async fn get_player(
 	match player {
 		PlayerIdentifier::Name(name) => params.name = Some(name.to_owned()),
 		PlayerIdentifier::SteamID(steam_id) => params.steam_id = Some(steam_id.to_string()),
+		PlayerIdentifier::SteamID64(steam_id64) => params.steamid64_list = Some(*steam_id64),
 	}
 
-	match api_request::<Vec<players::Response>, players::Params>(
-		&players::get_url(),
-		params,
-		client,
-	)
-	.await
-	{
-		Err(why) => Err(Error { origin: why.origin + " > gokz_rs::global_api::get_player", ..why }),
+	match api_request::<Vec<players::Response>, _>(&players::get_url(), params, client).await {
 		Ok(mut players) => {
-			if players.len() < 1 {
-				Err(Error {
+			if players.len() > 0 {
+				return Ok(players.remove(0));
+			} else {
+				return Err(Error {
 					kind: ErrorKind::NoData,
 					origin: String::from("gokz_rs::global_api::get_player"),
 					tldr: String::from("No player found."),
 					raw: None,
-				})
-			} else {
-				Ok(players.remove(0))
+				});
 			}
+		},
+		Err(why) => {
+			return Err(Error { origin: why.origin + " > gokz_rs::global_api::get_player", ..why })
 		},
 	}
 }
@@ -330,37 +326,23 @@ async fn get_player_test() {
 	}
 }
 
-/// This function will request [record filters](`crate::global_api::record_filters::Response`) from the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2) and return them.
-/// If there are no filters the function will return an [`Error`].
+/// Will request all record filters for a map.
 pub async fn get_filters(
-	map_identifier: &MapIdentifier,
+	map_id: i16,
 	client: &reqwest::Client,
 ) -> Result<Vec<record_filters::Response>, Error> {
-	let mut params = record_filters::Params::default();
-
-	match map_identifier {
-		&MapIdentifier::Name(_) => {
-			return Err(Error {
-				kind: ErrorKind::Input,
-				origin: String::from("gokz_rs::global_api::get_filters"),
-				tldr: String::from("Please only use IDs for this function."),
-				raw: None,
-			})
-		},
-		&MapIdentifier::ID(map_id) => params.map_ids = Some(map_id),
-	}
-
-	match api_request::<Vec<record_filters::Response>, record_filters::Params>(
+	let params = record_filters::Params { map_ids: Some(map_id), ..Default::default() };
+	match api_request::<Vec<record_filters::Response>, _>(
 		&record_filters::get_url(),
 		params,
 		client,
 	)
 	.await
 	{
+		Ok(filters) => return Ok(filters),
 		Err(why) => {
-			Err(Error { origin: why.origin + " > gokz_rs::global_api::get_filters", ..why })
+			return Err(Error { origin: why.origin + " > gokz_rs::global_api::get_filters", ..why })
 		},
-		Ok(filters) => Ok(filters),
 	}
 }
 
@@ -369,19 +351,14 @@ pub async fn get_filters(
 async fn get_filters_test() {
 	let client = reqwest::Client::new();
 
-	match get_filters(&MapIdentifier::Name(String::from("kz_lionharder")), &client).await {
-		Err(why) => println!("Test failed successfully: {:#?}", why),
-		Ok(filters) => panic!("Why did this work wtf: {:#?}", filters),
-	}
-
-	match get_filters(&MapIdentifier::ID(992), &client).await {
+	match get_filters(992, &client).await {
 		Err(why) => panic!("Test failed: {:#?}", why),
 		Ok(filters) => println!("Test successfuly: {:#?}", filters),
 	}
 }
 
-/// This function will request [record filters](`crate::global_api::record_filters::Response`) from the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2) and return them.
-/// If there are no filters the function will return an [`Error`].
+/// Will request all filters for a given [`Mode`] and runtype (TP / PRO). This will result in the
+/// distribution of record filters per [`Mode`].
 pub async fn get_filter_dist(
 	mode: &Mode,
 	runtype: bool,
@@ -402,14 +379,21 @@ pub async fn get_filter_dist(
 	)
 	.await
 	{
+		Ok(filters) => return Ok(filters),
 		Err(why) => {
-			Err(Error { origin: why.origin + " > gokz_rs::global_api::get_filter_dist", ..why })
+			return Err(Error {
+				origin: why.origin + " > gokz_rs::global_api::get_filter_dist",
+				..why
+			})
 		},
-		Ok(filters) => Ok(filters),
 	}
 }
 
-/// This function will request [all maps](`crate::global_api::record_filters::Response`) from the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2) that haven't been finished by a given [player](`crate::global_api::players::Response`) and return them.
+/// Will gather a list of maps which have not yet been completed by a given player and return their
+/// names.
+///
+/// Note: the function needs to be this specific because the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2) will return inconsistent
+/// results if not enough arguments are provided.
 pub async fn get_unfinished(
 	player_identifier: &PlayerIdentifier,
 	mode: &Mode,
@@ -417,12 +401,28 @@ pub async fn get_unfinished(
 	tier: Option<u8>,
 	client: &reqwest::Client,
 ) -> Result<Vec<String>, Error> {
-	let doable = get_filter_dist(mode, runtype, &client).await?;
-	let completed: Vec<i16> = (get_times(player_identifier, mode, runtype, 0, client).await?)
-		.into_iter()
-		.map(|rec| rec.map_id)
-		.collect();
-	let mut uncomp_ids = vec![];
+	let doable = match get_filter_dist(mode, runtype, &client).await {
+		Ok(filters) => filters,
+		Err(why) => {
+			return Err(Error {
+				origin: why.origin + " > gokz_rs::global_api::get_unfinished",
+				..why
+			})
+		},
+	};
+
+	let completed = match get_records(player_identifier, mode, runtype, 0, client).await {
+		Ok(records) => records,
+		Err(why) => {
+			return Err(Error {
+				origin: why.origin + " > gokz_rs::global_api::get_unfinished",
+				..why
+			})
+		},
+	};
+
+	let completed: Vec<i16> = completed.into_iter().map(|rec| rec.map_id).collect();
+	let mut uncomp_ids = Vec::new();
 
 	for filter in doable {
 		if !completed.contains(&filter.map_id) {
@@ -430,21 +430,30 @@ pub async fn get_unfinished(
 		}
 	}
 
-	let global_maps = get_maps(&client).await?;
-	let mut uncompleted = vec![];
+	let global_maps = match get_maps(&client).await {
+		Ok(maps) => maps,
+		Err(why) => {
+			return Err(Error {
+				origin: why.origin + " > gokz_rs::global_api::get_unfinished",
+				..why
+			})
+		},
+	};
+	let mut uncompleted = Vec::new();
 
 	for map in global_maps {
-		if uncomp_ids.contains(&map.id)
-			&& (match tier {
-				Some(x) => &map.difficulty == &x,
-				None => true,
-			}) && (if runtype { !&map.name.starts_with("kzpro_") } else { true })
-		{
+		let matches_tier = match tier {
+			Some(x) => map.difficulty == x,
+			None => true,
+		};
+		let matches_runtype = if runtype { !&map.name.starts_with("kzpro_") } else { true };
+
+		if uncomp_ids.contains(&map.id) && matches_tier && matches_runtype {
 			uncompleted.push(map.name);
 		}
 	}
 
-	Ok(uncompleted)
+	return Ok(uncompleted);
 }
 
 #[cfg(test)]
@@ -492,8 +501,7 @@ async fn get_unfinished_test() {
 	}
 }
 
-/// This function will request [a world record](`crate::global_api::records::top::Response`) from the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2) and return it.
-/// If there are no records the function will return an [`Error`].
+/// Will request the #1 record on a given map.
 pub async fn get_wr(
 	map_identifier: &MapIdentifier,
 	mode: &Mode,
@@ -510,28 +518,26 @@ pub async fn get_wr(
 
 	match map_identifier {
 		MapIdentifier::Name(map_name) => params.map_name = Some(map_name.to_owned()),
-		MapIdentifier::ID(map_id) => params.map_id = Some(map_id.to_owned()),
+		MapIdentifier::ID(map_id) => params.map_id = Some(*map_id),
 	}
 
-	match api_request::<Vec<records::top::Response>, records::top::Params>(
-		&records::top::get_url(),
-		params,
-		client,
-	)
-	.await
+	match api_request::<Vec<records::top::Response>, _>(&records::top::get_url(), params, client)
+		.await
 	{
-		Err(why) => Err(Error { origin: why.origin + " > gokz_rs::global_api::get_wr", ..why }),
 		Ok(mut records) => {
-			if records.len() < 1 {
-				Err(Error {
+			if records.len() > 0 {
+				return Ok(records.remove(0));
+			} else {
+				return Err(Error {
 					kind: ErrorKind::NoData,
 					origin: String::from("gokz_rs::global_api::get_wr"),
 					tldr: String::from("No WR found."),
 					raw: None,
-				})
-			} else {
-				Ok(records.remove(0))
+				});
 			}
+		},
+		Err(why) => {
+			return Err(Error { origin: why.origin + " > gokz_rs::global_api::get_wr", ..why })
 		},
 	}
 }
@@ -560,8 +566,7 @@ async fn get_wr_test() {
 	}
 }
 
-/// This function will request [a player's personal best](`crate::global_api::records::top::Response`) on some map from the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2) and return it.
-/// If there are no records the function will return an [`Error`].
+/// Will request a player's personal best on a given map.
 pub async fn get_pb(
 	player: &PlayerIdentifier,
 	map_identifier: &MapIdentifier,
@@ -580,32 +585,31 @@ pub async fn get_pb(
 	match player {
 		PlayerIdentifier::Name(name) => params.player_name = Some(name.to_owned()),
 		PlayerIdentifier::SteamID(steam_id) => params.steam_id = Some(steam_id.to_string()),
+		PlayerIdentifier::SteamID64(steam_id64) => params.steamid64 = Some(*steam_id64),
 	}
 
 	match map_identifier {
 		MapIdentifier::Name(map_name) => params.map_name = Some(map_name.to_owned()),
-		MapIdentifier::ID(map_id) => params.map_id = Some(map_id.to_owned()),
+		MapIdentifier::ID(map_id) => params.map_id = Some(*map_id),
 	}
 
-	match api_request::<Vec<records::top::Response>, records::top::Params>(
-		&records::top::get_url(),
-		params,
-		client,
-	)
-	.await
+	match api_request::<Vec<records::top::Response>, _>(&records::top::get_url(), params, client)
+		.await
 	{
-		Err(why) => Err(Error { origin: why.origin + " > gokz_rs::global_api::get_pb", ..why }),
 		Ok(mut records) => {
-			if records.len() < 1 {
-				Err(Error {
+			if records.len() > 0 {
+				return Ok(records.remove(0));
+			} else {
+				return Err(Error {
 					kind: ErrorKind::NoData,
 					origin: String::from("gokz_rs::global_api::get_wr"),
 					tldr: String::from("No PB found."),
 					raw: None,
-				})
-			} else {
-				Ok(records.remove(0))
+				});
 			}
+		},
+		Err(why) => {
+			return Err(Error { origin: why.origin + " > gokz_rs::global_api::get_pb", ..why })
 		},
 	}
 }
@@ -644,8 +648,7 @@ async fn get_pb_test() {
 	}
 }
 
-/// This function will request [the top 100 records](`crate::global_api::records::top::Response`) on some map from the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2) and return them.
-/// If there are no records the function will return an [`Error`].
+/// Will request the top 100 records on a given map.
 pub async fn get_maptop(
 	map_identifier: &MapIdentifier,
 	mode: &Mode,
@@ -663,28 +666,26 @@ pub async fn get_maptop(
 
 	match map_identifier {
 		MapIdentifier::Name(map_name) => params.map_name = Some(map_name.to_owned()),
-		MapIdentifier::ID(map_id) => params.map_id = Some(map_id.to_owned()),
+		MapIdentifier::ID(map_id) => params.map_id = Some(*map_id),
 	}
 
-	match api_request::<Vec<records::top::Response>, records::top::Params>(
-		&records::top::get_url(),
-		params,
-		client,
-	)
-	.await
+	match api_request::<Vec<records::top::Response>, _>(&records::top::get_url(), params, client)
+		.await
 	{
-		Err(why) => Err(Error { origin: why.origin + " > gokz_rs::global_api::get_maptop", ..why }),
 		Ok(records) => {
-			if records.len() < 1 {
-				Err(Error {
+			if records.len() > 0 {
+				return Ok(records);
+			} else {
+				return Err(Error {
 					kind: ErrorKind::NoData,
 					origin: String::from("gokz_rs::global_api::get_wr"),
 					tldr: String::from("No PB found."),
 					raw: None,
-				})
-			} else {
-				Ok(records)
+				});
 			}
+		},
+		Err(why) => {
+			return Err(Error { origin: why.origin + " > gokz_rs::global_api::get_maptop", ..why })
 		},
 	}
 }
@@ -713,9 +714,11 @@ async fn get_maptop_test() {
 	}
 }
 
-/// This function will request [all times of a player](`crate::global_api::records::top::Response`) from the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2) and return them.
-/// If there are no records the function will return an [`Error`].
-pub async fn get_times(
+/// Will request all records of a player.
+///
+/// Note: the function needs to be this specific because the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2) will return inconsistent
+/// results if not enough arguments are provided.
+pub async fn get_records(
 	player: &PlayerIdentifier,
 	mode: &Mode,
 	runtype: bool,
@@ -723,7 +726,7 @@ pub async fn get_times(
 	client: &reqwest::Client,
 ) -> Result<Vec<records::top::Response>, Error> {
 	let mut params = records::top::Params {
-		modes_list_string: Some(mode.to_string()),
+		modes_list_string: Some(mode.as_str().to_owned()),
 		has_teleports: Some(runtype),
 		stage: Some(course),
 		limit: Some(9999),
@@ -733,17 +736,27 @@ pub async fn get_times(
 	match player {
 		PlayerIdentifier::Name(name) => params.player_name = Some(name.to_owned()),
 		PlayerIdentifier::SteamID(steam_id) => params.steam_id = Some(steam_id.to_string()),
+		PlayerIdentifier::SteamID64(steam_id64) => params.steamid64 = Some(*steam_id64),
 	}
 
-	match api_request::<Vec<records::top::Response>, records::top::Params>(
-		&records::top::get_url(),
-		params,
-		client,
-	)
-	.await
+	match api_request::<Vec<records::top::Response>, _>(&records::top::get_url(), params, client)
+		.await
 	{
-		Err(why) => Err(Error { origin: why.origin + " > gokz_rs::global_api::get_times", ..why }),
-		Ok(records) => Ok(records),
+		Ok(records) => {
+			if records.len() > 0 {
+				return Ok(records);
+			} else {
+				return Err(Error {
+					kind: ErrorKind::NoData,
+					origin: String::from("gokz_rs::global_api::get_times"),
+					tldr: String::from("This player has 0 records."),
+					raw: None,
+				});
+			}
+		},
+		Err(why) => {
+			return Err(Error { origin: why.origin + " > gokz_rs::global_api::get_times", ..why })
+		},
 	}
 }
 
@@ -752,7 +765,7 @@ pub async fn get_times(
 async fn get_times_test() {
 	let client = reqwest::Client::new();
 
-	match get_times(
+	match get_records(
 		&PlayerIdentifier::Name(String::from("AlphaKeks")),
 		&Mode::SimpleKZ,
 		true,
@@ -766,8 +779,7 @@ async fn get_times_test() {
 	}
 }
 
-/// This function will request [a player's most recent personal best](`crate::global_api::records::top::Response`) from the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2) and return it.
-/// If there are no records the function will return an [`Error`].
+/// Will request all of a player's records and filter them to find the most recently set one.
 pub async fn get_recent(
 	player: &PlayerIdentifier,
 	client: &reqwest::Client,
@@ -776,12 +788,12 @@ pub async fn get_recent(
 	// this needs to be very specific or the GlobalAPI won't give accurate results
 	let modes = [Mode::KZTimer, Mode::SimpleKZ, Mode::Vanilla];
 	let mut records = (join_all([
-		get_times(player, &modes[0], true, 0, client),
-		get_times(player, &modes[0], false, 0, client),
-		get_times(player, &modes[1], true, 0, client),
-		get_times(player, &modes[1], false, 0, client),
-		get_times(player, &modes[2], true, 0, client),
-		get_times(player, &modes[2], false, 0, client),
+		get_records(player, &modes[0], true, 0, client),
+		get_records(player, &modes[0], false, 0, client),
+		get_records(player, &modes[1], true, 0, client),
+		get_records(player, &modes[1], false, 0, client),
+		get_records(player, &modes[2], true, 0, client),
+		get_records(player, &modes[2], false, 0, client),
 	])
 	.await)
 		.into_iter() // Vec<Result<Vec<Response>, Error>>
@@ -806,6 +818,7 @@ pub async fn get_recent(
 			&records[i].created_on,
 			"%Y-%m-%dT%H:%M:%S",
 		) {
+			Ok(date) => date,
 			Err(why) => {
 				return Err(Error {
 					kind: ErrorKind::Parsing,
@@ -814,7 +827,6 @@ pub async fn get_recent(
 					raw: Some(why.to_string()),
 				})
 			},
-			Ok(date) => date,
 		};
 
 		// replace current `recent` if newer record was found
@@ -862,22 +874,22 @@ async fn get_recent_test() {
 	}
 }
 
-/// This function will request request the leaderboard position of a [record](`crate::global_api::records::top::Response`) from the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2) and return it.
-/// If the given record doesn't have a position on the leaderboard the function will return an [`Error`].
-/// This occurs sometimes, although I don't know why.
+/// Will request the #placement of a given record.
 pub async fn get_place(
 	record_id: &u32,
 	client: &reqwest::Client,
 ) -> Result<records::place::Response, Error> {
-	match api_request::<records::place::Response, records::place::Params>(
+	match api_request::<records::place::Response, _>(
 		&records::place::get_url(record_id),
 		records::place::Params::default(),
 		client,
 	)
 	.await
 	{
-		Err(why) => Err(Error { origin: why.origin + " > gokz_rs::global_api::get_place", ..why }),
-		Ok(place) => Ok(place),
+		Ok(place) => return Ok(place),
+		Err(why) => {
+			return Err(Error { origin: why.origin + " > gokz_rs::global_api::get_place", ..why })
+		},
 	}
 }
 
@@ -906,25 +918,13 @@ async fn get_place_test() -> Result<(), Error> {
 	Ok(())
 }
 
-// --- //
+// --------------------------------------------------------------------------------------------- //
 
 /// This function will check the most recent 10 health checks and return a
 /// [fancy](health::Fancy) response.
 pub async fn health_check(client: &reqwest::Client) -> Result<health::Fancy, Error> {
 	match client.get(health::get_url()).send().await {
-		Err(why) => Err(Error {
-			kind: ErrorKind::GlobalAPI,
-			origin: String::from("gokz_rs::global_api::health_check"),
-			tldr: String::from("GlobalAPI request failed."),
-			raw: Some(why.to_string()),
-		}),
 		Ok(response) => match response.json::<health::Response>().await {
-			Err(why) => Err(Error {
-				kind: ErrorKind::Parsing,
-				origin: String::from("gokz_rs::global_api::health_check"),
-				tldr: String::from("Failed to parse JSON."),
-				raw: Some(why.to_string()),
-			}),
 			Ok(parsed_response) => {
 				let mut result = health::Fancy { successful_responses: 0, fast_responses: 0 };
 
@@ -938,8 +938,24 @@ pub async fn health_check(client: &reqwest::Client) -> Result<health::Fancy, Err
 					}
 				}
 
-				Ok(result)
+				return Ok(result);
 			},
+			Err(why) => {
+				return Err(Error {
+					kind: ErrorKind::Parsing,
+					origin: String::from("gokz_rs::global_api::health_check"),
+					tldr: String::from("Failed to parse JSON."),
+					raw: Some(why.to_string()),
+				})
+			},
+		},
+		Err(why) => {
+			return Err(Error {
+				kind: ErrorKind::GlobalAPI,
+				origin: String::from("gokz_rs::global_api::health_check"),
+				tldr: String::from("GlobalAPI request failed."),
+				raw: Some(why.to_string()),
+			})
 		},
 	}
 }
@@ -955,11 +971,11 @@ async fn health_test() {
 	}
 }
 
-/// This function will loop over [a list of maps](`crate::global_api::maps::Response`) and check
-/// if the input is part of that list. If it is, it will return the appropriate entry from the list.
+/// Will iterate over a list of [maps](maps::Response) and check if any of them match a given
+/// [`MapIdentifier`].
 ///
-/// This can for example be used to turn the string "lionHARDer" into a full struct.
-/// If the given input is not part of the list the function will return an [`Error`].
+/// Note: Technically you can pass in any list of [maps](maps::Response) but it is intended to be
+/// used with [`get_maps`].
 pub async fn is_global(
 	map_identifier: &MapIdentifier,
 	map_list: &Vec<maps::Response>,
@@ -984,7 +1000,7 @@ pub async fn is_global(
 	return Err(Error {
 		kind: ErrorKind::Input,
 		origin: String::from("gokz_rs::global_api::is_global"),
-		tldr: String::from("This map is not global."),
+		tldr: format!("{} is not global.", map_identifier),
 		raw: None,
 	});
 }
@@ -1022,15 +1038,19 @@ async fn is_global_test() -> Result<(), Error> {
 /// Returns download link to the replay of a given replay_id or an [`Error`]
 pub async fn get_replay(replay_id: u32) -> Result<String, Error> {
 	match replay_id {
-		0 => Err(Error {
-			kind: ErrorKind::NoData,
-			origin: String::from("gokz_rs::global_api::get_replay"),
-			tldr: String::from("`replay_id` is 0."),
-			raw: None,
-		}),
+		0 => {
+			return Err(Error {
+				kind: ErrorKind::NoData,
+				origin: String::from("gokz_rs::global_api::get_replay"),
+				tldr: String::from("`replay_id` is 0."),
+				raw: None,
+			})
+		},
 		replay_id => {
 			// https://kztimerglobal.com/api/v2/records/replay/{replay_id}
-			Ok(crate::global_api::get_url() + &records::replay::replay_id::get_url(replay_id))
+			return Ok(
+				crate::global_api::get_url() + &records::replay::replay_id::get_url(replay_id)
+			);
 		},
 	}
 }

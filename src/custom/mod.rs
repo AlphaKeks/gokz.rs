@@ -2,7 +2,7 @@ pub mod profile;
 use std::collections::HashMap;
 
 use crate::{
-	global_api::{get_maps, get_player, get_times},
+	global_api::{get_maps, get_player, get_records},
 	kzgo,
 	prelude::*,
 };
@@ -33,8 +33,8 @@ pub async fn get_profile(
 	}
 	tier_maps[1] = tier_maps[0].clone();
 
-	let tp = get_times(player_identifier, mode, true, 0, client).await.unwrap_or(vec![]);
-	let pro = get_times(player_identifier, mode, false, 0, client).await.unwrap_or(vec![]);
+	let tp = get_records(player_identifier, mode, true, 0, client).await.unwrap_or(vec![]);
+	let pro = get_records(player_identifier, mode, false, 0, client).await.unwrap_or(vec![]);
 
 	if tp.len() == 0 && pro.len() == 0 {
 		return Err(Error {

@@ -1,9 +1,10 @@
+/// Constructs the API route for this module so it can be used in combination with the
+/// [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2)'s base URL.
 pub fn get_url(mode: &crate::prelude::Mode) -> String {
 	format!("modes/id/{}", mode.as_id())
 }
 
 #[derive(Debug, serde::Serialize)]
-/// All possible parameters for the `/modes/id` route
 pub struct Params;
 
 impl Default for Params {
@@ -15,7 +16,7 @@ impl Default for Params {
 impl super::super::IsParams for Params {}
 
 #[derive(Debug, serde::Deserialize, Clone)]
-/// The shape of the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2)'s response on the `/modes/id` route
+/// The shape of the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2)'s response on this route
 pub struct Response {
 	pub id: u8,
 	pub name: String,

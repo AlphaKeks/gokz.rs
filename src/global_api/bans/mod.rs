@@ -1,9 +1,11 @@
+/// Constructs the API route for this module so it can be used in combination with the
+/// [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2)'s base URL.
 pub fn get_url() -> String {
 	String::from("bans?")
 }
 
-#[derive(Debug, serde::Serialize)]
-/// All possible parameters for the `/bans` route
+#[derive(Debug, Clone, serde::Serialize)]
+/// All possible parameters for this route
 pub struct Params {
 	pub ban_types: Option<String>,
 	pub ban_types_list: Option<Vec<String>>,
@@ -43,7 +45,7 @@ impl Default for Params {
 impl super::IsParams for Params {}
 
 #[derive(Debug, serde::Deserialize, Clone)]
-/// The shape of the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2)'s response on the `/bans` route
+/// The shape of the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2)'s response on this route
 pub struct Response {
 	pub id: u32,
 	pub ban_type: String,
