@@ -1,6 +1,6 @@
 use crate::prelude::*;
 
-#[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Response {
 	pub name: Option<String>,
 	pub steam_id: Option<String>,

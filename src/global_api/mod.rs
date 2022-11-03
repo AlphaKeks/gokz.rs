@@ -421,7 +421,7 @@ pub async fn get_unfinished(
 		},
 	};
 
-	let completed: Vec<i16> = completed.into_iter().map(|rec| rec.map_id).collect();
+	let completed = completed.into_iter().map(|rec| rec.map_id).collect::<Vec<i16>>();
 	let mut uncomp_ids = Vec::new();
 
 	for filter in doable {
@@ -471,12 +471,16 @@ async fn get_unfinished_test() {
 	.await
 	{
 		Err(why) => panic!("Test failed: {:#?}", why),
-		Ok(maps) => println!("Test successful: {} maps left (alphakeks, skz, tp, t7)", maps.len()),
+		Ok(maps) => println!(
+			"Test successful: {} maps left (alphakeks, skz, tp, t7)\n{:?}",
+			maps.len(),
+			maps
+		),
 	}
 
 	match get_unfinished(
 		&PlayerIdentifier::SteamID(SteamID(String::from("STEAM_1:0:135486492"))),
-		&Mode::SimpleKZ,
+		&Mode::KZTimer,
 		false,
 		None,
 		&client,
@@ -484,7 +488,9 @@ async fn get_unfinished_test() {
 	.await
 	{
 		Err(why) => panic!("Test failed: {:#?}", why),
-		Ok(maps) => println!("Test successful: {} maps left (jucci, kzt, pro)", maps.len()),
+		Ok(maps) => {
+			println!("Test successful: {} maps left (jucci, kzt, pro)\n{:?}", maps.len(), maps)
+		},
 	}
 
 	match get_unfinished(
@@ -497,7 +503,9 @@ async fn get_unfinished_test() {
 	.await
 	{
 		Err(why) => panic!("Test failed: {:#?}", why),
-		Ok(maps) => println!("Test successful: {} maps left (charlie, skz, tp, t7)", maps.len()),
+		Ok(maps) => {
+			println!("Test successful: {} maps left (charlie, skz, tp, t7)\n{:?}", maps.len(), maps)
+		},
 	}
 }
 
@@ -510,7 +518,7 @@ pub async fn get_wr(
 	client: &reqwest::Client,
 ) -> Result<records::top::Response, Error> {
 	let mut params = records::top::Params {
-		modes_list_string: Some(mode.to_string()),
+		modes_list_string: Some(mode.as_str().to_owned()),
 		has_teleports: Some(runtype),
 		stage: Some(course),
 		..Default::default()
@@ -576,7 +584,7 @@ pub async fn get_pb(
 	client: &reqwest::Client,
 ) -> Result<records::top::Response, Error> {
 	let mut params = records::top::Params {
-		modes_list_string: Some(mode.to_string()),
+		modes_list_string: Some(mode.as_str().to_owned()),
 		has_teleports: Some(runtype),
 		stage: Some(course),
 		..Default::default()
@@ -657,7 +665,7 @@ pub async fn get_maptop(
 	client: &reqwest::Client,
 ) -> Result<Vec<records::top::Response>, Error> {
 	let mut params = records::top::Params {
-		modes_list_string: Some(mode.to_string()),
+		modes_list_string: Some(mode.as_str().to_owned()),
 		has_teleports: Some(runtype),
 		stage: Some(course),
 		limit: Some(100),
@@ -718,6 +726,8 @@ async fn get_maptop_test() {
 ///
 /// Note: the function needs to be this specific because the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2) will return inconsistent
 /// results if not enough arguments are provided.
+///
+/// Note: this function returns **ALL** records from the API, even records on non-global maps.
 pub async fn get_records(
 	player: &PlayerIdentifier,
 	mode: &Mode,
@@ -762,7 +772,7 @@ pub async fn get_records(
 
 #[cfg(test)]
 #[tokio::test]
-async fn get_times_test() {
+async fn get_records_test() {
 	let client = reqwest::Client::new();
 
 	match get_records(
@@ -775,7 +785,7 @@ async fn get_times_test() {
 	.await
 	{
 		Err(why) => panic!("Test failed: {:#?}", why),
-		Ok(records) => println!("Test successful: {} records", records.len()),
+		Ok(records) => println!("Test successful: {} records (AlphaKeks, skz, tp)", records.len()),
 	}
 }
 
@@ -1076,4 +1086,23 @@ async fn get_replay_test() -> Result<(), Error> {
 	};
 
 	Ok(())
+}
+
+/// Will fetch a record by its ID.
+pub async fn get_record(
+	record_id: &u32,
+	client: &reqwest::Client,
+) -> Result<records::top::Response, Error> {
+	let params = records::top::Params { tickrate: None, limit: None, ..Default::default() };
+	api_request::<records::top::Response, _>(&format!("records/{record_id}"), params, client).await
+}
+
+#[tokio::test]
+async fn get_record_test() {
+	let client = reqwest::Client::new();
+
+	match get_record(&328472, &client).await {
+		Err(why) => panic!("Test failed: {:#?}", why),
+		Ok(record) => println!("Test successful: {:#?}", record),
+	}
 }

@@ -24,11 +24,11 @@ pub struct ConditionResult {
 }
 
 #[derive(Debug, Clone, serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct StatusResult {
 	pub status: u16,
 	pub hostname: String,
 	pub duration: u32,
-	#[serde(rename = "camelCase")]
 	pub condition_results: [ConditionResult; 2],
 	pub success: bool,
 	pub timestamp: String,

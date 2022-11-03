@@ -7,15 +7,13 @@ use crate::{
 	prelude::*,
 };
 
-/// This function will gather a bunch of data about a
-/// player from the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2) and [KZGO](https://kzgo.eu/)
+/// Will gather a bunch of data about a player from the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2) and [KZGO](https://kzgo.eu/).
 pub async fn get_profile(
 	player_identifier: &PlayerIdentifier,
 	mode: &Mode,
 	client: &reqwest::Client,
 ) -> Result<profile::Response, Error> {
 	let mut player = match get_player(player_identifier, client).await {
-		Err(why) => return Err(why),
 		Ok(data) => profile::Response {
 			name: Some(data.name),
 			steam_id: Some(data.steam_id),
@@ -23,18 +21,29 @@ pub async fn get_profile(
 			is_banned: Some(data.is_banned),
 			..Default::default()
 		},
+		Err(why) => return Err(why),
 	};
 
 	let mut tier_maps = [HashMap::new(), HashMap::new()];
 
-	let global_maps = get_maps(client).await?;
+	let global_maps = match get_maps(client).await {
+		Ok(maps) => maps,
+		Err(why) => {
+			return Err(Error { origin: why.origin + " > gokz_rs::custom::get_profile", ..why })
+		},
+	};
+
 	for map in global_maps {
 		tier_maps[0].insert(map.name, map.difficulty);
 	}
 	tier_maps[1] = tier_maps[0].clone();
 
-	let tp = get_records(player_identifier, mode, true, 0, client).await.unwrap_or(vec![]);
-	let pro = get_records(player_identifier, mode, false, 0, client).await.unwrap_or(vec![]);
+	let tp = get_records(player_identifier, mode, true, 0, client)
+		.await
+		.unwrap_or(Vec::new());
+	let pro = get_records(player_identifier, mode, false, 0, client)
+		.await
+		.unwrap_or(Vec::new());
 
 	if tp.len() == 0 && pro.len() == 0 {
 		return Err(Error {
@@ -86,7 +95,13 @@ pub async fn get_profile(
 	let total_points = &player.points.0 + &player.points.1;
 	player.rank = Some(Rank::from_points(total_points, mode));
 
-	let doable = kzgo::completion::get_completion_count(mode, client).await?;
+	let doable = match kzgo::completion::get_completion_count(mode, client).await {
+		Ok(completion_count) => completion_count,
+		Err(why) => {
+			return Err(Error { origin: why.origin + " > gokz_rs::custom::get_profile", ..why })
+		},
+	};
+
 	let doable = [
 		[
 			doable.tp.one,
@@ -122,7 +137,7 @@ pub async fn get_profile(
 		}
 	}
 
-	Ok(player)
+	return Ok(player);
 }
 
 #[cfg(test)]

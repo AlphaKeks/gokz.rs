@@ -1,6 +1,6 @@
 use crate::prelude::*;
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
 pub struct CompletionCount {
 	#[serde(rename(deserialize = "1"))]
 	pub one: u32,
@@ -19,7 +19,7 @@ pub struct CompletionCount {
 	pub total: u32,
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Response {
 	pub _id: String,
 	pub mode: String,
@@ -38,15 +38,8 @@ pub async fn get_completion_count(
 		.send()
 		.await
 	{
-		Err(why) => {
-			return Err(Error {
-				kind: ErrorKind::KZGO,
-				origin: String::from("gokz_rs::kzgo::completion::get_completion_count"),
-				tldr: String::from("KZ:GO API request failed."),
-				raw: Some(why.to_string()),
-			})
-		},
 		Ok(data) => match data.json::<Response>().await {
+			Ok(json) => Ok(json),
 			Err(why) => {
 				return Err(Error {
 					kind: ErrorKind::Parsing,
@@ -55,7 +48,14 @@ pub async fn get_completion_count(
 					raw: Some(why.to_string()),
 				})
 			},
-			Ok(json) => Ok(json),
+		},
+		Err(why) => {
+			return Err(Error {
+				kind: ErrorKind::KZGO,
+				origin: String::from("gokz_rs::kzgo::completion::get_completion_count"),
+				tldr: String::from("KZ:GO API request failed."),
+				raw: Some(why.to_string()),
+			})
 		},
 	}
 }
