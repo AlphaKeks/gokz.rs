@@ -1106,3 +1106,58 @@ async fn get_record_test() {
 		Ok(record) => println!("Test successful: {:#?}", record),
 	}
 }
+
+/// Will return a Vec<String> of all global map names
+pub async fn get_mapcycle(
+	tier: Option<u8>,
+	client: &reqwest::Client,
+) -> Result<Vec<String>, Error> {
+	let url = format!(
+		"https://maps.cawkz.net/mapcycles/{}",
+		match tier {
+			Some(tier) => format!("tier{}.txt", tier),
+			None => String::from("gokz.txt"),
+		}
+	);
+	match client.get(url).send().await {
+		Ok(response) => match response.text().await {
+			Ok(text) => return Ok(text.split_terminator("\r\n").map(|s| s.to_owned()).collect()),
+			Err(why) => {
+				return Err(Error {
+					kind: ErrorKind::Parsing,
+					origin: String::from("gokz_rs::global_api::get_mapcycle"),
+					tldr: String::from("Failed to parse text."),
+					raw: Some(why.to_string()),
+				})
+			},
+		},
+		Err(why) => {
+			return Err(Error {
+				kind: ErrorKind::GlobalAPI,
+				origin: String::from("gokz_rs::global_api::get_mapcycle"),
+				tldr: String::from("GET Request failed."),
+				raw: Some(why.to_string()),
+			})
+		},
+	}
+}
+
+#[tokio::test]
+async fn get_mapcycle_test() {
+	let client = reqwest::Client::new();
+
+	match get_mapcycle(Some(7), &client).await {
+		Err(why) => panic!("Test failed: {:#?}", why),
+		Ok(map_names) => println!("Test successful (T7): {:#?}", map_names),
+	}
+
+	match get_mapcycle(None, &client).await {
+		Err(why) => panic!("Test failed: {:#?}", why),
+		Ok(map_names) => println!("Test successful (all): {:#?}", map_names),
+	}
+
+	match get_mapcycle(Some(3), &client).await {
+		Err(why) => panic!("Test failed: {:#?}", why),
+		Ok(map_names) => println!("Test successful (T3): {:#?}", map_names),
+	}
+}
