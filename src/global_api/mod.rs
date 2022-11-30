@@ -1010,7 +1010,7 @@ pub async fn is_global(
 	return Err(Error {
 		kind: ErrorKind::Input,
 		origin: String::from("gokz_rs::global_api::is_global"),
-		tldr: format!("{} is not global.", map_identifier),
+		tldr: format!("\"{}\" is not a global map.", map_identifier),
 		raw: None,
 	});
 }
