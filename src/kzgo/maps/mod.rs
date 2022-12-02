@@ -62,6 +62,7 @@ pub async fn get_map(
 
 #[cfg(test)]
 #[tokio::test]
+#[ignore = "expensive"]
 async fn kzgo_get_map_test() {
 	let client = reqwest::Client::new();
 

@@ -142,6 +142,7 @@ pub async fn get_profile(
 
 #[cfg(test)]
 #[tokio::test]
+#[ignore = "expensive"]
 async fn get_profile_test() {
 	let client = reqwest::Client::new();
 

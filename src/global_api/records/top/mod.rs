@@ -9,7 +9,7 @@ pub fn get_url() -> String {
 
 #[derive(Debug, Clone, serde::Serialize)]
 /// All possible parameters for this route
-pub struct Params {
+pub struct RecordParams {
 	pub steam_id: Option<String>,
 	pub server_id: Option<u32>,
 	pub steamid64: Option<u64>,
@@ -26,9 +26,9 @@ pub struct Params {
 	pub limit: Option<u32>,
 }
 
-impl Default for Params {
+impl Default for RecordParams {
 	fn default() -> Self {
-		Params {
+		RecordParams {
 			steam_id: None,
 			server_id: None,
 			steamid64: None,
@@ -47,11 +47,11 @@ impl Default for Params {
 	}
 }
 
-impl super::super::IsParams for Params {}
+impl super::super::IsParams for RecordParams {}
 
 #[derive(Debug, Clone, serde::Deserialize)]
 /// The shape of the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2)'s response on this route
-pub struct Response {
+pub struct Record {
 	pub id: u32,
 	pub steamid64: String,
 	pub player_name: Option<String>,
@@ -73,5 +73,5 @@ pub struct Response {
 	pub replay_id: u32,
 }
 
-impl super::super::IsResponse for Response {}
-impl super::super::IsResponse for Vec<Response> {}
+impl super::super::IsResponse for Record {}
+impl super::super::IsResponse for Vec<Record> {}

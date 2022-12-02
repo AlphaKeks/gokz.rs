@@ -77,13 +77,15 @@ impl Display for Error {
 ///
 /// Note: [official definition](https://developer.valvesoftware.com/wiki/SteamID).
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct SteamID(pub String);
+pub struct SteamID(String);
 
 impl<'a> SteamID {
 	/// A function to test whether a String qualifies as a [`SteamID`] or not.
 	///
 	/// # Examples
 	/// ```rust
+	/// use gokz_rs::prelude::SteamID;
+	///
 	/// let steam_id = "STEAM_1:1:161178172";
 	/// let not_steam_id = "some random text";
 	/// let also_not_steam_id = "textSTEAM_1:1:161178172";
@@ -102,6 +104,19 @@ impl<'a> SteamID {
 		}
 
 		return false;
+	}
+
+	pub fn new(steam_id: &'a str) -> Result<SteamID, Error> {
+		if Self::test(steam_id) {
+			Ok(SteamID(steam_id.to_owned()))
+		} else {
+			Err(Error {
+				kind: ErrorKind::Input,
+				origin: String::from("gokz_rs::prelude::SteamID::new"),
+				tldr: String::from("Invalid SteamID."),
+				raw: None,
+			})
+		}
 	}
 }
 
@@ -228,9 +243,7 @@ impl Display for MapIdentifier {
 ///     String::from("AlphaKeks")
 /// );
 /// let player_steamid = PlayerIdentifier::SteamID(
-///     SteamID(
-///         String::from("STEAM_1:1:161178172")
-///     )
+///     SteamID::new("STEAM_1:1:161178172").unwrap()
 /// );
 /// let player_steamid64 = PlayerIdentifier::SteamID64(76561198282622073);
 /// ```

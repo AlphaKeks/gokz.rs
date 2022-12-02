@@ -6,7 +6,7 @@ pub fn get_url() -> String {
 
 #[derive(Debug, Clone, serde::Serialize)]
 /// All possible parameters for this route
-pub struct Params {
+pub struct PlayerParams {
 	pub name: Option<String>,
 	pub steam_id: Option<String>,
 	pub is_banned: Option<bool>,
@@ -17,9 +17,9 @@ pub struct Params {
 	pub limit: Option<u32>,
 }
 
-impl Default for Params {
+impl Default for PlayerParams {
 	fn default() -> Self {
-		Params {
+		PlayerParams {
 			name: None,
 			steam_id: None,
 			is_banned: None,
@@ -32,11 +32,11 @@ impl Default for Params {
 	}
 }
 
-impl super::IsParams for Params {}
+impl super::IsParams for PlayerParams {}
 
 #[derive(Debug, Clone, serde::Deserialize)]
 /// The shape of the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2)'s response on this route
-pub struct Response {
+pub struct APIPlayer {
 	pub steamid64: String,
 	pub steam_id: String,
 	pub is_banned: bool,
@@ -44,5 +44,5 @@ pub struct Response {
 	pub name: String,
 }
 
-impl super::IsResponse for Response {}
-impl super::IsResponse for Vec<Response> {}
+impl super::IsResponse for APIPlayer {}
+impl super::IsResponse for Vec<APIPlayer> {}

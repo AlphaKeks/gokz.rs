@@ -20,6 +20,10 @@ fn get_url() -> String {
 trait IsResponse {}
 trait IsParams {}
 
+#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
+struct EmptyParams;
+impl IsParams for EmptyParams {}
+
 /// Makes an HTTPS GET request using a [`reqwest::Client`] and parses the response into a struct.
 async fn api_request<'a, T, P>(
 	route: &'a str,
@@ -57,9 +61,9 @@ where
 pub async fn get_bans(
 	steam_id: SteamID,
 	client: &reqwest::Client,
-) -> Result<Vec<bans::Response>, Error> {
-	let params = bans::Params { steam_id: Some(steam_id.0), ..Default::default() };
-	match api_request::<Vec<bans::Response>, _>(&bans::get_url(), params, client).await {
+) -> Result<Vec<bans::Ban>, Error> {
+	let params = bans::BanParams { steam_id: Some(steam_id.to_string()), ..Default::default() };
+	match api_request::<Vec<bans::Ban>, _>(&bans::get_url(), params, client).await {
 		Ok(response) => {
 			if response.len() > 0 {
 				return Ok(response);
@@ -80,17 +84,18 @@ pub async fn get_bans(
 
 #[cfg(test)]
 #[tokio::test]
+#[ignore = "expensive"]
 async fn get_bans_test() {
 	let client = reqwest::Client::new();
 
-	let no_bans = SteamID(String::from("STEAM_1:0:165881949"));
+	let no_bans = SteamID::new("STEAM_1:0:165881949").unwrap();
 
 	match get_bans(no_bans, &client).await {
 		Err(why) => println!("Test successful: {:#?}", why),
 		Ok(bans) => panic!("Test failed: {:#?}", bans),
 	}
 
-	let bans = SteamID(String::from("STEAM_1:1:161178172"));
+	let bans = SteamID::new("STEAM_1:1:161178172").unwrap();
 
 	match get_bans(bans, &client).await {
 		Err(why) => panic!("Test failed: {:#?}", why),
@@ -101,9 +106,9 @@ async fn get_bans_test() {
 /// Will make an API request for all global maps. Since the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2) contains more maps than
 /// actually valid / "global" maps, this function will ensure to only request maps marked as
 /// `validated`.
-pub async fn get_maps(client: &reqwest::Client) -> Result<Vec<maps::Response>, Error> {
-	let params = maps::Params { is_validated: Some(true), ..Default::default() };
-	match api_request::<Vec<maps::Response>, _>(&maps::get_url(), params, client).await {
+pub async fn get_maps(client: &reqwest::Client) -> Result<Vec<maps::KZMap>, Error> {
+	let params = maps::MapParams { is_validated: Some(true), ..Default::default() };
+	match api_request::<Vec<maps::KZMap>, _>(&maps::get_url(), params, client).await {
 		Ok(maps) => {
 			if maps.len() > 0 {
 				return Ok(maps);
@@ -124,6 +129,7 @@ pub async fn get_maps(client: &reqwest::Client) -> Result<Vec<maps::Response>, E
 
 #[cfg(test)]
 #[tokio::test]
+#[ignore = "expensive"]
 async fn get_maps_test() {
 	let client = reqwest::Client::new();
 
@@ -137,16 +143,16 @@ async fn get_maps_test() {
 pub async fn get_map(
 	map_identifier: &MapIdentifier,
 	client: &reqwest::Client,
-) -> Result<maps::Response, Error> {
+) -> Result<maps::KZMap, Error> {
 	let mut params =
-		maps::Params { is_validated: Some(true), limit: Some(1), ..Default::default() };
+		maps::MapParams { is_validated: Some(true), limit: Some(1), ..Default::default() };
 
 	match map_identifier {
 		MapIdentifier::ID(map_id) => params.id = Some(*map_id),
 		MapIdentifier::Name(map_name) => params.name = Some(map_name.to_owned()),
 	}
 
-	match api_request::<Vec<maps::Response>, _>(&maps::get_url(), params, client).await {
+	match api_request::<Vec<maps::KZMap>, _>(&maps::get_url(), params, client).await {
 		Ok(mut maps) => {
 			if maps.len() > 0 {
 				return Ok(maps.remove(0));
@@ -167,6 +173,7 @@ pub async fn get_map(
 
 #[cfg(test)]
 #[tokio::test]
+#[ignore = "expensive"]
 async fn get_map_test() {
 	let client = reqwest::Client::new();
 
@@ -182,14 +189,8 @@ async fn get_map_test() {
 }
 
 /// Will request all 3 [Modes](`crate::prelude::Mode`) from the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2).
-pub async fn get_modes(client: &reqwest::Client) -> Result<Vec<modes::Response>, Error> {
-	match api_request::<Vec<modes::Response>, _>(
-		&modes::get_url(),
-		modes::Params::default(),
-		client,
-	)
-	.await
-	{
+pub async fn get_modes(client: &reqwest::Client) -> Result<Vec<modes::APIMode>, Error> {
+	match api_request::<Vec<modes::APIMode>, _>(&modes::get_url(), EmptyParams, client).await {
 		Ok(modes) => {
 			if modes.len() > 0 {
 				return Ok(modes);
@@ -210,6 +211,7 @@ pub async fn get_modes(client: &reqwest::Client) -> Result<Vec<modes::Response>,
 
 #[cfg(test)]
 #[tokio::test]
+#[ignore = "expensive"]
 async fn get_modes_test() {
 	let client = reqwest::Client::new();
 
@@ -223,14 +225,8 @@ async fn get_modes_test() {
 ///
 /// Note: You could either use a name or an id for this, it technically does not matter. I chose to
 /// use an id.
-pub async fn get_mode(mode: &Mode, client: &reqwest::Client) -> Result<modes::Response, Error> {
-	match api_request::<modes::Response, _>(
-		&modes::id::get_url(mode),
-		modes::Params::default(),
-		client,
-	)
-	.await
-	{
+pub async fn get_mode(mode: &Mode, client: &reqwest::Client) -> Result<modes::APIMode, Error> {
+	match api_request::<modes::APIMode, _>(&modes::id::get_url(mode), EmptyParams, client).await {
 		Ok(mode) => return Ok(mode),
 		Err(why) => {
 			return Err(Error { origin: why.origin + " > gokz_rs::global_api::get_mode", ..why })
@@ -240,6 +236,7 @@ pub async fn get_mode(mode: &Mode, client: &reqwest::Client) -> Result<modes::Re
 
 #[cfg(test)]
 #[tokio::test]
+#[ignore = "expensive"]
 async fn get_mode_test() {
 	let client = reqwest::Client::new();
 
@@ -279,8 +276,8 @@ async fn get_mode_test() {
 pub async fn get_player(
 	player: &PlayerIdentifier,
 	client: &reqwest::Client,
-) -> Result<players::Response, Error> {
-	let mut params = players::Params::default();
+) -> Result<players::APIPlayer, Error> {
+	let mut params = players::PlayerParams::default();
 
 	match player {
 		PlayerIdentifier::Name(name) => params.name = Some(name.to_owned()),
@@ -288,7 +285,7 @@ pub async fn get_player(
 		PlayerIdentifier::SteamID64(steam_id64) => params.steamid64_list = Some(*steam_id64),
 	}
 
-	match api_request::<Vec<players::Response>, _>(&players::get_url(), params, client).await {
+	match api_request::<Vec<players::APIPlayer>, _>(&players::get_url(), params, client).await {
 		Ok(mut players) => {
 			if players.len() > 0 {
 				return Ok(players.remove(0));
@@ -309,10 +306,11 @@ pub async fn get_player(
 
 #[cfg(test)]
 #[tokio::test]
+#[ignore = "expensive"]
 async fn get_player_test() {
 	let client = reqwest::Client::new();
 
-	let alphakeks = PlayerIdentifier::SteamID(SteamID(String::from("STEAM_1:1:161178172")));
+	let alphakeks = PlayerIdentifier::SteamID(SteamID::new("STEAM_1:1:161178172").unwrap());
 	let charlie = PlayerIdentifier::Name(String::from("charlieeilrahc"));
 
 	match get_player(&alphakeks, &client).await {
@@ -330,9 +328,9 @@ async fn get_player_test() {
 pub async fn get_filters(
 	map_id: i16,
 	client: &reqwest::Client,
-) -> Result<Vec<record_filters::Response>, Error> {
-	let params = record_filters::Params { map_ids: Some(map_id), ..Default::default() };
-	match api_request::<Vec<record_filters::Response>, _>(
+) -> Result<Vec<record_filters::RecordFilter>, Error> {
+	let params = record_filters::RecordFilterParams { map_ids: Some(map_id), ..Default::default() };
+	match api_request::<Vec<record_filters::RecordFilter>, _>(
 		&record_filters::get_url(),
 		params,
 		client,
@@ -348,6 +346,7 @@ pub async fn get_filters(
 
 #[cfg(test)]
 #[tokio::test]
+#[ignore = "expensive"]
 async fn get_filters_test() {
 	let client = reqwest::Client::new();
 
@@ -363,8 +362,8 @@ pub async fn get_filter_dist(
 	mode: &Mode,
 	runtype: bool,
 	client: &reqwest::Client,
-) -> Result<Vec<record_filters::Response>, Error> {
-	let params = record_filters::Params {
+) -> Result<Vec<record_filters::RecordFilter>, Error> {
+	let params = record_filters::RecordFilterParams {
 		mode_ids: Some(mode.as_id()),
 		has_teleports: Some(runtype),
 		stages: Some(0),
@@ -372,7 +371,7 @@ pub async fn get_filter_dist(
 		..Default::default()
 	};
 
-	match api_request::<Vec<record_filters::Response>, record_filters::Params>(
+	match api_request::<Vec<record_filters::RecordFilter>, record_filters::RecordFilterParams>(
 		&record_filters::get_url(),
 		params,
 		client,
@@ -458,6 +457,7 @@ pub async fn get_unfinished(
 
 #[cfg(test)]
 #[tokio::test]
+#[ignore = "expensive"]
 async fn get_unfinished_test() {
 	let client = reqwest::Client::new();
 
@@ -479,7 +479,7 @@ async fn get_unfinished_test() {
 	}
 
 	match get_unfinished(
-		&PlayerIdentifier::SteamID(SteamID(String::from("STEAM_1:0:135486492"))),
+		&PlayerIdentifier::SteamID(SteamID::new("STEAM_1:0:135486492").unwrap()),
 		&Mode::KZTimer,
 		false,
 		None,
@@ -494,7 +494,7 @@ async fn get_unfinished_test() {
 	}
 
 	match get_unfinished(
-		&PlayerIdentifier::SteamID(SteamID(String::from("STEAM_1:0:46898346"))),
+		&PlayerIdentifier::SteamID(SteamID::new("STEAM_1:0:46898346").unwrap()),
 		&Mode::SimpleKZ,
 		true,
 		Some(7),
@@ -516,8 +516,8 @@ pub async fn get_wr(
 	runtype: bool,
 	course: u8,
 	client: &reqwest::Client,
-) -> Result<records::top::Response, Error> {
-	let mut params = records::top::Params {
+) -> Result<records::top::Record, Error> {
+	let mut params = records::top::RecordParams {
 		modes_list_string: Some(mode.as_str().to_owned()),
 		has_teleports: Some(runtype),
 		stage: Some(course),
@@ -529,7 +529,7 @@ pub async fn get_wr(
 		MapIdentifier::ID(map_id) => params.map_id = Some(*map_id),
 	}
 
-	match api_request::<Vec<records::top::Response>, _>(&records::top::get_url(), params, client)
+	match api_request::<Vec<records::top::Record>, _>(&records::top::get_url(), params, client)
 		.await
 	{
 		Ok(mut records) => {
@@ -552,6 +552,7 @@ pub async fn get_wr(
 
 #[cfg(test)]
 #[tokio::test]
+#[ignore = "expensive"]
 async fn get_wr_test() {
 	let client = reqwest::Client::new();
 
@@ -582,8 +583,8 @@ pub async fn get_pb(
 	runtype: bool,
 	course: u8,
 	client: &reqwest::Client,
-) -> Result<records::top::Response, Error> {
-	let mut params = records::top::Params {
+) -> Result<records::top::Record, Error> {
+	let mut params = records::top::RecordParams {
 		modes_list_string: Some(mode.as_str().to_owned()),
 		has_teleports: Some(runtype),
 		stage: Some(course),
@@ -601,7 +602,7 @@ pub async fn get_pb(
 		MapIdentifier::ID(map_id) => params.map_id = Some(*map_id),
 	}
 
-	match api_request::<Vec<records::top::Response>, _>(&records::top::get_url(), params, client)
+	match api_request::<Vec<records::top::Record>, _>(&records::top::get_url(), params, client)
 		.await
 	{
 		Ok(mut records) => {
@@ -624,11 +625,12 @@ pub async fn get_pb(
 
 #[cfg(test)]
 #[tokio::test]
+#[ignore = "expensive"]
 async fn get_pb_test() {
 	let client = reqwest::Client::new();
 
 	match get_pb(
-		&PlayerIdentifier::SteamID(SteamID(String::from("STEAM_1:1:161178172"))),
+		&PlayerIdentifier::SteamID(SteamID::new("STEAM_1:1:161178172").unwrap()),
 		&MapIdentifier::Name(String::from("kz_lionharder")),
 		&Mode::SimpleKZ,
 		false,
@@ -663,8 +665,8 @@ pub async fn get_maptop(
 	runtype: bool,
 	course: u8,
 	client: &reqwest::Client,
-) -> Result<Vec<records::top::Response>, Error> {
-	let mut params = records::top::Params {
+) -> Result<Vec<records::top::Record>, Error> {
+	let mut params = records::top::RecordParams {
 		modes_list_string: Some(mode.as_str().to_owned()),
 		has_teleports: Some(runtype),
 		stage: Some(course),
@@ -677,7 +679,7 @@ pub async fn get_maptop(
 		MapIdentifier::ID(map_id) => params.map_id = Some(*map_id),
 	}
 
-	match api_request::<Vec<records::top::Response>, _>(&records::top::get_url(), params, client)
+	match api_request::<Vec<records::top::Record>, _>(&records::top::get_url(), params, client)
 		.await
 	{
 		Ok(records) => {
@@ -700,6 +702,7 @@ pub async fn get_maptop(
 
 #[cfg(test)]
 #[tokio::test]
+#[ignore = "expensive"]
 async fn get_maptop_test() {
 	let client = reqwest::Client::new();
 
@@ -734,8 +737,8 @@ pub async fn get_records(
 	runtype: bool,
 	course: u8,
 	client: &reqwest::Client,
-) -> Result<Vec<records::top::Response>, Error> {
-	let mut params = records::top::Params {
+) -> Result<Vec<records::top::Record>, Error> {
+	let mut params = records::top::RecordParams {
 		modes_list_string: Some(mode.as_str().to_owned()),
 		has_teleports: Some(runtype),
 		stage: Some(course),
@@ -749,7 +752,7 @@ pub async fn get_records(
 		PlayerIdentifier::SteamID64(steam_id64) => params.steamid64 = Some(*steam_id64),
 	}
 
-	match api_request::<Vec<records::top::Response>, _>(&records::top::get_url(), params, client)
+	match api_request::<Vec<records::top::Record>, _>(&records::top::get_url(), params, client)
 		.await
 	{
 		Ok(records) => {
@@ -772,6 +775,7 @@ pub async fn get_records(
 
 #[cfg(test)]
 #[tokio::test]
+#[ignore = "expensive"]
 async fn get_records_test() {
 	let client = reqwest::Client::new();
 
@@ -793,7 +797,7 @@ async fn get_records_test() {
 pub async fn get_recent(
 	player: &PlayerIdentifier,
 	client: &reqwest::Client,
-) -> Result<records::top::Response, Error> {
+) -> Result<records::top::Record, Error> {
 	// get all records from a player
 	// this needs to be very specific or the GlobalAPI won't give accurate results
 	let modes = [Mode::KZTimer, Mode::SimpleKZ, Mode::Vanilla];
@@ -851,20 +855,21 @@ pub async fn get_recent(
 
 #[cfg(test)]
 #[tokio::test]
+#[ignore = "expensive"]
 async fn get_recent_test() {
 	let client = reqwest::Client::new();
 
 	let players = [
 		PlayerIdentifier::Name(String::from("AlphaKeks")),
-		PlayerIdentifier::SteamID(SteamID(String::from("STEAM_1:1:161178172"))),
+		PlayerIdentifier::SteamID(SteamID::new("STEAM_1:1:161178172").unwrap()),
 		PlayerIdentifier::Name(String::from("racist75")),
-		PlayerIdentifier::SteamID(SteamID(String::from("STEAM_1:1:152337044"))),
+		PlayerIdentifier::SteamID(SteamID::new("STEAM_1:1:152337044").unwrap()),
 		PlayerIdentifier::Name(String::from("𝘨𝘰𝘴ℎℎℎℎℎℎℎ")),
-		PlayerIdentifier::SteamID(SteamID(String::from("STEAM_1:0:165881949"))),
+		PlayerIdentifier::SteamID(SteamID::new("STEAM_1:0:165881949").unwrap()),
 		PlayerIdentifier::Name(String::from("charlieeilrahc")),
-		PlayerIdentifier::SteamID(SteamID(String::from("STEAM_1:0:46898346"))),
+		PlayerIdentifier::SteamID(SteamID::new("STEAM_1:0:46898346").unwrap()),
 		PlayerIdentifier::Name(String::from("Fob")),
-		PlayerIdentifier::SteamID(SteamID(String::from("STEAM_1:1:96787045"))),
+		PlayerIdentifier::SteamID(SteamID::new("STEAM_1:1:96787045").unwrap()),
 	];
 
 	for player in players {
@@ -888,10 +893,10 @@ async fn get_recent_test() {
 pub async fn get_place(
 	record_id: &u32,
 	client: &reqwest::Client,
-) -> Result<records::place::Response, Error> {
-	match api_request::<records::place::Response, _>(
+) -> Result<records::place::Place, Error> {
+	match api_request::<records::place::Place, _>(
 		&records::place::get_url(record_id),
-		records::place::Params::default(),
+		EmptyParams,
 		client,
 	)
 	.await
@@ -905,6 +910,7 @@ pub async fn get_place(
 
 #[cfg(test)]
 #[tokio::test]
+#[ignore = "expensive"]
 async fn get_place_test() -> Result<(), Error> {
 	let client = reqwest::Client::new();
 
@@ -932,11 +938,12 @@ async fn get_place_test() -> Result<(), Error> {
 
 /// This function will check the most recent 10 health checks and return a
 /// [fancy](health::Fancy) response.
-pub async fn health_check(client: &reqwest::Client) -> Result<health::Fancy, Error> {
+pub async fn health_check(client: &reqwest::Client) -> Result<health::FancyHealthReport, Error> {
 	match client.get(health::get_url()).send().await {
-		Ok(response) => match response.json::<health::Response>().await {
+		Ok(response) => match response.json::<health::HealthResponse>().await {
 			Ok(parsed_response) => {
-				let mut result = health::Fancy { successful_responses: 0, fast_responses: 0 };
+				let mut result =
+					health::FancyHealthReport { successful_responses: 0, fast_responses: 0 };
 
 				for res in &parsed_response.results[0..10] {
 					if res.condition_results[0].success {
@@ -972,6 +979,7 @@ pub async fn health_check(client: &reqwest::Client) -> Result<health::Fancy, Err
 
 #[cfg(test)]
 #[tokio::test]
+#[ignore = "expensive"]
 async fn health_test() {
 	let client = reqwest::Client::new();
 
@@ -988,8 +996,8 @@ async fn health_test() {
 /// used with [`get_maps`].
 pub async fn is_global(
 	map_identifier: &MapIdentifier,
-	map_list: &Vec<maps::Response>,
-) -> Result<maps::Response, Error> {
+	map_list: &Vec<maps::KZMap>,
+) -> Result<maps::KZMap, Error> {
 	match map_identifier {
 		MapIdentifier::Name(map_name) => {
 			for map in map_list {
@@ -1017,6 +1025,7 @@ pub async fn is_global(
 
 #[cfg(test)]
 #[tokio::test]
+#[ignore = "expensive"]
 async fn is_global_test() -> Result<(), Error> {
 	let client = reqwest::Client::new();
 
@@ -1067,6 +1076,7 @@ pub async fn get_replay(replay_id: u32) -> Result<String, Error> {
 
 #[cfg(test)]
 #[tokio::test]
+#[ignore = "expensive"]
 async fn get_replay_test() -> Result<(), Error> {
 	let client = reqwest::Client::new();
 
@@ -1092,12 +1102,13 @@ async fn get_replay_test() -> Result<(), Error> {
 pub async fn get_record(
 	record_id: &u32,
 	client: &reqwest::Client,
-) -> Result<records::top::Response, Error> {
-	let params = records::top::Params { tickrate: None, limit: None, ..Default::default() };
-	api_request::<records::top::Response, _>(&format!("records/{record_id}"), params, client).await
+) -> Result<records::top::Record, Error> {
+	let params = records::top::RecordParams { tickrate: None, limit: None, ..Default::default() };
+	api_request::<records::top::Record, _>(&format!("records/{record_id}"), params, client).await
 }
 
 #[tokio::test]
+#[ignore = "expensive"]
 async fn get_record_test() {
 	let client = reqwest::Client::new();
 
@@ -1143,6 +1154,7 @@ pub async fn get_mapcycle(
 }
 
 #[tokio::test]
+#[ignore = "expensive"]
 async fn get_mapcycle_test() {
 	let client = reqwest::Client::new();
 

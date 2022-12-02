@@ -6,22 +6,22 @@ pub fn get_url() -> String {
 
 #[derive(Debug, Clone, Copy, serde::Serialize)]
 /// All possible parameters for this route
-pub struct Params {
+pub struct ReplayListParams {
 	pub offset: Option<i32>,
 	pub limit: Option<u32>,
 }
 
-impl Default for Params {
+impl Default for ReplayListParams {
 	fn default() -> Self {
-		Params { offset: None, limit: Some(1) }
+		ReplayListParams { offset: None, limit: Some(1) }
 	}
 }
 
-impl super::super::super::IsParams for Params {}
+impl super::super::super::IsParams for ReplayListParams {}
 
 #[derive(Debug, Clone, serde::Deserialize)]
 /// The shape of the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2)'s response on this route
-pub struct Response {
+pub struct Replay {
 	pub id: u32,
 	pub steamid64: String,
 	pub server_id: u16,
@@ -35,5 +35,5 @@ pub struct Response {
 	pub replay_id: u32,
 }
 
-impl super::super::super::IsResponse for Response {}
-impl super::super::super::IsResponse for Vec<Response> {}
+impl super::super::super::IsResponse for Replay {}
+impl super::super::super::IsResponse for Vec<Replay> {}

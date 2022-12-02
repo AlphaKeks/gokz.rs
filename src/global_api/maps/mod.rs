@@ -6,7 +6,7 @@ pub fn get_url() -> String {
 
 #[derive(Debug, serde::Serialize)]
 /// All possible parameters for this route
-pub struct Params {
+pub struct MapParams {
 	pub id: Option<i16>,
 	pub name: Option<String>,
 	pub larger_than_filesize: Option<u32>,
@@ -19,9 +19,9 @@ pub struct Params {
 	pub limit: Option<u32>,
 }
 
-impl Default for Params {
+impl Default for MapParams {
 	fn default() -> Self {
-		Params {
+		MapParams {
 			id: None,
 			name: None,
 			larger_than_filesize: None,
@@ -36,11 +36,11 @@ impl Default for Params {
 	}
 }
 
-impl super::IsParams for Params {}
+impl super::IsParams for MapParams {}
 
 #[derive(Debug, serde::Deserialize, Clone)]
 /// The shape of the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2)'s response on this route
-pub struct Response {
+pub struct KZMap {
 	pub id: i16,
 	pub name: String,
 	pub filesize: u64,
@@ -53,5 +53,5 @@ pub struct Response {
 	pub download_url: Option<String>,
 }
 
-impl super::IsResponse for Response {}
-impl super::IsResponse for Vec<Response> {}
+impl super::IsResponse for KZMap {}
+impl super::IsResponse for Vec<KZMap> {}

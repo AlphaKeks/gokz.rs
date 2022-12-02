@@ -6,7 +6,7 @@ pub fn get_url() -> String {
 
 #[derive(Debug, Clone, serde::Serialize)]
 /// All possible parameters for this route
-pub struct Params {
+pub struct WorldRecordParams {
 	pub ids: Option<u32>,
 	pub map_ids: Option<u16>,
 	pub stages: Option<u8>,
@@ -19,9 +19,9 @@ pub struct Params {
 	pub limit: Option<u32>,
 }
 
-impl Default for Params {
+impl Default for WorldRecordParams {
 	fn default() -> Self {
-		Params {
+		WorldRecordParams {
 			ids: None,
 			map_ids: None,
 			stages: None,
@@ -35,16 +35,17 @@ impl Default for Params {
 	}
 }
 
-impl super::super::super::IsParams for Params {}
+impl super::super::super::IsParams for WorldRecordParams {}
 
 #[derive(Debug, Clone, serde::Deserialize)]
 /// The shape of the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2)'s response on this route
-pub struct Response {
+// I can't think of a better name for this, lol
+pub struct WorldRecordHolder {
 	steamid64: String,
 	steam_id: Option<String>,
 	count: u32,
 	player_name: Option<String>,
 }
 
-impl super::super::super::IsResponse for Response {}
-impl super::super::super::IsResponse for Vec<Response> {}
+impl super::super::super::IsResponse for WorldRecordHolder {}
+impl super::super::super::IsResponse for Vec<WorldRecordHolder> {}

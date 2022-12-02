@@ -6,7 +6,7 @@ pub fn get_url() -> String {
 
 #[derive(Debug, Clone, serde::Serialize)]
 /// All possible parameters for this route
-pub struct Params {
+pub struct BanParams {
 	pub ban_types: Option<String>,
 	pub ban_types_list: Option<Vec<String>>,
 	pub is_expired: Option<bool>,
@@ -22,9 +22,9 @@ pub struct Params {
 	pub limit: Option<u32>,
 }
 
-impl Default for Params {
+impl Default for BanParams {
 	fn default() -> Self {
-		Params {
+		BanParams {
 			ban_types: None,
 			ban_types_list: None,
 			is_expired: None,
@@ -42,11 +42,11 @@ impl Default for Params {
 	}
 }
 
-impl super::IsParams for Params {}
+impl super::IsParams for BanParams {}
 
 #[derive(Debug, serde::Deserialize, Clone)]
 /// The shape of the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2)'s response on this route
-pub struct Response {
+pub struct Ban {
 	pub id: u32,
 	pub ban_type: String,
 	pub expires_on: String,
@@ -61,5 +61,5 @@ pub struct Response {
 	pub updated_on: String,
 }
 
-impl super::IsResponse for Response {}
-impl super::IsResponse for Vec<Response> {}
+impl super::IsResponse for Ban {}
+impl super::IsResponse for Vec<Ban> {}

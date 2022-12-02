@@ -7,20 +7,9 @@ pub fn get_url() -> String {
 	String::from("modes?")
 }
 
-#[derive(Debug, Clone, serde::Serialize)]
-pub struct Params;
-
-impl Default for Params {
-	fn default() -> Self {
-		Params
-	}
-}
-
-impl super::IsParams for Params {}
-
 #[derive(Debug, Clone, serde::Deserialize)]
 /// The shape of the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2)'s response on this route
-pub struct Response {
+pub struct APIMode {
 	pub id: u8,
 	pub name: String,
 	pub description: String,
@@ -35,5 +24,5 @@ pub struct Response {
 	pub updated_by_id: String,
 }
 
-impl super::IsResponse for Response {}
-impl super::IsResponse for Vec<Response> {}
+impl super::IsResponse for APIMode {}
+impl super::IsResponse for Vec<APIMode> {}

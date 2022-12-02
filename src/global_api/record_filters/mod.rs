@@ -6,7 +6,7 @@ pub fn get_url() -> String {
 
 #[derive(Debug, Clone, serde::Serialize)]
 /// All possible parameters for this route
-pub struct Params {
+pub struct RecordFilterParams {
 	pub ids: Option<u32>,
 	pub map_ids: Option<i16>,
 	pub stages: Option<u8>,
@@ -17,9 +17,9 @@ pub struct Params {
 	pub limit: Option<u32>,
 }
 
-impl Default for Params {
+impl Default for RecordFilterParams {
 	fn default() -> Self {
-		Params {
+		RecordFilterParams {
 			ids: None,
 			map_ids: None,
 			stages: None,
@@ -32,11 +32,11 @@ impl Default for Params {
 	}
 }
 
-impl super::IsParams for Params {}
+impl super::IsParams for RecordFilterParams {}
 
 #[derive(Debug, Clone, serde::Deserialize)]
 /// The shape of the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2)'s response on this route
-pub struct Response {
+pub struct RecordFilter {
 	pub id: u32,
 	pub map_id: i16,
 	pub stage: u8,
@@ -47,5 +47,5 @@ pub struct Response {
 	pub updated_by_id: String,
 }
 
-impl super::IsResponse for Response {}
-impl super::IsResponse for Vec<Response> {}
+impl super::IsResponse for RecordFilter {}
+impl super::IsResponse for Vec<RecordFilter> {}
