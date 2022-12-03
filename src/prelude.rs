@@ -120,6 +120,23 @@ impl<'a> SteamID {
 	}
 }
 
+impl std::str::FromStr for SteamID {
+	type Err = Error;
+
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		if Self::test(s) {
+			Ok(SteamID(s.to_owned()))
+		} else {
+			Err(Error {
+				kind: ErrorKind::Input,
+				origin: String::from("gokz_rs::prelude::SteamID::from_str"),
+				tldr: String::from("Invalid SteamID."),
+				raw: None,
+			})
+		}
+	}
+}
+
 impl Display for SteamID {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		return write!(f, "{}", self.0);
