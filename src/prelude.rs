@@ -58,18 +58,7 @@ pub struct Error {
 
 impl Display for Error {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		write!(
-			f,
-			"
-			Error {{
-				kind: {},
-				origin: {},
-				tldr: {},
-				raw: {:#?}
-			}}
-			",
-			self.kind, self.origin, self.tldr, self.raw
-		)
+		return write!(f, "Error {{ kind: {}, tldr: {} }}", self.kind, self.tldr);
 	}
 }
 
@@ -114,24 +103,7 @@ impl<'a> SteamID {
 				kind: ErrorKind::Input,
 				origin: String::from("gokz_rs::prelude::SteamID::new"),
 				tldr: String::from("Invalid SteamID."),
-				raw: None,
-			})
-		}
-	}
-}
-
-impl std::str::FromStr for SteamID {
-	type Err = Error;
-
-	fn from_str(s: &str) -> Result<Self, Self::Err> {
-		if Self::test(s) {
-			Ok(SteamID(s.to_owned()))
-		} else {
-			Err(Error {
-				kind: ErrorKind::Input,
-				origin: String::from("gokz_rs::prelude::SteamID::from_str"),
-				tldr: String::from("Invalid SteamID."),
-				raw: None,
+				raw: Some(steam_id.to_owned()),
 			})
 		}
 	}
@@ -143,6 +115,40 @@ impl Display for SteamID {
 	}
 }
 
+impl std::str::FromStr for SteamID {
+	type Err = Error;
+
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		if Self::test(s) {
+			return Ok(SteamID(s.to_owned()));
+		} else {
+			return Err(Error {
+				kind: ErrorKind::Input,
+				origin: String::from("gokz_rs::prelude::SteamID::from_str"),
+				tldr: String::from("Invalid SteamID."),
+				raw: Some(s.to_owned()),
+			});
+		}
+	}
+}
+
+impl TryFrom<String> for SteamID {
+	type Error = crate::prelude::Error;
+
+	fn try_from(value: String) -> Result<Self, Self::Error> {
+		if Self::test(&value) {
+			return Ok(SteamID(value));
+		} else {
+			return Err(Error {
+				kind: ErrorKind::Input,
+				origin: String::from("gokz_rs::prelude::SteamID::from_str"),
+				tldr: String::from("Invalid SteamID."),
+				raw: Some(value),
+			});
+		}
+	}
+}
+
 /// The 3 gamemodes currently available in [GOKZ](https://github.com/KZGlobalTeam/gokz).
 #[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
 pub enum Mode {
@@ -151,73 +157,81 @@ pub enum Mode {
 	Vanilla,
 }
 
-impl Mode {
-	pub fn from_str(s: &str) -> Result<Mode, Error> {
-		match s.to_lowercase().as_str() {
+impl Display for Mode {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		let s = match self {
+			Mode::KZTimer => "KZTimer",
+			Mode::SimpleKZ => "SimpleKZ",
+			Mode::Vanilla => "Vanilla",
+		};
+
+		return write!(f, "{}", s);
+	}
+}
+
+impl std::str::FromStr for Mode {
+	type Err = crate::prelude::Error;
+
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		return match s.to_lowercase().as_str() {
 			"kz_timer" | "kztimer" | "kzt" => Ok(Mode::KZTimer),
 			"kz_simple" | "simplekz" | "skz" => Ok(Mode::SimpleKZ),
 			"kz_vanilla" | "vanilla" | "vnl" => Ok(Mode::Vanilla),
-			input => {
-				return Err(Error {
-					kind: ErrorKind::Input,
-					origin: String::from("gokz_rs::prelude::Mode::from_str"),
-					tldr: format!("{} is not a valid input.", input),
-					raw: None,
-				})
-			},
-		}
+			input => Err(Error {
+				kind: ErrorKind::Input,
+				origin: String::from("gokz_rs::prelude::Mode -> FromStr"),
+				tldr: format!("{} is not a valid input.", input),
+				raw: Some(input.to_owned()),
+			}),
+		};
 	}
+}
 
-	pub fn as_str<'a>(&'a self) -> &'a str {
-		match self {
-			&Mode::KZTimer => "kz_timer",
-			&Mode::SimpleKZ => "kz_simple",
-			&Mode::Vanilla => "kz_vanilla",
-		}
-	}
+impl TryFrom<u8> for Mode {
+	type Error = crate::prelude::Error;
 
-	pub fn from_id(id: u8) -> Result<Mode, Error> {
-		match id {
+	fn try_from(value: u8) -> Result<Self, Self::Error> {
+		match value {
 			200 => Ok(Mode::KZTimer),
 			201 => Ok(Mode::SimpleKZ),
 			202 => Ok(Mode::Vanilla),
 			input => {
 				return Err(Error {
 					kind: ErrorKind::Input,
-					origin: String::from("gokz_rs::prelude::Mode::from_id"),
+					origin: String::from("gokz_rs::prelude::Mode -> TryFrom<u8>"),
 					tldr: format!("Cannot convert {} to a mode.", input),
-					raw: None,
+					raw: Some(value.to_string()),
 				})
 			},
 		}
 	}
+}
 
-	pub fn as_id(&self) -> u8 {
-		match self {
-			&Mode::KZTimer => 200,
-			&Mode::SimpleKZ => 201,
-			&Mode::Vanilla => 202,
-		}
-	}
-
-	pub fn to_fancy(&self) -> String {
-		match self {
-			&Mode::KZTimer => String::from("KZT"),
-			&Mode::SimpleKZ => String::from("SKZ"),
-			&Mode::Vanilla => String::from("VNL"),
-		}
+impl Into<u8> for Mode {
+	fn into(self) -> u8 {
+		return match self {
+			Mode::KZTimer => 200,
+			Mode::SimpleKZ => 201,
+			Mode::Vanilla => 202,
+		};
 	}
 }
 
-impl Display for Mode {
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		let s = match self {
-			&Mode::KZTimer => "KZTimer",
-			&Mode::SimpleKZ => "SimpleKZ",
-			&Mode::Vanilla => "Vanilla",
+impl Mode {
+	pub fn as_str<'a>(&'a self) -> &'a str {
+		return match self {
+			Mode::KZTimer => "kz_timer",
+			Mode::SimpleKZ => "kz_simple",
+			Mode::Vanilla => "kz_vanilla",
 		};
+	}
 
-		return write!(f, "{}", s);
+	pub fn to_fancy(&self) -> String {
+		return match self {
+			Mode::KZTimer => String::from("KZT"),
+			Mode::SimpleKZ => String::from("SKZ"),
+			Mode::Vanilla => String::from("VNL"),
+		};
 	}
 }
 
@@ -246,6 +260,42 @@ impl Display for MapIdentifier {
 			MapIdentifier::Name(name) => write!(f, "{}", name),
 			MapIdentifier::ID(id) => write!(f, "{}", id),
 		}
+	}
+}
+
+impl std::str::FromStr for MapIdentifier {
+	type Err = crate::prelude::Error;
+
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		return Ok(MapIdentifier::Name(s.to_owned()));
+	}
+}
+
+impl From<String> for MapIdentifier {
+	fn from(s: String) -> Self {
+		return MapIdentifier::Name(s);
+	}
+}
+
+impl From<i16> for MapIdentifier {
+	fn from(id: i16) -> Self {
+		return MapIdentifier::ID(id);
+	}
+}
+
+impl TryInto<i16> for MapIdentifier {
+	type Error = crate::prelude::Error;
+
+	fn try_into(self) -> Result<i16, Self::Error> {
+		return match self {
+			Self::Name(name) => Err(Error {
+				kind: ErrorKind::Input,
+				origin: String::from("gokz_rs::prelude::MapIdentifier -> TryInto<i16>"),
+				tldr: String::from("A name has been provided instead of an ID."),
+				raw: Some(name),
+			}),
+			Self::ID(id) => Ok(id),
+		};
 	}
 }
 
@@ -278,6 +328,72 @@ impl Display for PlayerIdentifier {
 			PlayerIdentifier::SteamID(steam_id) => write!(f, "{}", steam_id),
 			PlayerIdentifier::SteamID64(steam_id64) => write!(f, "{}", steam_id64),
 		}
+	}
+}
+
+impl From<String> for PlayerIdentifier {
+	fn from(name: String) -> Self {
+		return PlayerIdentifier::Name(name);
+	}
+}
+
+impl From<SteamID> for PlayerIdentifier {
+	fn from(steam_id: SteamID) -> Self {
+		return PlayerIdentifier::SteamID(steam_id);
+	}
+}
+
+impl From<u64> for PlayerIdentifier {
+	fn from(steam_id64: u64) -> Self {
+		return PlayerIdentifier::SteamID64(steam_id64);
+	}
+}
+
+impl TryInto<String> for PlayerIdentifier {
+	type Error = crate::prelude::Error;
+
+	fn try_into(self) -> Result<String, Self::Error> {
+		return match self {
+			Self::Name(name) => Ok(name),
+			input => Err(Error {
+				kind: ErrorKind::Input,
+				origin: String::from("gokz_rs::prelude::PlayerIdentifier -> TryInto<String>"),
+				tldr: format!("`{}` cannot be turned into a player name.", input),
+				raw: Some(input.to_string()),
+			}),
+		};
+	}
+}
+
+impl TryInto<SteamID> for PlayerIdentifier {
+	type Error = crate::prelude::Error;
+
+	fn try_into(self) -> Result<SteamID, Self::Error> {
+		return match self {
+			Self::SteamID(steam_id) => Ok(steam_id),
+			input => Err(Error {
+				kind: ErrorKind::Input,
+				origin: String::from("gokz_rs::prelude::PlayerIdentifier -> TryInto<SteamID>"),
+				tldr: format!("`{}` cannot be turned into a SteamID.", input),
+				raw: Some(input.to_string()),
+			}),
+		};
+	}
+}
+
+impl TryInto<u64> for PlayerIdentifier {
+	type Error = crate::prelude::Error;
+
+	fn try_into(self) -> Result<u64, Self::Error> {
+		return match self {
+			Self::SteamID64(steam_id64) => Ok(steam_id64),
+			input => Err(Error {
+				kind: ErrorKind::Input,
+				origin: String::from("gokz_rs::prelude::PlayerIdentifier -> TryInto<u64>"),
+				tldr: format!("`{}` cannot be turned into a SteamID64.", input),
+				raw: Some(input.to_string()),
+			}),
+		};
 	}
 }
 
@@ -316,7 +432,7 @@ impl Rank {
 	/// [`Rank`] based on an amount of points and a specific [`Mode`].
 	pub fn from_points(points: u32, mode: &Mode) -> Self {
 		match mode {
-			&Mode::KZTimer => {
+			Mode::KZTimer => {
 				if points > 1_000_000 {
 					return Rank::Legend;
 				} else if points > 800_000 {
@@ -365,7 +481,7 @@ impl Rank {
 					return Rank::New;
 				}
 			},
-			&Mode::SimpleKZ => {
+			Mode::SimpleKZ => {
 				if points > 800_000 {
 					return Rank::Legend;
 				} else if points > 500_000 {
@@ -414,7 +530,7 @@ impl Rank {
 					return Rank::New;
 				}
 			},
-			&Mode::Vanilla => {
+			Mode::Vanilla => {
 				if points > 600_000 {
 					return Rank::Legend;
 				} else if points > 400_000 {
@@ -470,31 +586,88 @@ impl Rank {
 impl Display for Rank {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		let s = match self {
-			&Rank::Legend => "Legend",
-			&Rank::Master => "Master",
-			&Rank::Pro => "Pro",
-			&Rank::Semipro => "Semipro",
-			&Rank::ExpertPlus => "Expert+",
-			&Rank::Expert => "Expert",
-			&Rank::ExpertMinus => "Expert-",
-			&Rank::SkilledPlus => "Skilled+",
-			&Rank::Skilled => "Skilled",
-			&Rank::SkilledMinus => "Skilled-",
-			&Rank::RegularPlus => "Regular+",
-			&Rank::Regular => "Regular",
-			&Rank::RegularMinus => "Regular+",
-			&Rank::CasualPlus => "Casual+",
-			&Rank::Casual => "Casual",
-			&Rank::CasualMinus => "Casual-",
-			&Rank::AmateurPlus => "Amateur+",
-			&Rank::Amateur => "Amateur",
-			&Rank::AmateurMinus => "Amateur-",
-			&Rank::BeginnerPlus => "Beginner+",
-			&Rank::Beginner => "Beginner",
-			&Rank::BeginnerMinus => "Beginner-",
-			&Rank::New => "New",
+			Rank::Legend => "Legend",
+			Rank::Master => "Master",
+			Rank::Pro => "Pro",
+			Rank::Semipro => "Semipro",
+			Rank::ExpertPlus => "Expert+",
+			Rank::Expert => "Expert",
+			Rank::ExpertMinus => "Expert-",
+			Rank::SkilledPlus => "Skilled+",
+			Rank::Skilled => "Skilled",
+			Rank::SkilledMinus => "Skilled-",
+			Rank::RegularPlus => "Regular+",
+			Rank::Regular => "Regular",
+			Rank::RegularMinus => "Regular-",
+			Rank::CasualPlus => "Casual+",
+			Rank::Casual => "Casual",
+			Rank::CasualMinus => "Casual-",
+			Rank::AmateurPlus => "Amateur+",
+			Rank::Amateur => "Amateur",
+			Rank::AmateurMinus => "Amateur-",
+			Rank::BeginnerPlus => "Beginner+",
+			Rank::Beginner => "Beginner",
+			Rank::BeginnerMinus => "Beginner-",
+			Rank::New => "New",
 		};
 
 		return write!(f, "{}", s);
+	}
+}
+
+impl std::str::FromStr for Rank {
+	type Err = crate::prelude::Error;
+
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		return match s {
+			"Legend" => Ok(Rank::Legend),
+			"Master" => Ok(Rank::Master),
+			"Pro" => Ok(Rank::Pro),
+			"Semipro" => Ok(Rank::Semipro),
+			"Expert+" => Ok(Rank::ExpertPlus),
+			"Expert" => Ok(Rank::Expert),
+			"Expert-" => Ok(Rank::ExpertMinus),
+			"Skilled+" => Ok(Rank::SkilledPlus),
+			"Skilled" => Ok(Rank::Skilled),
+			"Skilled-" => Ok(Rank::SkilledMinus),
+			"Regular+" => Ok(Rank::RegularPlus),
+			"Regular" => Ok(Rank::Regular),
+			"Regular-" => Ok(Rank::RegularMinus),
+			"Casual+" => Ok(Rank::CasualPlus),
+			"Casual" => Ok(Rank::Casual),
+			"Casual-" => Ok(Rank::CasualMinus),
+			"Amateur+" => Ok(Rank::AmateurPlus),
+			"Amateur" => Ok(Rank::Amateur),
+			"Amateur-" => Ok(Rank::AmateurMinus),
+			"Beginner+" => Ok(Rank::BeginnerPlus),
+			"Beginner" => Ok(Rank::Beginner),
+			"Beginner-" => Ok(Rank::BeginnerMinus),
+			"New" => Ok(Rank::New),
+			input => Err(Error {
+				kind: ErrorKind::Input,
+				origin: String::from("gokz_rs::prelude::Rank -> FromStr"),
+				tldr: format!("`{}` cannot be turned into a Rank.", input),
+				raw: Some(input.to_owned()),
+			}),
+		};
+	}
+}
+
+impl TryFrom<String> for Rank {
+	type Error = crate::prelude::Error;
+
+	fn try_from(value: String) -> Result<Self, Self::Error> {
+		return match value.as_str().parse::<Rank>() {
+			Ok(output) => Ok(output),
+			Err(err) => Err(Error {
+				kind: ErrorKind::Input,
+				origin: String::from("gokz_rs::prelude::Rank -> TryFrom<String>"),
+				tldr: format!(
+					"`{}` cannot be turned into a Rank.",
+					err.raw.expect("This should have a value.")
+				),
+				raw: Some(value),
+			}),
+		};
 	}
 }

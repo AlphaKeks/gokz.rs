@@ -248,7 +248,7 @@ pub async fn get_filter_dist(
 	client: &reqwest::Client,
 ) -> Result<Vec<record_filters::RecordFilter>, Error> {
 	let params = record_filters::RecordFilterParams {
-		mode_ids: Some(mode.as_id()),
+		mode_ids: Some((*mode).into()),
 		has_teleports: Some(runtype),
 		stages: Some(0),
 		limit: Some(9999),
