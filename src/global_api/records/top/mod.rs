@@ -7,7 +7,7 @@ pub fn get_url() -> String {
 	String::from("records/top?")
 }
 
-#[derive(Debug, Clone, serde::Serialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 /// All possible parameters for this route
 pub struct RecordParams {
 	pub steam_id: Option<String>,
@@ -49,7 +49,7 @@ impl Default for RecordParams {
 
 impl super::super::IsParams for RecordParams {}
 
-#[derive(Debug, Clone, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 /// The shape of the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2)'s response on this route
 pub struct Record {
 	pub id: u32,

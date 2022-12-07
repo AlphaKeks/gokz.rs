@@ -4,7 +4,7 @@ pub fn get_url() -> String {
 	String::from("player_ranks?")
 }
 
-#[derive(Debug, Clone, serde::Serialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 /// All possible parameters for this route
 pub struct PlayerRankParams {
 	pub points_greater_than: Option<u32>,
@@ -47,7 +47,7 @@ impl Default for PlayerRankParams {
 
 impl super::IsParams for PlayerRankParams {}
 
-#[derive(Debug, Clone, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 /// The shape of the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2)'s response on this route
 pub struct PlayerRankResponse {
 	pub points: u32,

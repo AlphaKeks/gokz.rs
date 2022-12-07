@@ -4,7 +4,7 @@ pub fn get_url(record_id: &u32) -> String {
 	format!("records/place/{record_id}")
 }
 
-#[derive(Debug, Clone, Copy, serde::Deserialize)]
+#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
 /// The shape of the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2)'s response on this route
 pub struct Place(pub u32);
 

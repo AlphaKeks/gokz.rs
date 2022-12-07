@@ -4,7 +4,7 @@ pub fn get_url() -> String {
 	String::from("records/replay/list")
 }
 
-#[derive(Debug, Clone, Copy, serde::Serialize)]
+#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
 /// All possible parameters for this route
 pub struct ReplayListParams {
 	pub offset: Option<i32>,
@@ -19,7 +19,7 @@ impl Default for ReplayListParams {
 
 impl super::super::super::IsParams for ReplayListParams {}
 
-#[derive(Debug, Clone, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 /// The shape of the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2)'s response on this route
 pub struct Replay {
 	pub id: u32,

@@ -1,7 +1,7 @@
 use crate::prelude::*;
 
 #[allow(non_snake_case, dead_code)]
-#[derive(Debug, serde::Deserialize, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Response {
 	pub _id: Option<String>,
 	pub name: Option<String>,

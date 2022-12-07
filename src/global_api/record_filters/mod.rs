@@ -4,7 +4,7 @@ pub fn get_url() -> String {
 	String::from("record_filters?")
 }
 
-#[derive(Debug, Clone, serde::Serialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 /// All possible parameters for this route
 pub struct RecordFilterParams {
 	pub ids: Option<u32>,
@@ -34,7 +34,7 @@ impl Default for RecordFilterParams {
 
 impl super::IsParams for RecordFilterParams {}
 
-#[derive(Debug, Clone, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 /// The shape of the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2)'s response on this route
 pub struct RecordFilter {
 	pub id: u32,

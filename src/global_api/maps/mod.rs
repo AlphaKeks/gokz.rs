@@ -4,7 +4,7 @@ pub fn get_url() -> String {
 	String::from("maps?")
 }
 
-#[derive(Debug, serde::Serialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 /// All possible parameters for this route
 pub struct MapParams {
 	pub id: Option<i16>,
@@ -38,7 +38,7 @@ impl Default for MapParams {
 
 impl super::IsParams for MapParams {}
 
-#[derive(Debug, serde::Deserialize, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 /// The shape of the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2)'s response on this route
 pub struct KZMap {
 	pub id: i16,

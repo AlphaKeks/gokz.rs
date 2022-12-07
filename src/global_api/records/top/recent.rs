@@ -4,7 +4,7 @@ pub fn get_url() -> String {
 	String::from("records/top/recent?")
 }
 
-#[derive(Debug, Clone, serde::Serialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 /// All possible parameters for this route
 pub struct RecentRecordParams {
 	pub steam_id: Option<String>,
@@ -46,7 +46,7 @@ impl Default for RecentRecordParams {
 
 impl super::super::super::IsParams for RecentRecordParams {}
 
-#[derive(Debug, Clone, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 /// The shape of the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2)'s response on this route
 pub struct RecentRecord {
 	pub id: u32,

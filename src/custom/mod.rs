@@ -14,7 +14,7 @@ pub async fn get_profile(
 	client: &reqwest::Client,
 ) -> Result<profile::Response, Error> {
 	log::info!(
-		"get_profile() => Function Input {{ player_identifier: {}, mode: {} }}",
+		"[START] get_profile() => Function Input {{ player_identifier: {}, mode: {} }}",
 		player_identifier,
 		mode
 	);
@@ -143,6 +143,8 @@ pub async fn get_profile(
 				(player.completion[i].1 as f32 / doable[1][i] as f32) * 100.0;
 		}
 	}
+
+	log::info!("[START] get_profile() => Result {:?}", &player);
 
 	return Ok(player);
 }

@@ -4,7 +4,7 @@ pub fn get_url() -> String {
 	String::from("records/top/world_records?")
 }
 
-#[derive(Debug, Clone, serde::Serialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 /// All possible parameters for this route
 pub struct WorldRecordParams {
 	pub ids: Option<u32>,
@@ -37,7 +37,7 @@ impl Default for WorldRecordParams {
 
 impl super::super::super::IsParams for WorldRecordParams {}
 
-#[derive(Debug, Clone, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 /// The shape of the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2)'s response on this route
 // I can't think of a better name for this, lol
 pub struct WorldRecordHolder {

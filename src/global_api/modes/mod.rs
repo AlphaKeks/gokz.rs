@@ -7,7 +7,7 @@ pub fn get_url() -> String {
 	String::from("modes?")
 }
 
-#[derive(Debug, Clone, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 /// The shape of the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2)'s response on this route
 pub struct APIMode {
 	pub id: u8,
