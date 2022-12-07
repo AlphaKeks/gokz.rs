@@ -82,27 +82,6 @@ pub async fn get_bans(
 	}
 }
 
-#[cfg(test)]
-#[tokio::test]
-#[ignore = "expensive"]
-async fn get_bans_test() {
-	let client = reqwest::Client::new();
-
-	let no_bans = SteamID::new("STEAM_1:0:165881949").unwrap();
-
-	match get_bans(no_bans, &client).await {
-		Err(why) => println!("Test successful: {:#?}", why),
-		Ok(bans) => panic!("Test failed: {:#?}", bans),
-	}
-
-	let bans = SteamID::new("STEAM_1:1:161178172").unwrap();
-
-	match get_bans(bans, &client).await {
-		Err(why) => panic!("Test failed: {:#?}", why),
-		Ok(bans) => println!("Test successful: {:#?}", bans),
-	}
-}
-
 /// Will make an API request for all global maps. Since the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2) contains more maps than
 /// actually valid / "global" maps, this function will ensure to only request maps marked as
 /// `validated`.
@@ -124,18 +103,6 @@ pub async fn get_maps(client: &reqwest::Client) -> Result<Vec<maps::KZMap>, Erro
 		Err(why) => {
 			return Err(Error { origin: why.origin + " > gokz_rs::global_api::get_maps", ..why })
 		},
-	}
-}
-
-#[cfg(test)]
-#[tokio::test]
-#[ignore = "expensive"]
-async fn get_maps_test() {
-	let client = reqwest::Client::new();
-
-	match get_maps(&client).await {
-		Err(why) => panic!("Test failed: {:#?}", why),
-		Ok(maps) => println!("Test successful: {} maps", maps.len()),
 	}
 }
 
@@ -171,23 +138,6 @@ pub async fn get_map(
 	}
 }
 
-#[cfg(test)]
-#[tokio::test]
-#[ignore = "expensive"]
-async fn get_map_test() {
-	let client = reqwest::Client::new();
-
-	match get_map(&MapIdentifier::Name(String::from("kz_lionharder")), &client).await {
-		Err(why) => panic!("Test failed: {:#?}", why),
-		Ok(map) => println!("Test successful: {:#?}", map),
-	}
-
-	match get_map(&MapIdentifier::ID(992), &client).await {
-		Err(why) => panic!("Test failed: {:#?}", why),
-		Ok(map) => println!("Test successful: {:#?}", map),
-	}
-}
-
 /// Will request all 3 [Modes](`crate::prelude::Mode`) from the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2).
 pub async fn get_modes(client: &reqwest::Client) -> Result<Vec<modes::APIMode>, Error> {
 	match api_request::<Vec<modes::APIMode>, _>(&modes::get_url(), EmptyParams, client).await {
@@ -209,18 +159,6 @@ pub async fn get_modes(client: &reqwest::Client) -> Result<Vec<modes::APIMode>, 
 	}
 }
 
-#[cfg(test)]
-#[tokio::test]
-#[ignore = "expensive"]
-async fn get_modes_test() {
-	let client = reqwest::Client::new();
-
-	match get_modes(&client).await {
-		Err(why) => panic!("Test failed: {:#?}", why),
-		Ok(modes) => println!("Test successful: {:#?}\n({} modes)", modes, modes.len()),
-	}
-}
-
 /// Will request a single mode from the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2).
 ///
 /// Note: You could either use a name or an id for this, it technically does not matter. I chose to
@@ -231,28 +169,6 @@ pub async fn get_mode(mode: &Mode, client: &reqwest::Client) -> Result<modes::AP
 		Err(why) => {
 			return Err(Error { origin: why.origin + " > gokz_rs::global_api::get_mode", ..why })
 		},
-	}
-}
-
-#[cfg(test)]
-#[tokio::test]
-#[ignore = "expensive"]
-async fn get_mode_test() {
-	let client = reqwest::Client::new();
-
-	match get_mode(&Mode::KZTimer, &client).await {
-		Err(why) => panic!("Test failed: {:#?}", why),
-		Ok(mode) => assert_eq!(200, mode.id),
-	}
-
-	match get_mode(&Mode::SimpleKZ, &client).await {
-		Err(why) => panic!("Test failed: {:#?}", why),
-		Ok(mode) => assert_eq!(201, mode.id),
-	}
-
-	match get_mode(&Mode::Vanilla, &client).await {
-		Err(why) => panic!("Test failed: {:#?}", why),
-		Ok(mode) => assert_eq!(202, mode.id),
 	}
 }
 
@@ -304,26 +220,6 @@ pub async fn get_player(
 	}
 }
 
-#[cfg(test)]
-#[tokio::test]
-#[ignore = "expensive"]
-async fn get_player_test() {
-	let client = reqwest::Client::new();
-
-	let alphakeks = PlayerIdentifier::SteamID(SteamID::new("STEAM_1:1:161178172").unwrap());
-	let charlie = PlayerIdentifier::Name(String::from("charlieeilrahc"));
-
-	match get_player(&alphakeks, &client).await {
-		Err(why) => panic!("Test failed: {:#?}", why),
-		Ok(player) => println!("Test successful: {:#?}", player),
-	}
-
-	match get_player(&charlie, &client).await {
-		Err(why) => panic!("Test failed: {:#?}", why),
-		Ok(player) => println!("Test successful: {:#?}", player),
-	}
-}
-
 /// Will request all record filters for a map.
 pub async fn get_filters(
 	map_id: i16,
@@ -341,18 +237,6 @@ pub async fn get_filters(
 		Err(why) => {
 			return Err(Error { origin: why.origin + " > gokz_rs::global_api::get_filters", ..why })
 		},
-	}
-}
-
-#[cfg(test)]
-#[tokio::test]
-#[ignore = "expensive"]
-async fn get_filters_test() {
-	let client = reqwest::Client::new();
-
-	match get_filters(992, &client).await {
-		Err(why) => panic!("Test failed: {:#?}", why),
-		Ok(filters) => println!("Test successfuly: {:#?}", filters),
 	}
 }
 
@@ -455,60 +339,6 @@ pub async fn get_unfinished(
 	return Ok(uncompleted);
 }
 
-#[cfg(test)]
-#[tokio::test]
-#[ignore = "expensive"]
-async fn get_unfinished_test() {
-	let client = reqwest::Client::new();
-
-	match get_unfinished(
-		&PlayerIdentifier::Name(String::from("AlphaKeks")),
-		&Mode::SimpleKZ,
-		true,
-		Some(7),
-		&client,
-	)
-	.await
-	{
-		Err(why) => panic!("Test failed: {:#?}", why),
-		Ok(maps) => println!(
-			"Test successful: {} maps left (alphakeks, skz, tp, t7)\n{:?}",
-			maps.len(),
-			maps
-		),
-	}
-
-	match get_unfinished(
-		&PlayerIdentifier::SteamID(SteamID::new("STEAM_1:0:135486492").unwrap()),
-		&Mode::KZTimer,
-		false,
-		None,
-		&client,
-	)
-	.await
-	{
-		Err(why) => panic!("Test failed: {:#?}", why),
-		Ok(maps) => {
-			println!("Test successful: {} maps left (jucci, kzt, pro)\n{:?}", maps.len(), maps)
-		},
-	}
-
-	match get_unfinished(
-		&PlayerIdentifier::SteamID(SteamID::new("STEAM_1:0:46898346").unwrap()),
-		&Mode::SimpleKZ,
-		true,
-		Some(7),
-		&client,
-	)
-	.await
-	{
-		Err(why) => panic!("Test failed: {:#?}", why),
-		Ok(maps) => {
-			println!("Test successful: {} maps left (charlie, skz, tp, t7)\n{:?}", maps.len(), maps)
-		},
-	}
-}
-
 /// Will request the #1 record on a given map.
 pub async fn get_wr(
 	map_identifier: &MapIdentifier,
@@ -547,31 +377,6 @@ pub async fn get_wr(
 		Err(why) => {
 			return Err(Error { origin: why.origin + " > gokz_rs::global_api::get_wr", ..why })
 		},
-	}
-}
-
-#[cfg(test)]
-#[tokio::test]
-#[ignore = "expensive"]
-async fn get_wr_test() {
-	let client = reqwest::Client::new();
-
-	match get_wr(
-		&MapIdentifier::Name(String::from("kz_lionharder")),
-		&Mode::SimpleKZ,
-		false,
-		0,
-		&client,
-	)
-	.await
-	{
-		Err(why) => panic!("Test failed: {:#?}", why),
-		Ok(wr) => println!("Test successful: {:#?}", wr),
-	}
-
-	match get_wr(&MapIdentifier::ID(992), &Mode::KZTimer, true, 0, &client).await {
-		Err(why) => panic!("Test failed: {:#?}", why),
-		Ok(wr) => println!("Test successful: {:#?}", wr),
 	}
 }
 
@@ -623,41 +428,6 @@ pub async fn get_pb(
 	}
 }
 
-#[cfg(test)]
-#[tokio::test]
-#[ignore = "expensive"]
-async fn get_pb_test() {
-	let client = reqwest::Client::new();
-
-	match get_pb(
-		&PlayerIdentifier::SteamID(SteamID::new("STEAM_1:1:161178172").unwrap()),
-		&MapIdentifier::Name(String::from("kz_lionharder")),
-		&Mode::SimpleKZ,
-		false,
-		0,
-		&client,
-	)
-	.await
-	{
-		Err(why) => panic!("Test failed: {:#?}", why),
-		Ok(wr) => println!("Test successful: {:#?}", wr),
-	}
-
-	match get_pb(
-		&PlayerIdentifier::Name(String::from("racist75")),
-		&MapIdentifier::ID(992),
-		&Mode::SimpleKZ,
-		true,
-		0,
-		&client,
-	)
-	.await
-	{
-		Err(why) => panic!("Test failed: {:#?}", why),
-		Ok(wr) => println!("Test successful: {:#?}", wr),
-	}
-}
-
 /// Will request the top 100 records on a given map.
 pub async fn get_maptop(
 	map_identifier: &MapIdentifier,
@@ -697,31 +467,6 @@ pub async fn get_maptop(
 		Err(why) => {
 			return Err(Error { origin: why.origin + " > gokz_rs::global_api::get_maptop", ..why })
 		},
-	}
-}
-
-#[cfg(test)]
-#[tokio::test]
-#[ignore = "expensive"]
-async fn get_maptop_test() {
-	let client = reqwest::Client::new();
-
-	match get_maptop(
-		&MapIdentifier::Name(String::from("kz_lionharder")),
-		&Mode::SimpleKZ,
-		false,
-		0,
-		&client,
-	)
-	.await
-	{
-		Err(why) => panic!("Test failed: {:#?}", why),
-		Ok(maptop) => println!("Test successful: {} records (lionharder, skz, pro)", maptop.len()),
-	}
-
-	match get_maptop(&MapIdentifier::ID(992), &Mode::KZTimer, true, 0, &client).await {
-		Err(why) => panic!("Test failed: {:#?}", why),
-		Ok(maptop) => println!("Test successful: {} records (lionharder, kzt, tp)", maptop.len()),
 	}
 }
 
@@ -770,26 +515,6 @@ pub async fn get_records(
 		Err(why) => {
 			return Err(Error { origin: why.origin + " > gokz_rs::global_api::get_times", ..why })
 		},
-	}
-}
-
-#[cfg(test)]
-#[tokio::test]
-#[ignore = "expensive"]
-async fn get_records_test() {
-	let client = reqwest::Client::new();
-
-	match get_records(
-		&PlayerIdentifier::Name(String::from("AlphaKeks")),
-		&Mode::SimpleKZ,
-		true,
-		0,
-		&client,
-	)
-	.await
-	{
-		Err(why) => panic!("Test failed: {:#?}", why),
-		Ok(records) => println!("Test successful: {} records (AlphaKeks, skz, tp)", records.len()),
 	}
 }
 
@@ -853,42 +578,6 @@ pub async fn get_recent(
 	Ok(records.remove(recent.1))
 }
 
-#[cfg(test)]
-#[tokio::test]
-#[ignore = "expensive"]
-async fn get_recent_test() {
-	let client = reqwest::Client::new();
-
-	let players = [
-		PlayerIdentifier::Name(String::from("AlphaKeks")),
-		PlayerIdentifier::SteamID(SteamID::new("STEAM_1:1:161178172").unwrap()),
-		PlayerIdentifier::Name(String::from("racist75")),
-		PlayerIdentifier::SteamID(SteamID::new("STEAM_1:1:152337044").unwrap()),
-		PlayerIdentifier::Name(String::from("𝘨𝘰𝘴ℎℎℎℎℎℎℎ")),
-		PlayerIdentifier::SteamID(SteamID::new("STEAM_1:0:165881949").unwrap()),
-		PlayerIdentifier::Name(String::from("charlieeilrahc")),
-		PlayerIdentifier::SteamID(SteamID::new("STEAM_1:0:46898346").unwrap()),
-		PlayerIdentifier::Name(String::from("Fob")),
-		PlayerIdentifier::SteamID(SteamID::new("STEAM_1:1:96787045").unwrap()),
-	];
-
-	for player in players {
-		match get_recent(&player, &client).await {
-			Ok(recent) => {
-				println!(
-					"{:?}'s recent: {} ({} {}) - {}",
-					&player,
-					&recent.map_name,
-					&recent.mode,
-					if &recent.teleports > &0 { "TP" } else { "PRO" },
-					&recent.time
-				);
-			},
-			Err(why) => panic!("Fail: {:#?}", why),
-		}
-	}
-}
-
 /// Will request the #placement of a given record.
 pub async fn get_place(
 	record_id: &u32,
@@ -906,32 +595,6 @@ pub async fn get_place(
 			return Err(Error { origin: why.origin + " > gokz_rs::global_api::get_place", ..why })
 		},
 	}
-}
-
-#[cfg(test)]
-#[tokio::test]
-#[ignore = "expensive"]
-async fn get_place_test() -> Result<(), Error> {
-	let client = reqwest::Client::new();
-
-	let lionharder_pb = get_pb(
-		&PlayerIdentifier::Name(String::from("AlphaKeks")),
-		&MapIdentifier::ID(992),
-		&Mode::SimpleKZ,
-		false,
-		0,
-		&client,
-	)
-	.await?;
-
-	match get_place(&lionharder_pb.id, &client).await {
-		Ok(place) => {
-			println!("Test successful: AlphaKeks is #{} on kz_lionharder (SKZ PRO).", place.0)
-		},
-		Err(why) => panic!("Test failed: {:#?}", why),
-	}
-
-	Ok(())
 }
 
 // --------------------------------------------------------------------------------------------- //
@@ -977,18 +640,6 @@ pub async fn health_check(client: &reqwest::Client) -> Result<health::FancyHealt
 	}
 }
 
-#[cfg(test)]
-#[tokio::test]
-#[ignore = "expensive"]
-async fn health_test() {
-	let client = reqwest::Client::new();
-
-	match health_check(&client).await {
-		Err(why) => panic!("Test failed: {:#?}", why),
-		Ok(data) => println!("Test successful: {:#?}", data),
-	}
-}
-
 /// Will iterate over a list of [maps](maps::Response) and check if any of them match a given
 /// [`MapIdentifier`].
 ///
@@ -1023,37 +674,6 @@ pub async fn is_global(
 	});
 }
 
-#[cfg(test)]
-#[tokio::test]
-#[ignore = "expensive"]
-async fn is_global_test() -> Result<(), Error> {
-	let client = reqwest::Client::new();
-
-	let global_maps = get_maps(&client).await?;
-
-	match is_global(&MapIdentifier::ID(1337), &global_maps).await {
-		Ok(what) => panic!("KZ really did come far, huh?\n{:#?}", what),
-		Err(why) => println!("Test successfully failed: {:#?}", why),
-	}
-
-	match is_global(&MapIdentifier::ID(992), &global_maps).await {
-		Err(why) => panic!("Test failed: {:#?}", why),
-		Ok(map) => println!("Test successfull: {:#?}", map),
-	}
-
-	match is_global(&MapIdentifier::Name(String::from("kz_lionHARDer")), &global_maps).await {
-		Err(why) => panic!("Test failed: {:#?}", why),
-		Ok(map) => println!("Test successfull: {:#?}", map),
-	}
-
-	match is_global(&MapIdentifier::Name(String::from("penis")), &global_maps).await {
-		Err(why) => panic!("Test failed: {:#?}", why),
-		Ok(map) => println!("Test successfull: {:#?}", map),
-	}
-
-	Ok(())
-}
-
 /// Returns download link to the replay of a given replay_id or an [`Error`]
 pub async fn get_replay(replay_id: u32) -> Result<String, Error> {
 	match replay_id {
@@ -1074,30 +694,6 @@ pub async fn get_replay(replay_id: u32) -> Result<String, Error> {
 	}
 }
 
-#[cfg(test)]
-#[tokio::test]
-#[ignore = "expensive"]
-async fn get_replay_test() -> Result<(), Error> {
-	let client = reqwest::Client::new();
-
-	let eventide_pb = get_pb(
-		&PlayerIdentifier::Name(String::from("AlphaKeks")),
-		&MapIdentifier::Name(String::from("kz_eventide")),
-		&Mode::SimpleKZ,
-		false,
-		0,
-		&client,
-	)
-	.await?;
-
-	match get_replay(eventide_pb.replay_id).await {
-		Err(why) => panic!("Test failed: {:#?}", why),
-		Ok(link) => println!("Test successful: {}", link),
-	};
-
-	Ok(())
-}
-
 /// Will fetch a record by its ID.
 pub async fn get_record(
 	record_id: &u32,
@@ -1106,18 +702,6 @@ pub async fn get_record(
 	let params = records::top::RecordParams { tickrate: None, limit: None, ..Default::default() };
 	api_request::<records::top::Record, _>(&format!("records/{record_id}"), params, client).await
 }
-
-#[tokio::test]
-#[ignore = "expensive"]
-async fn get_record_test() {
-	let client = reqwest::Client::new();
-
-	match get_record(&328472, &client).await {
-		Err(why) => panic!("Test failed: {:#?}", why),
-		Ok(record) => println!("Test successful: {:#?}", record),
-	}
-}
-
 /// Will return a Vec<String> of all global map names
 pub async fn get_mapcycle(
 	tier: Option<u8>,
@@ -1153,23 +737,436 @@ pub async fn get_mapcycle(
 	}
 }
 
-#[tokio::test]
-#[ignore = "expensive"]
-async fn get_mapcycle_test() {
-	let client = reqwest::Client::new();
+#[cfg(test)]
+mod tests {
+	use super::*;
 
-	match get_mapcycle(Some(7), &client).await {
-		Err(why) => panic!("Test failed: {:#?}", why),
-		Ok(map_names) => println!("Test successful (T7): {:#?}", map_names),
+	#[tokio::test]
+	#[ignore = "expensive"]
+	async fn get_bans_test() {
+		let client = reqwest::Client::new();
+
+		let no_bans = SteamID::new("STEAM_1:0:165881949").unwrap();
+
+		match get_bans(no_bans, &client).await {
+			Err(why) => println!("Test successful: {:#?}", why),
+			Ok(bans) => panic!("Test failed: {:#?}", bans),
+		}
+
+		let bans = SteamID::new("STEAM_1:1:161178172").unwrap();
+
+		match get_bans(bans, &client).await {
+			Err(why) => panic!("Test failed: {:#?}", why),
+			Ok(bans) => println!("Test successful: {:#?}", bans),
+		}
 	}
 
-	match get_mapcycle(None, &client).await {
-		Err(why) => panic!("Test failed: {:#?}", why),
-		Ok(map_names) => println!("Test successful (all): {:#?}", map_names),
+	#[tokio::test]
+	#[ignore = "expensive"]
+	async fn get_maps_test() {
+		let client = reqwest::Client::new();
+
+		match get_maps(&client).await {
+			Err(why) => panic!("Test failed: {:#?}", why),
+			Ok(maps) => println!("Test successful: {} maps", maps.len()),
+		}
 	}
 
-	match get_mapcycle(Some(3), &client).await {
-		Err(why) => panic!("Test failed: {:#?}", why),
-		Ok(map_names) => println!("Test successful (T3): {:#?}", map_names),
+	#[tokio::test]
+	#[ignore = "expensive"]
+	async fn get_map_test() {
+		let client = reqwest::Client::new();
+
+		match get_map(&MapIdentifier::Name(String::from("kz_lionharder")), &client).await {
+			Err(why) => panic!("Test failed: {:#?}", why),
+			Ok(map) => println!("Test successful: {:#?}", map),
+		}
+
+		match get_map(&MapIdentifier::ID(992), &client).await {
+			Err(why) => panic!("Test failed: {:#?}", why),
+			Ok(map) => println!("Test successful: {:#?}", map),
+		}
+	}
+
+	#[tokio::test]
+	#[ignore = "expensive"]
+	async fn get_modes_test() {
+		let client = reqwest::Client::new();
+
+		match get_modes(&client).await {
+			Err(why) => panic!("Test failed: {:#?}", why),
+			Ok(modes) => println!("Test successful: {:#?}\n({} modes)", modes, modes.len()),
+		}
+	}
+
+	#[tokio::test]
+	#[ignore = "expensive"]
+	async fn get_mode_test() {
+		let client = reqwest::Client::new();
+
+		match get_mode(&Mode::KZTimer, &client).await {
+			Err(why) => panic!("Test failed: {:#?}", why),
+			Ok(mode) => assert_eq!(200, mode.id),
+		}
+
+		match get_mode(&Mode::SimpleKZ, &client).await {
+			Err(why) => panic!("Test failed: {:#?}", why),
+			Ok(mode) => assert_eq!(201, mode.id),
+		}
+
+		match get_mode(&Mode::Vanilla, &client).await {
+			Err(why) => panic!("Test failed: {:#?}", why),
+			Ok(mode) => assert_eq!(202, mode.id),
+		}
+	}
+
+	#[tokio::test]
+	#[ignore = "expensive"]
+	async fn get_player_test() {
+		let client = reqwest::Client::new();
+
+		let alphakeks = PlayerIdentifier::SteamID(SteamID::new("STEAM_1:1:161178172").unwrap());
+		let charlie = PlayerIdentifier::Name(String::from("charlieeilrahc"));
+
+		match get_player(&alphakeks, &client).await {
+			Err(why) => panic!("Test failed: {:#?}", why),
+			Ok(player) => println!("Test successful: {:#?}", player),
+		}
+
+		match get_player(&charlie, &client).await {
+			Err(why) => panic!("Test failed: {:#?}", why),
+			Ok(player) => println!("Test successful: {:#?}", player),
+		}
+	}
+
+	#[tokio::test]
+	#[ignore = "expensive"]
+	async fn get_filters_test() {
+		let client = reqwest::Client::new();
+
+		match get_filters(992, &client).await {
+			Err(why) => panic!("Test failed: {:#?}", why),
+			Ok(filters) => println!("Test successfuly: {:#?}", filters),
+		}
+	}
+
+	#[tokio::test]
+	#[ignore = "expensive"]
+	async fn get_unfinished_test() {
+		let client = reqwest::Client::new();
+
+		match get_unfinished(
+			&PlayerIdentifier::Name(String::from("AlphaKeks")),
+			&Mode::SimpleKZ,
+			true,
+			Some(7),
+			&client,
+		)
+		.await
+		{
+			Err(why) => panic!("Test failed: {:#?}", why),
+			Ok(maps) => println!(
+				"Test successful: {} maps left (alphakeks, skz, tp, t7)\n{:?}",
+				maps.len(),
+				maps
+			),
+		}
+
+		match get_unfinished(
+			&PlayerIdentifier::SteamID(SteamID::new("STEAM_1:0:135486492").unwrap()),
+			&Mode::KZTimer,
+			false,
+			None,
+			&client,
+		)
+		.await
+		{
+			Err(why) => panic!("Test failed: {:#?}", why),
+			Ok(maps) => {
+				println!("Test successful: {} maps left (jucci, kzt, pro)\n{:?}", maps.len(), maps)
+			},
+		}
+
+		match get_unfinished(
+			&PlayerIdentifier::SteamID(SteamID::new("STEAM_1:0:46898346").unwrap()),
+			&Mode::SimpleKZ,
+			true,
+			Some(7),
+			&client,
+		)
+		.await
+		{
+			Err(why) => panic!("Test failed: {:#?}", why),
+			Ok(maps) => {
+				println!(
+					"Test successful: {} maps left (charlie, skz, tp, t7)\n{:?}",
+					maps.len(),
+					maps
+				)
+			},
+		}
+	}
+
+	#[tokio::test]
+	#[ignore = "expensive"]
+	async fn get_wr_test() {
+		let client = reqwest::Client::new();
+
+		match get_wr(
+			&MapIdentifier::Name(String::from("kz_lionharder")),
+			&Mode::SimpleKZ,
+			false,
+			0,
+			&client,
+		)
+		.await
+		{
+			Err(why) => panic!("Test failed: {:#?}", why),
+			Ok(wr) => println!("Test successful: {:#?}", wr),
+		}
+
+		match get_wr(&MapIdentifier::ID(992), &Mode::KZTimer, true, 0, &client).await {
+			Err(why) => panic!("Test failed: {:#?}", why),
+			Ok(wr) => println!("Test successful: {:#?}", wr),
+		}
+	}
+
+	#[tokio::test]
+	#[ignore = "expensive"]
+	async fn get_pb_test() {
+		let client = reqwest::Client::new();
+
+		match get_pb(
+			&PlayerIdentifier::SteamID(SteamID::new("STEAM_1:1:161178172").unwrap()),
+			&MapIdentifier::Name(String::from("kz_lionharder")),
+			&Mode::SimpleKZ,
+			false,
+			0,
+			&client,
+		)
+		.await
+		{
+			Err(why) => panic!("Test failed: {:#?}", why),
+			Ok(wr) => println!("Test successful: {:#?}", wr),
+		}
+
+		match get_pb(
+			&PlayerIdentifier::Name(String::from("racist75")),
+			&MapIdentifier::ID(992),
+			&Mode::SimpleKZ,
+			true,
+			0,
+			&client,
+		)
+		.await
+		{
+			Err(why) => panic!("Test failed: {:#?}", why),
+			Ok(wr) => println!("Test successful: {:#?}", wr),
+		}
+	}
+
+	#[tokio::test]
+	#[ignore = "expensive"]
+	async fn get_maptop_test() {
+		let client = reqwest::Client::new();
+
+		match get_maptop(
+			&MapIdentifier::Name(String::from("kz_lionharder")),
+			&Mode::SimpleKZ,
+			false,
+			0,
+			&client,
+		)
+		.await
+		{
+			Err(why) => panic!("Test failed: {:#?}", why),
+			Ok(maptop) => {
+				println!("Test successful: {} records (lionharder, skz, pro)", maptop.len())
+			},
+		}
+
+		match get_maptop(&MapIdentifier::ID(992), &Mode::KZTimer, true, 0, &client).await {
+			Err(why) => panic!("Test failed: {:#?}", why),
+			Ok(maptop) => {
+				println!("Test successful: {} records (lionharder, kzt, tp)", maptop.len())
+			},
+		}
+	}
+
+	#[tokio::test]
+	#[ignore = "expensive"]
+	async fn get_records_test() {
+		let client = reqwest::Client::new();
+
+		match get_records(
+			&PlayerIdentifier::Name(String::from("AlphaKeks")),
+			&Mode::SimpleKZ,
+			true,
+			0,
+			&client,
+		)
+		.await
+		{
+			Err(why) => panic!("Test failed: {:#?}", why),
+			Ok(records) => {
+				println!("Test successful: {} records (AlphaKeks, skz, tp)", records.len())
+			},
+		}
+	}
+
+	#[tokio::test]
+	#[ignore = "expensive"]
+	async fn get_recent_test() {
+		let client = reqwest::Client::new();
+
+		let players = [
+			PlayerIdentifier::Name(String::from("AlphaKeks")),
+			PlayerIdentifier::SteamID(SteamID::new("STEAM_1:1:161178172").unwrap()),
+			PlayerIdentifier::Name(String::from("racist75")),
+			PlayerIdentifier::SteamID(SteamID::new("STEAM_1:1:152337044").unwrap()),
+			PlayerIdentifier::Name(String::from("𝘨𝘰𝘴ℎℎℎℎℎℎℎ")),
+			PlayerIdentifier::SteamID(SteamID::new("STEAM_1:0:165881949").unwrap()),
+			PlayerIdentifier::Name(String::from("charlieeilrahc")),
+			PlayerIdentifier::SteamID(SteamID::new("STEAM_1:0:46898346").unwrap()),
+			PlayerIdentifier::Name(String::from("Fob")),
+			PlayerIdentifier::SteamID(SteamID::new("STEAM_1:1:96787045").unwrap()),
+		];
+
+		for player in players {
+			match get_recent(&player, &client).await {
+				Ok(recent) => {
+					println!(
+						"{:?}'s recent: {} ({} {}) - {}",
+						&player,
+						&recent.map_name,
+						&recent.mode,
+						if &recent.teleports > &0 { "TP" } else { "PRO" },
+						&recent.time
+					);
+				},
+				Err(why) => panic!("Fail: {:#?}", why),
+			}
+		}
+	}
+
+	#[tokio::test]
+	#[ignore = "expensive"]
+	async fn get_place_test() -> Result<(), Error> {
+		let client = reqwest::Client::new();
+
+		let lionharder_pb = get_pb(
+			&PlayerIdentifier::Name(String::from("AlphaKeks")),
+			&MapIdentifier::ID(992),
+			&Mode::SimpleKZ,
+			false,
+			0,
+			&client,
+		)
+		.await?;
+
+		match get_place(&lionharder_pb.id, &client).await {
+			Ok(place) => {
+				println!("Test successful: AlphaKeks is #{} on kz_lionharder (SKZ PRO).", place.0)
+			},
+			Err(why) => panic!("Test failed: {:#?}", why),
+		}
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	#[ignore = "expensive"]
+	async fn health_test() {
+		let client = reqwest::Client::new();
+
+		match health_check(&client).await {
+			Err(why) => panic!("Test failed: {:#?}", why),
+			Ok(data) => println!("Test successful: {:#?}", data),
+		}
+	}
+
+	#[tokio::test]
+	#[ignore = "expensive"]
+	async fn is_global_test() -> Result<(), Error> {
+		let client = reqwest::Client::new();
+
+		let global_maps = get_maps(&client).await?;
+
+		match is_global(&MapIdentifier::ID(1337), &global_maps).await {
+			Ok(what) => panic!("KZ really did come far, huh?\n{:#?}", what),
+			Err(why) => println!("Test successfully failed: {:#?}", why),
+		}
+
+		match is_global(&MapIdentifier::ID(992), &global_maps).await {
+			Err(why) => panic!("Test failed: {:#?}", why),
+			Ok(map) => println!("Test successfull: {:#?}", map),
+		}
+
+		match is_global(&MapIdentifier::Name(String::from("kz_lionHARDer")), &global_maps).await {
+			Err(why) => panic!("Test failed: {:#?}", why),
+			Ok(map) => println!("Test successfull: {:#?}", map),
+		}
+
+		match is_global(&MapIdentifier::Name(String::from("penis")), &global_maps).await {
+			Err(why) => panic!("Test failed: {:#?}", why),
+			Ok(map) => println!("Test successfull: {:#?}", map),
+		}
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	#[ignore = "expensive"]
+	async fn get_replay_test() -> Result<(), Error> {
+		let client = reqwest::Client::new();
+
+		let eventide_pb = get_pb(
+			&PlayerIdentifier::Name(String::from("AlphaKeks")),
+			&MapIdentifier::Name(String::from("kz_eventide")),
+			&Mode::SimpleKZ,
+			false,
+			0,
+			&client,
+		)
+		.await?;
+
+		match get_replay(eventide_pb.replay_id).await {
+			Err(why) => panic!("Test failed: {:#?}", why),
+			Ok(link) => println!("Test successful: {}", link),
+		};
+
+		Ok(())
+	}
+
+	#[tokio::test]
+	#[ignore = "expensive"]
+	async fn get_record_test() {
+		let client = reqwest::Client::new();
+
+		match get_record(&328472, &client).await {
+			Err(why) => panic!("Test failed: {:#?}", why),
+			Ok(record) => println!("Test successful: {:#?}", record),
+		}
+	}
+
+	#[tokio::test]
+	#[ignore = "expensive"]
+	async fn get_mapcycle_test() {
+		let client = reqwest::Client::new();
+
+		match get_mapcycle(Some(7), &client).await {
+			Err(why) => panic!("Test failed: {:#?}", why),
+			Ok(map_names) => println!("Test successful (T7): {:#?}", map_names),
+		}
+
+		match get_mapcycle(None, &client).await {
+			Err(why) => panic!("Test failed: {:#?}", why),
+			Ok(map_names) => println!("Test successful (all): {:#?}", map_names),
+		}
+
+		match get_mapcycle(Some(3), &client).await {
+			Err(why) => panic!("Test failed: {:#?}", why),
+			Ok(map_names) => println!("Test successful (T3): {:#?}", map_names),
+		}
 	}
 }
