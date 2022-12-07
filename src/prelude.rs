@@ -38,15 +38,8 @@ impl Display for ErrorKind {
 /// ```
 /// use gokz_rs::prelude::Mode;
 ///
-/// // results in an [`Error`]
-/// let mode = Mode::from_id(69);
-///
-/// // Err {
-/// //     kind: ErrorKind::Input,
-/// //     origin: String::from("gokz_rs::prelude::Mode::from_id"),
-/// //     tldr: format!("Cannot convert {} to a mode.", input),
-/// //     raw: None,
-/// // }
+/// // results in an [`Error`], since `69` is not a valid ID for a Mode.
+/// let mode = Mode::try_from(69);
 /// ```
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Error {
@@ -72,7 +65,7 @@ impl<'a> SteamID {
 	/// A function to test whether a String qualifies as a [`SteamID`] or not.
 	///
 	/// # Examples
-	/// ```rust
+	/// ```
 	/// use gokz_rs::prelude::SteamID;
 	///
 	/// let steam_id = "STEAM_1:1:161178172";

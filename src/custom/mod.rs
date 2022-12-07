@@ -13,6 +13,12 @@ pub async fn get_profile(
 	mode: &Mode,
 	client: &reqwest::Client,
 ) -> Result<profile::Response, Error> {
+	log::info!(
+		"get_profile() => Function Input {{ player_identifier: {}, mode: {} }}",
+		player_identifier,
+		mode
+	);
+
 	let mut player = match get_player(player_identifier, client).await {
 		Ok(data) => profile::Response {
 			name: Some(data.name),
@@ -46,6 +52,7 @@ pub async fn get_profile(
 		.unwrap_or(Vec::new());
 
 	if tp.len() == 0 && pro.len() == 0 {
+		log::warn!("Received an empty response from the GlobalAPI.");
 		return Err(Error {
 			kind: ErrorKind::NoData,
 			tldr: String::from("This player has 0 completions."),
