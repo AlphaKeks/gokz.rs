@@ -56,6 +56,15 @@ where
 						});
 					},
 				},
+				StatusCode::INTERNAL_SERVER_ERROR => {
+					log::warn!("GlobalAPI Internal Server Error");
+					return Err(Error {
+						kind: ErrorKind::GlobalAPI,
+						origin: String::from("gokz_rs::global_api::api_request"),
+						tldr: String::from("GlobalAPI returned an internal server error. You can check it's health via `/apistatus`."),
+						raw: None
+					});
+				},
 				code => {
 					log::warn!("Got a response from the GlobalAPI, but not an `OK` Code.");
 					log::warn!("Code: {}", &code);
