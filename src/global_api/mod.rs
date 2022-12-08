@@ -668,6 +668,8 @@ pub async fn get_recent(
 ) -> Result<records::top::Record, Error> {
 	log::info!("[START] get_recent() => Function Input {{ player: {:?} }}", player);
 
+	let mut potential_err = None;
+
 	// get all records from a player
 	// this needs to be very specific or the GlobalAPI won't give accurate results
 	let modes = [Mode::KZTimer, Mode::SimpleKZ, Mode::Vanilla];
@@ -681,18 +683,28 @@ pub async fn get_recent(
 	])
 	.await)
 		.into_iter() // Vec<Result<Vec<Response>, Error>>
-		.filter_map(|result| result.ok()) // filter out errors
+		.filter_map(|result| {
+			// filter out errors
+			if let Err(why) = &result {
+				potential_err = Some(why.clone());
+			}
+			result.ok()
+		})
 		.flatten() // flatten into single Vec
 		.collect::<Vec<_>>(); // Vec<Response>
 
 	if records.len() < 1 {
 		log::warn!("Received an empty response from the GlobalAPI.");
-		return Err(Error {
-			kind: ErrorKind::NoData,
-			origin: String::from("gokz_rs::global_api::get_recent"),
-			tldr: String::from("No recent PB found."),
-			raw: None,
-		});
+		if let Some(err) = potential_err {
+			return Err(err);
+		} else {
+			return Err(Error {
+				kind: ErrorKind::NoData,
+				origin: String::from("gokz_rs::global_api::get_recent"),
+				tldr: String::from("No recent PB found."),
+				raw: None,
+			});
+		};
 	}
 
 	// store the most recent pb as (unix_timestamp, index)
@@ -978,7 +990,7 @@ mod tests {
 	}
 
 	#[tokio::test]
-	// #[ignore = "expensive"]
+	#[ignore = "expensive"]
 	async fn get_maps_test() {
 		let client = reqwest::Client::new();
 
