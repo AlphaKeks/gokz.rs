@@ -65,6 +65,15 @@ where
 						raw: None
 					});
 				},
+				StatusCode::TOO_MANY_REQUESTS => {
+					log::warn!("We're getting rate limited");
+					return Err(Error {
+						kind: ErrorKind::GlobalAPI,
+						origin: String::from("gokz_rs::global_api::api_request"),
+						tldr: String::from("Currently too many requests are being made. Please wait a bit before using the next command."),
+						raw: None
+					});
+				},
 				code => {
 					log::warn!("Got a response from the GlobalAPI, but not an `OK` Code.");
 					log::warn!("Code: {}", &code);
