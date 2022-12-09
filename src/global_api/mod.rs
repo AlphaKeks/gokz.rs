@@ -228,7 +228,7 @@ pub async fn get_modes(client: &reqwest::Client) -> Result<Vec<modes::APIMode>, 
 		},
 	};
 
-	log::info!("[START] get_modes() => Result {:?}", &result);
+	log::info!("[END] get_modes() => Result {:?}", &result);
 
 	return result;
 }
