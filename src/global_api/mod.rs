@@ -132,7 +132,7 @@ pub async fn get_bans(
 	return result;
 }
 
-/// Will make an API request for all global maps. Since the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2) contains more maps than
+/// Will make an API request for all _validated_ global maps. Since the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2) contains more maps than
 /// actually valid / "global" maps, this function will ensure to only request maps marked as
 /// `validated`.
 pub async fn get_maps(client: &reqwest::Client) -> Result<Vec<maps::KZMap>, Error> {
@@ -141,6 +141,40 @@ pub async fn get_maps(client: &reqwest::Client) -> Result<Vec<maps::KZMap>, Erro
 	log::info!("[START] get_maps() => Params {:?}", &params);
 
 	let result = match api_request::<Vec<maps::KZMap>, _>(&maps::get_url(), params, client).await {
+		Ok(maps) => {
+			if maps.len() > 0 {
+				Ok(maps)
+			} else {
+				log::warn!("Received an empty response from the GlobalAPI.");
+				return Err(Error {
+					kind: ErrorKind::GlobalAPI,
+					origin: String::from("gokz_rs::global_api::get_maps"),
+					tldr: String::from("No maps found."),
+					raw: None,
+				});
+			}
+		},
+		Err(why) => {
+			return Err(Error { origin: why.origin + " > gokz_rs::global_api::get_maps", ..why })
+		},
+	};
+
+	log::info!("[END] get_maps() => Result {:?}", &result);
+
+	return result;
+}
+
+/// Will make an API request for all global maps.
+pub async fn get_all_maps(client: &reqwest::Client) -> Result<Vec<maps::KZMap>, Error> {
+	log::info!("[START] get_maps()");
+
+	let result = match api_request::<Vec<maps::KZMap>, _>(
+		&maps::get_url(),
+		maps::MapParams::default(),
+		client,
+	)
+	.await
+	{
 		Ok(maps) => {
 			if maps.len() > 0 {
 				Ok(maps)
@@ -995,6 +1029,17 @@ mod tests {
 		let client = reqwest::Client::new();
 
 		match get_maps(&client).await {
+			Err(why) => panic!("Test failed: {:#?}", why),
+			Ok(maps) => println!("Test successful: {} maps", maps.len()),
+		}
+	}
+
+	#[tokio::test]
+	// #[ignore = "expensive"]
+	async fn get_all_maps_test() {
+		let client = reqwest::Client::new();
+
+		match get_all_maps(&client).await {
 			Err(why) => panic!("Test failed: {:#?}", why),
 			Ok(maps) => println!("Test successful: {} maps", maps.len()),
 		}
