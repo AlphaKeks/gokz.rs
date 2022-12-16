@@ -79,14 +79,35 @@ impl TryFrom<String> for SteamID {
 	}
 }
 
+impl TryFrom<PlayerIdentifier> for SteamID {
+	type Error = Error;
+
+	fn try_from(value: PlayerIdentifier) -> Result<Self, Self::Error> {
+		if let PlayerIdentifier::SteamID(steam_id) = value {
+			return Ok(steam_id);
+		}
+
+		Err(Error::InvalidInput {
+			msg: format!(
+				"[{}:{}] TryFrom<PlayerIdentifier> for SteamID failed => `{}`",
+				file!(),
+				line!(),
+				value
+			),
+			tldr: format!("`{}` is not a SteamID.", value),
+			raw: Some(value.to_string()),
+		})
+	}
+}
+
 /* --------------------------------------------------------------------------------------------- */
 
 /// The 3 gamemodes currently available in [GOKZ](https://github.com/KZGlobalTeam/gokz)
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub enum Mode {
-	KZTimer,
-	SimpleKZ,
-	Vanilla,
+	KZTimer = 200,
+	SimpleKZ = 201,
+	Vanilla = 202,
 }
 
 impl Mode {
@@ -179,6 +200,77 @@ impl From<Mode> for u8 {
 
 /* --------------------------------------------------------------------------------------------- */
 
+/// A Player can be represented in multiple ways when making requests to the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V).
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum PlayerIdentifier {
+	Name(String),
+	SteamID(SteamID),
+	SteamID64(u64),
+}
+
+impl std::fmt::Display for PlayerIdentifier {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			PlayerIdentifier::Name(name) => write!(f, "{}", name),
+			PlayerIdentifier::SteamID(steam_id) => write!(f, "{}", steam_id),
+			PlayerIdentifier::SteamID64(steam_id64) => write!(f, "{}", steam_id64),
+		}
+	}
+}
+
+impl std::str::FromStr for PlayerIdentifier {
+	type Err = std::convert::Infallible;
+
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		if let Ok(steam_id) = SteamID::new(s) {
+			return Ok(Self::SteamID(steam_id));
+		}
+
+		Ok(Self::Name(s.to_owned()))
+	}
+}
+
+impl From<String> for PlayerIdentifier {
+	fn from(input: String) -> Self {
+		input.parse().expect("Infallible Error")
+	}
+}
+
+impl From<SteamID> for PlayerIdentifier {
+	fn from(steam_id: SteamID) -> Self {
+		Self::SteamID(steam_id)
+	}
+}
+
+impl From<u64> for PlayerIdentifier {
+	fn from(steam_id64: u64) -> Self {
+		Self::SteamID64(steam_id64)
+	}
+}
+
+impl TryFrom<PlayerIdentifier> for u64 {
+	type Error = Error;
+
+	fn try_from(value: PlayerIdentifier) -> Result<Self, Self::Error> {
+		if let PlayerIdentifier::SteamID64(steam_id64) = value {
+			return Ok(steam_id64);
+		}
+
+		Err(Error::InvalidInput {
+			msg: format!(
+				"[{}:{}] TryFrom<PlayerIdentifier> for u64 failed => `{}`",
+				file!(),
+				line!(),
+				value
+			),
+			tldr: format!("`{}` is not a SteamID64.", value),
+			raw: Some(value.to_string()),
+		})
+	}
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
 #[cfg(test)]
 mod tests {
 	use super::*;
@@ -194,6 +286,17 @@ mod tests {
 		assert!(dbg!(invalid1).is_err());
 		assert!(dbg!(invalid2).is_err());
 		assert!(dbg!(invalid3).is_err());
+	}
+
+	#[test]
+	fn steam_id_from_playeridentifier() {
+		let name = PlayerIdentifier::Name(String::from("AlphaKeks"));
+		let steam_id = PlayerIdentifier::SteamID(SteamID::new("STEAM_1:1:161178172").unwrap());
+		let steam_id64 = PlayerIdentifier::SteamID64(76561198282622073);
+
+		assert!(SteamID::try_from(name).is_err());
+		assert!(SteamID::try_from(steam_id).is_ok());
+		assert!(SteamID::try_from(steam_id64).is_err());
 	}
 
 	#[test]
@@ -242,5 +345,31 @@ mod tests {
 		assert!("vanillakz".parse::<Mode>().is_ok());
 		assert!("vanilla_kz".parse::<Mode>().is_ok());
 		assert!("vnl".parse::<Mode>().is_ok());
+	}
+
+	#[test]
+	fn mode_try_from_u8() {
+		for i in 0..=u8::MAX {
+			match i {
+				200 => assert!(Mode::try_from(200).is_ok()),
+				201 => assert!(Mode::try_from(201).is_ok()),
+				202 => assert!(Mode::try_from(202).is_ok()),
+				n => assert!(Mode::try_from(n).is_err()),
+			}
+		}
+	}
+
+	#[test]
+	fn mode_into_u8() {
+		assert_eq!(200, Mode::KZTimer as u8);
+		assert_eq!(201, Mode::SimpleKZ as u8);
+		assert_eq!(202, Mode::Vanilla as u8);
+
+		let kzt: u8 = Mode::KZTimer.into();
+		assert_eq!(200, kzt);
+		let skz: u8 = Mode::SimpleKZ.into();
+		assert_eq!(201, skz);
+		let vnl: u8 = Mode::Vanilla.into();
+		assert_eq!(202, vnl);
 	}
 }
