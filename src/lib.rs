@@ -1,6 +1,4 @@
-pub mod custom;
-pub mod global_api;
-pub mod kzgo;
-pub mod prelude;
-
+//! A Rust wrapper for the [CS:GO KZ GlobalAPI]().
+//!
+//! This crate provides a bunch of utility functions to communicate with KZ's GlobalAPI.
 pub use reqwest::Client;
