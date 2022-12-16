@@ -103,7 +103,7 @@ impl TryFrom<PlayerIdentifier> for SteamID {
 /* --------------------------------------------------------------------------------------------- */
 
 /// The 3 gamemodes currently available in [GOKZ](https://github.com/KZGlobalTeam/gokz)
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub enum Mode {
 	KZTimer = 200,
 	SimpleKZ = 201,
@@ -266,6 +266,152 @@ impl TryFrom<PlayerIdentifier> for u64 {
 			tldr: format!("`{}` is not a SteamID64.", value),
 			raw: Some(value.to_string()),
 		})
+	}
+}
+
+/* --------------------------------------------------------------------------------------------- */
+
+/// Every player who has joined a [GOKZ](https://github.com/KZGlobalTeam/gokz) server with version 3.0.0 or higher will get a [`Rank`]
+/// assigned to them. Which [`Rank`] they will have is based on the player's total points in a
+/// given [`Mode`].
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub enum Rank {
+	Legend,
+	Master,
+	Pro,
+	Semipro,
+	ExpertPlus,
+	Expert,
+	ExpertMinus,
+	SkilledPlus,
+	Skilled,
+	SkilledMinus,
+	RegularPlus,
+	Regular,
+	RegularMinus,
+	CasualPlus,
+	Casual,
+	CasualMinus,
+	AmateurPlus,
+	Amateur,
+	AmateurMinus,
+	BeginnerPlus,
+	Beginner,
+	BeginnerMinus,
+	New,
+}
+
+impl Rank {
+	pub fn from_points(points: u32, mode: &Mode) -> Self {
+		let (kzt, skz, vnl) = (&Mode::KZTimer, &Mode::SimpleKZ, &Mode::Vanilla);
+		match points {
+			0 => Self::New,
+			1..=499 => Self::BeginnerMinus,
+			500..=999 => Self::Beginner,
+			1_000..=1_999 => Self::BeginnerPlus,
+			2_000..=4_999 => Self::AmateurMinus,
+			5_000..=9_999 => Self::Amateur,
+			10_000..=19_999 => Self::AmateurPlus,
+			20_000..=29_999 => Self::CasualMinus,
+			30_000..=39_999 => Self::Casual,
+			40_000..=59_999 => Self::CasualPlus,
+			60_000..=69_999 => Self::RegularMinus,
+			70_000..=79_999 => Self::Regular,
+			80_000..=99_999 => Self::RegularPlus,
+			100_000..=119_999 => Self::SkilledMinus,
+			120_000..=139_999 if mode == vnl => Self::Skilled,
+			120_000..=149_999 if mode != vnl => Self::Skilled,
+			140_000..=159_999 if mode == vnl => Self::SkilledPlus,
+			150_000..=199_999 if mode != vnl => Self::SkilledPlus,
+			160_000..=179_999 if mode == vnl => Self::ExpertMinus,
+			200_000..=229_999 if mode != vnl => Self::ExpertMinus,
+			180_000..=199_999 if mode == vnl => Self::Expert,
+			230_000..=249_999 if mode != vnl => Self::Expert,
+			200_000..=249_999 if mode == vnl => Self::ExpertPlus,
+			250_000..=299_999 if mode == skz => Self::ExpertPlus,
+			250_000..=399_999 if mode == kzt => Self::ExpertPlus,
+			250_000..=299_999 if mode == vnl => Self::Semipro,
+			300_000..=399_999 if mode == skz => Self::Semipro,
+			400_000..=599_999 if mode == kzt => Self::Semipro,
+			300_000..=399_999 if mode == vnl => Self::Pro,
+			400_000..=499_999 if mode == skz => Self::Pro,
+			600_000..=799_999 if mode == kzt => Self::Pro,
+			400_000..=599_999 if mode == vnl => Self::Master,
+			500_000..=799_999 if mode == skz => Self::Master,
+			800_000..=999_999 if mode == kzt => Self::Master,
+			(600_000..) if mode == vnl => Self::Legend,
+			(800_000..) if mode == skz => Self::Legend,
+			(1_000_000..) if mode == kzt => Self::Legend,
+			_ => Self::Legend,
+		}
+	}
+}
+
+impl std::fmt::Display for Rank {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		let s = match self {
+			Rank::Legend => "Legend",
+			Rank::Master => "Master",
+			Rank::Pro => "Pro",
+			Rank::Semipro => "Semipro",
+			Rank::ExpertPlus => "Expert+",
+			Rank::Expert => "Expert",
+			Rank::ExpertMinus => "Expert-",
+			Rank::SkilledPlus => "Skilled+",
+			Rank::Skilled => "Skilled",
+			Rank::SkilledMinus => "Skilled-",
+			Rank::RegularPlus => "Regular+",
+			Rank::Regular => "Regular",
+			Rank::RegularMinus => "Regular-",
+			Rank::CasualPlus => "Casual+",
+			Rank::Casual => "Casual",
+			Rank::CasualMinus => "Casual-",
+			Rank::AmateurPlus => "Amateur+",
+			Rank::Amateur => "Amateur",
+			Rank::AmateurMinus => "Amateur-",
+			Rank::BeginnerPlus => "Beginner+",
+			Rank::Beginner => "Beginner",
+			Rank::BeginnerMinus => "Beginner-",
+			Rank::New => "New",
+		};
+		write!(f, "{}", s)
+	}
+}
+
+impl std::str::FromStr for Rank {
+	type Err = Error;
+
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		match s.to_lowercase().as_str() {
+			"legend" => Ok(Rank::Legend),
+			"master" => Ok(Rank::Master),
+			"pro" => Ok(Rank::Pro),
+			"semipro" => Ok(Rank::Semipro),
+			"expert+" | "expertplus" => Ok(Rank::ExpertPlus),
+			"expert" => Ok(Rank::Expert),
+			"expert-" | "expertminus" => Ok(Rank::ExpertMinus),
+			"skilled+" | "skilledplus" => Ok(Rank::SkilledPlus),
+			"skilled" => Ok(Rank::Skilled),
+			"skilled-" | "skilledminus" => Ok(Rank::SkilledMinus),
+			"regular+" | "regularplus" => Ok(Rank::RegularPlus),
+			"regular" => Ok(Rank::Regular),
+			"regular-" | "regularminus" => Ok(Rank::RegularMinus),
+			"casual+" | "casualplus" => Ok(Rank::CasualPlus),
+			"casual" => Ok(Rank::Casual),
+			"casual-" | "casualminus" => Ok(Rank::CasualMinus),
+			"amateur+" | "amateurplus" => Ok(Rank::AmateurPlus),
+			"amateur" => Ok(Rank::Amateur),
+			"amateur-" | "amateurminus" => Ok(Rank::AmateurMinus),
+			"beginner+" | "beginnerplus" => Ok(Rank::BeginnerPlus),
+			"beginner" => Ok(Rank::Beginner),
+			"beginner-" | "beginnerminus" => Ok(Rank::BeginnerMinus),
+			"new" => Ok(Rank::New),
+			input => Err(Error::InvalidInput {
+				msg: format!("[{}:{}] FromStr<Rank> failed => `{}`", file!(), line!(), input),
+				tldr: format!("`{}` is not a valid Mode.", input),
+				raw: Some(input.to_owned()),
+			}),
+		}
 	}
 }
 
