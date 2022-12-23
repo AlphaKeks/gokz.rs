@@ -3,18 +3,23 @@ use {
 	serde::{Deserialize, Serialize},
 };
 
-/* --------------------------------------------------------------------------------------------- */
-
-///
+/// The default Error type which gets returned from any function exposed by this crate.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum Error {
-	/// `msg` => format!("\[{}:{}\] <function> failed => `{}`", file!(), line!(), input)
-	/// `tldr` => Message to be sent to the user
-	/// `raw` => original user input
-	InvalidInput { msg: String, tldr: String, raw: Option<String> },
+pub struct Error {
+	pub(crate) kind: ErrorKind,
+	pub msg: String,
 }
 
-/* --------------------------------------------------------------------------------------------- */
+impl std::fmt::Display for Error {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		write!(f, "{}", self.msg)
+	}
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub(crate) enum ErrorKind {
+	InvalidInput { input: String },
+}
 
 /// A unique identifier for a [Steam](https://www.steamcommunity.com/) Account.
 ///
@@ -25,9 +30,10 @@ pub struct SteamID(String);
 impl SteamID {
 	/// Function to test whether a String qualifies as a [`SteamID`] or not
 	///
-	/// # Example
+	/// # Examples
 	/// ```
 	/// use gokz_rs::prelude::SteamID;
+	///
 	/// let valid = SteamID::test("STEAM_1:1:161178172");
 	/// let invalid1 = SteamID::test("wordSTEAM_1:1:161178172");
 	/// let invalid2 = SteamID::test("STEAM_1:1:161178172word");
@@ -48,10 +54,9 @@ impl SteamID {
 		if Self::test(&steam_id) {
 			Ok(SteamID(steam_id))
 		} else {
-			Err(Error::InvalidInput {
-				msg: format!("[{}:{}] SteamID::new() failed => `{}`", file!(), line!(), steam_id),
-				tldr: format!("`{}` is not a valid SteamID.", steam_id),
-				raw: Some(steam_id),
+			Err(Error {
+				kind: ErrorKind::InvalidInput { input: steam_id.clone() },
+				msg: format!("`{}` is not a valid SteamID.", steam_id),
 			})
 		}
 	}
@@ -87,15 +92,9 @@ impl TryFrom<PlayerIdentifier> for SteamID {
 			return Ok(steam_id);
 		}
 
-		Err(Error::InvalidInput {
-			msg: format!(
-				"[{}:{}] TryFrom<PlayerIdentifier> for SteamID failed => `{}`",
-				file!(),
-				line!(),
-				value
-			),
-			tldr: format!("`{}` is not a SteamID.", value),
-			raw: Some(value.to_string()),
+		Err(Error {
+			kind: ErrorKind::InvalidInput { input: value.to_string() },
+			msg: format!("`{}` is a name, not a SteamID.", value),
 		})
 	}
 }
@@ -112,7 +111,10 @@ pub enum Mode {
 
 impl Mode {
 	/// Format a given [`Mode`] so it can be sent to the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2)
-	pub fn api(&self) -> &'_ str {
+	/// - KZTimer => `"kz_timer"`
+	/// - SimpleKZ => `"kz_simple"`
+	/// - Vanilla => `"kz_vanilla"`
+	pub fn api(&self) -> &str {
 		match self {
 			Mode::KZTimer => "kz_timer",
 			Mode::SimpleKZ => "kz_simple",
@@ -121,6 +123,9 @@ impl Mode {
 	}
 
 	/// Turn a [`Mode`] into an abbreviated String
+	/// - KZTimer => `"KZT"`
+	/// - SimpleKZ => `"SKZ"`
+	/// - Vanilla => `"VNL"`
 	pub fn short(&self) -> String {
 		match self {
 			Mode::KZTimer => String::from("KZT"),
@@ -149,10 +154,9 @@ impl std::str::FromStr for Mode {
 			"kztimer" | "kz_timer" | "kzt" => Ok(Self::KZTimer),
 			"simplekz" | "simple_kz" | "kz_simple" | "skz" => Ok(Self::SimpleKZ),
 			"vanilla" | "vanillakz" | "vanilla_kz" | "kz_vanilla" | "vnl" => Ok(Self::Vanilla),
-			input => Err(Error::InvalidInput {
-				msg: format!("[{}:{}] FromStr<Mode> failed => `{}`", file!(), line!(), input),
-				tldr: format!("`{}` is not a valid Mode.", input),
-				raw: Some(input.to_owned()),
+			input => Err(Error {
+				kind: ErrorKind::InvalidInput { input: input.to_owned() },
+				msg: format!("`{}` is not a valid Mode.", input),
 			}),
 		}
 	}
@@ -174,15 +178,9 @@ impl TryFrom<u8> for Mode {
 			200 => Ok(Self::KZTimer),
 			201 => Ok(Self::SimpleKZ),
 			202 => Ok(Self::Vanilla),
-			_ => Err(Error::InvalidInput {
-				msg: format!(
-					"[{}:{}] TryFrom<u8> for Mode failed => `{}`",
-					file!(),
-					line!(),
-					value
-				),
-				tldr: format!("`{}` is not a valid ModeID.", value),
-				raw: Some(value.to_string()),
+			_ => Err(Error {
+				kind: ErrorKind::InvalidInput { input: value.to_string() },
+				msg: format!("`{}` is not a valid Mode ID.", value),
 			}),
 		}
 	}
@@ -198,9 +196,10 @@ impl From<Mode> for u8 {
 	}
 }
 
-/* --------------------------------------------------------------------------------------------- */
-
 /// A Player can be represented in multiple ways when making requests to the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V).
+/// - Name => `"AlphaKeks"`
+/// - SteamID => `SteamID("STEAM_1:1:161178172")`
+/// - SteamID64 => `76561198282622073`
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum PlayerIdentifier {
 	Name(String),
@@ -256,20 +255,12 @@ impl TryFrom<PlayerIdentifier> for u64 {
 			return Ok(steam_id64);
 		}
 
-		Err(Error::InvalidInput {
-			msg: format!(
-				"[{}:{}] TryFrom<PlayerIdentifier> for u64 failed => `{}`",
-				file!(),
-				line!(),
-				value
-			),
-			tldr: format!("`{}` is not a SteamID64.", value),
-			raw: Some(value.to_string()),
+		Err(Error {
+			kind: ErrorKind::InvalidInput { input: value.to_string() },
+			msg: format!("`{}` is not a SteamID64.", value),
 		})
 	}
 }
-
-/* --------------------------------------------------------------------------------------------- */
 
 /// Every player who has joined a [GOKZ](https://github.com/KZGlobalTeam/gokz) server with version 3.0.0 or higher will get a [`Rank`]
 /// assigned to them. Which [`Rank`] they will have is based on the player's total points in a
@@ -303,7 +294,10 @@ pub enum Rank {
 
 impl Rank {
 	pub fn from_points(points: u32, mode: &Mode) -> Self {
-		let (kzt, skz, vnl) = (&Mode::KZTimer, &Mode::SimpleKZ, &Mode::Vanilla);
+		let is_kzt = mode == &Mode::KZTimer;
+		let is_skz = mode == &Mode::SimpleKZ;
+		let is_vnl = mode == &Mode::Vanilla;
+
 		match points {
 			0 => Self::New,
 			1..=499 => Self::BeginnerMinus,
@@ -319,30 +313,30 @@ impl Rank {
 			70_000..=79_999 => Self::Regular,
 			80_000..=99_999 => Self::RegularPlus,
 			100_000..=119_999 => Self::SkilledMinus,
-			120_000..=139_999 if mode == vnl => Self::Skilled,
-			120_000..=149_999 if mode != vnl => Self::Skilled,
-			140_000..=159_999 if mode == vnl => Self::SkilledPlus,
-			150_000..=199_999 if mode != vnl => Self::SkilledPlus,
-			160_000..=179_999 if mode == vnl => Self::ExpertMinus,
-			200_000..=229_999 if mode != vnl => Self::ExpertMinus,
-			180_000..=199_999 if mode == vnl => Self::Expert,
-			230_000..=249_999 if mode != vnl => Self::Expert,
-			200_000..=249_999 if mode == vnl => Self::ExpertPlus,
-			250_000..=299_999 if mode == skz => Self::ExpertPlus,
-			250_000..=399_999 if mode == kzt => Self::ExpertPlus,
-			250_000..=299_999 if mode == vnl => Self::Semipro,
-			300_000..=399_999 if mode == skz => Self::Semipro,
-			400_000..=599_999 if mode == kzt => Self::Semipro,
-			300_000..=399_999 if mode == vnl => Self::Pro,
-			400_000..=499_999 if mode == skz => Self::Pro,
-			600_000..=799_999 if mode == kzt => Self::Pro,
-			400_000..=599_999 if mode == vnl => Self::Master,
-			500_000..=799_999 if mode == skz => Self::Master,
-			800_000..=999_999 if mode == kzt => Self::Master,
-			(600_000..) if mode == vnl => Self::Legend,
-			(800_000..) if mode == skz => Self::Legend,
-			(1_000_000..) if mode == kzt => Self::Legend,
-			_ => Self::Legend,
+			120_000..=139_999 if is_vnl => Self::Skilled,
+			120_000..=149_999 if is_vnl => Self::Skilled,
+			140_000..=159_999 if is_vnl => Self::SkilledPlus,
+			150_000..=199_999 if is_vnl => Self::SkilledPlus,
+			160_000..=179_999 if is_vnl => Self::ExpertMinus,
+			200_000..=229_999 if is_vnl => Self::ExpertMinus,
+			180_000..=199_999 if is_vnl => Self::Expert,
+			230_000..=249_999 if is_vnl => Self::Expert,
+			200_000..=249_999 if is_vnl => Self::ExpertPlus,
+			250_000..=299_999 if is_skz => Self::ExpertPlus,
+			250_000..=399_999 if is_kzt => Self::ExpertPlus,
+			250_000..=299_999 if is_vnl => Self::Semipro,
+			300_000..=399_999 if is_skz => Self::Semipro,
+			400_000..=599_999 if is_kzt => Self::Semipro,
+			300_000..=399_999 if is_vnl => Self::Pro,
+			400_000..=499_999 if is_skz => Self::Pro,
+			600_000..=799_999 if is_kzt => Self::Pro,
+			400_000..=599_999 if is_vnl => Self::Master,
+			500_000..=799_999 if is_skz => Self::Master,
+			800_000..=999_999 if is_kzt => Self::Master,
+			(600_000..) if is_vnl => Self::Legend,
+			(800_000..) if is_skz => Self::Legend,
+			(1_000_000..) if is_kzt => Self::Legend,
+			_ => unreachable!(),
 		}
 	}
 }
@@ -406,10 +400,9 @@ impl std::str::FromStr for Rank {
 			"beginner" => Ok(Rank::Beginner),
 			"beginner-" | "beginnerminus" => Ok(Rank::BeginnerMinus),
 			"new" => Ok(Rank::New),
-			input => Err(Error::InvalidInput {
-				msg: format!("[{}:{}] FromStr<Rank> failed => `{}`", file!(), line!(), input),
-				tldr: format!("`{}` is not a valid Mode.", input),
-				raw: Some(input.to_owned()),
+			input => Err(Error {
+				kind: ErrorKind::InvalidInput { input: input.to_owned() },
+				msg: format!("`{}` is not a valid Rank.", input),
 			}),
 		}
 	}
