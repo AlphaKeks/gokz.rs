@@ -1,23 +1,15 @@
-use {
-	super::GlobalAPI,
-	crate::prelude::*,
-	log::{info, trace},
-};
+use {super::GlobalAPI, crate::prelude::*};
 
-pub(super) async fn get(steam_id: SteamID, client: &crate::Client) -> Result<Response, Error> {
-	info!("[GlobalAPI::get_bans] START");
-
-	let params = Params { steam_id: Some(steam_id.to_string()), ..Default::default() };
-
-	trace!("[GlobalAPI::get_bans] `params`: {:?}", &params);
-
+/// Route: `/bans`
+/// - Lets you fetch ban entries of players
+pub(super) async fn get(params: Params, client: &crate::Client) -> Result<Vec<Response>, Error> {
 	match GlobalAPI::get_raw::<Vec<Response>, Params>("/bans?", params, client).await {
 		Err(why) => Err(why),
-		Ok(mut response) => {
+		Ok(response) => {
 			if response.is_empty() {
 				Err(Error { kind: ErrorKind::NoData, msg: String::from("No bans found.") })
 			} else {
-				Ok(response.remove(0))
+				Ok(response)
 			}
 		},
 	}

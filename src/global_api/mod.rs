@@ -1,16 +1,19 @@
-pub(crate) mod bans;
-
 use {
-	self::bans::Response as Ban,
 	crate::prelude::*,
 	log::{info, trace, warn},
 };
+pub(crate) mod bans;
+use bans::Response as Ban;
 
-pub struct GlobalAPI;
+pub(crate) mod jumpstats;
+
+pub(crate) mod maps;
+use maps::Response as Map;
 
 pub(crate) trait GlobalAPIResponse {}
 pub(crate) trait GlobalAPIParams {}
 
+pub struct GlobalAPI;
 impl GlobalAPI {
 	pub const BASE_URL: &str = "https://kztimerglobal.com/api/v2";
 
@@ -115,11 +118,69 @@ impl GlobalAPI {
 		Ok(parsed_response)
 	}
 
-	pub async fn get_bans(steam_id: SteamID, client: &crate::Client) -> Result<Ban, Error> {
-		match self::bans::get(steam_id, client).await {
+	/// Route: `/bans`
+	/// - Lets you fetch ban entries of players
+	pub async fn get_bans(
+		steam_id: SteamID,
+		limit: u32,
+		client: &crate::Client,
+	) -> Result<Vec<Ban>, Error> {
+		info!("[GlobalAPI::get_bans] START");
+		let params = bans::Params {
+			steam_id: Some(steam_id.to_string()),
+			limit: Some(limit),
+			..Default::default()
+		};
+		trace!("[GlobalAPI::get_bans] `params`: {:?}", &params);
+
+		match bans::get(params, client).await {
 			Err(why) => Err(why),
 			Ok(response) => {
 				info!("[GlobalAPI::get_bans] Successfully completed.");
+				Ok(response)
+			},
+		}
+	}
+
+	/// Route: `/maps`
+	/// - Lets you fetch all maps stored in the GlobalAPI
+	pub async fn get_maps(
+		validated_only: bool,
+		limit: Option<u32>,
+		client: &crate::Client,
+	) -> Result<Vec<Map>, Error> {
+		info!("[GlobalAPI::get_maps] START");
+		let params =
+			maps::Params { is_validated: Some(validated_only), limit, ..Default::default() };
+		trace!("[GlobalAPI::get_maps] `params`: {:?}", &params);
+
+		match maps::get(params, client).await {
+			Err(why) => Err(why),
+			Ok(response) => {
+				info!("[GlobalAPI::get_maps] Successfully completed.");
+				Ok(response)
+			},
+		}
+	}
+
+	/// Route: `/maps/id/{map_id}` _OR_ `/maps/name/{map_name}`
+	/// - Lets you fetch a map stored in the GlobalAPI
+	pub async fn get_map(
+		map_identifier: &MapIdentifier,
+		client: &crate::Client,
+	) -> Result<Vec<Map>, Error> {
+		info!("[GlobalAPI::get_maps] START");
+		let mut params = maps::Params::default();
+		match map_identifier {
+			MapIdentifier::ID(id) => params.id = Some(*id),
+			MapIdentifier::Name(name) => params.name = Some(name.to_owned()),
+		}
+		trace!("[GlobalAPI::get_maps] `params`: {:?}", &params);
+
+		match maps::get(params, client).await {
+			Err(why) => Err(why),
+			Ok(response) => {
+				info!("[GlobalAPI::get_maps] Successfully completed.");
 				Ok(response)
 			},
 		}
@@ -128,38 +189,6 @@ impl GlobalAPI {
 
 #[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
 pub enum Route {
-	/// Route: `/bans`
-	/// - Lets you fetch ban entries of players
-	Bans,
-
-	/// Route: `/jumpstats`
-	/// - Lets you fetch "global" jumpstats from legacy KZTimer servers
-	Jumpstats,
-
-	/// Route: `/jumpstats/{jump_type}/top`
-	/// - `jump_type`: not documented anywhere.
-	/// - Lets you fetch the top "global" jumpstats from legacy KZTimer servers
-	JumpstatsTop,
-
-	/// Route: `/jumpstats/{jump_type}/top30`
-	/// - `jump_type`: not documented anywhere.
-	/// - Note: The last time I tried using this route it didn't work.
-	JumpstatsTop30,
-
-	/// Route: `/maps`
-	/// - Lets you fetch all maps stored in the GlobalAPI
-	Maps,
-
-	/// Route: `/maps/{id}`
-	/// - `id`: `id` property on a [Map]()
-	/// - Lets you fetch a map stored in the GlobalAPI
-	MapsID,
-
-	/// Route: `/maps/name/{map_name}`
-	/// - `map_name`: any of [these](https://maps.global-api.com/mapcycles/gokz.txt)
-	/// - Lets you fetch a map stored in the GlobalAPI
-	MapsName,
-
 	/// Route: `/modes`
 	/// - Lets you fetch all modes stored in the GlobalAPI
 	Modes,

@@ -116,8 +116,6 @@ impl TryFrom<PlayerIdentifier> for SteamID {
 	}
 }
 
-/* --------------------------------------------------------------------------------------------- */
-
 /// The 3 gamemodes currently available in [GOKZ](https://github.com/KZGlobalTeam/gokz)
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub enum Mode {
@@ -212,6 +210,71 @@ impl From<Mode> for u8 {
 		}
 	}
 }
+
+/// A Map can be represented in multiple ways when making requests to the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V).
+/// - Name => `"kz_lionharder"`
+/// - ID => `992`
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum MapIdentifier {
+	ID(u16),
+	Name(String),
+}
+
+impl std::fmt::Display for MapIdentifier {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			MapIdentifier::ID(map_id) => write!(f, "{}", map_id),
+			MapIdentifier::Name(map_name) => write!(f, "{}", map_name),
+		}
+	}
+}
+
+// impl std::str::FromStr for MapIdentifier {
+// 	type Err = Error;
+//
+// 	fn from_str(s: &str) -> Result<Self, Self::Err> {
+// 		match s.parse::<u16>() {
+// 			Ok(map_id) => {
+// 				// use mapcycle
+// 				let total_maps = todo!();
+// 				(200..=total_maps).contains(map_id)
+// 			}
+// 			_ => if let Ok(map) = global_api::is_global(s.to_owned()) {
+// 				Self::Name(map.name)
+// 			}
+// 		}
+//
+// 		Err(Error {
+// 			kind: ErrorKind::InvalidInput {
+// 				input: s.to_owned(),
+// 			},
+// 			msg: format!("`{}` is not a global map.", s)
+// 		})
+// 	}
+// }
+
+// impl TryFrom<u16> for MapIdentifier {
+// 	type Error = Error;
+//
+// 	fn try_from(value: u16) -> Result<Self, Self::Error> {
+// 		&(value.to_string()).parse()
+// 	}
+// }
+
+// impl TryFrom<MapIdentifier> for u16 {
+// 	type Error = Error;
+//
+// 	fn try_from(value: MapIdentifier) -> Result<Self, Self::Error> {
+// 		if let MapIdentifier::ID(map_id) = value {
+// 			return Ok(map_id);
+// 		}
+//
+// 		Err(Error {
+// 			kind: ErrorKind::InvalidInput { input: value.to_string() },
+// 			msg: format!("`{}` is not a MapID.", value),
+// 		})
+// 	}
+// }
 
 /// A Player can be represented in multiple ways when making requests to the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V).
 /// - Name => `"AlphaKeks"`
