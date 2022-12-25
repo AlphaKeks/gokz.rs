@@ -3,4 +3,7 @@
 //! This crate provides a bunch of utility functions to communicate with KZ's GlobalAPI.
 pub mod prelude;
 
+mod global_api;
+pub use global_api::{GlobalAPI, Route};
+
 pub use reqwest::Client;

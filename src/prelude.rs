@@ -18,7 +18,24 @@ impl std::fmt::Display for Error {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub(crate) enum ErrorKind {
-	InvalidInput { input: String },
+	/// `input`: original input which is invalid
+	InvalidInput {
+		input: String,
+	},
+
+	/// `input`: original input which failed to be parsed
+	Parsing {
+		input: Option<String>,
+	},
+
+	/// `status_code`: HTTP Status Code
+	/// `raw_message`: the message returned by the GlobalAPI (if there is one)
+	GlobalAPI {
+		status_code: Option<String>,
+		raw_message: Option<String>,
+	},
+
+	NoData,
 }
 
 /// A unique identifier for a [Steam](https://www.steamcommunity.com/) Account.
