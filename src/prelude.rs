@@ -55,6 +55,8 @@ impl Display for Error {
 	}
 }
 
+impl std::error::Error for Error {}
+
 /// A unique identifier for a [Steam](https://www.steamcommunity.com/) Account.
 ///
 /// Note: [official definition](https://developer.valvesoftware.com/wiki/SteamID).
