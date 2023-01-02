@@ -7,17 +7,20 @@ use crate::{
 /// Route: `/jumpstats/{jump_type}/top30`
 /// - `jump_type`: not documented anywhere.
 /// - Note: The last time I tried using this route it didn't work.
-pub(super) async fn get(
+pub(crate) async fn get(
 	params: Params,
 	jump_type: u8,
 	client: &crate::Client,
 ) -> Result<Vec<super::Response>, Error> {
 	let route = format!("/jumpstats/{jump_type}/top30");
-	match GlobalAPI::get_raw::<Vec<super::Response>, Params>(&route, params, client).await {
+	match GlobalAPI::get::<Vec<super::Response>, Params>(&route, params, client).await {
 		Err(why) => Err(why),
 		Ok(response) => {
 			if response.is_empty() {
-				Err(Error { kind: ErrorKind::NoData, msg: String::from("No jumpstats found.") })
+				Err(Error {
+					kind: ErrorKind::NoData { expected: String::from("top 30 jumpstats") },
+					msg: String::from("No jumpstats found."),
+				})
 			} else {
 				Ok(response)
 			}

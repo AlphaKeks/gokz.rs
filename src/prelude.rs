@@ -1,4 +1,5 @@
 use {
+	log::warn,
 	regex::Regex,
 	serde::{Deserialize, Serialize},
 };
@@ -6,42 +7,73 @@ use {
 /// The default Error type which gets returned from any function exposed by this crate.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Error {
-	pub(crate) kind: ErrorKind,
+	pub kind: ErrorKind,
 	pub msg: String,
 }
 
 impl std::fmt::Display for Error {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		write!(f, "{}", self.msg)
+		let msg = match &self.kind {
+			ErrorKind::InvalidInput { expected, got } => {
+				let msg = format!("Invalid Input. Expected `{}`, but got `{}`", expected, got);
+				warn!("{}", &msg);
+				msg
+			},
+			ErrorKind::Parsing { expected, got } => {
+				let mut msg = format!("Failed to parse input. Expected `{}`", expected);
+				if let Some(got) = got {
+					msg += &format!(", but got `{}`.", got);
+				} else {
+					msg += ".";
+				}
+				warn!("{}", &msg);
+				msg
+			},
+			ErrorKind::NoData { expected } => {
+				let msg = format!("Expected to find `{}`, but found nothing.", expected);
+				warn!("{}", &msg);
+				msg
+			},
+			ErrorKind::GlobalAPI { status_code, raw_message } => {
+				let msg = if let Some(status_code) = status_code {
+					format!("GlobalAPI request failed with Status Code `{}`.", status_code)
+				} else {
+					String::from("GlobalAPI request failed, but returned no Status Code.")
+				};
+				warn!("{}", &msg);
+				warn!("Raw Message: {:?}", raw_message);
+				msg
+			},
+		};
+
+		write!(f, "{}", msg)
 	}
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
-pub(crate) enum ErrorKind {
-	/// `input`: original input which is invalid
-	InvalidInput {
-		input: String,
-	},
+impl std::error::Error for Error {}
 
-	/// `input`: original input which failed to be parsed
-	Parsing {
-		input: Option<String>,
-	},
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub enum ErrorKind {
+	/// `expected`: the expected type
+	/// `got`: original input which is invalid
+	InvalidInput { expected: String, got: String },
+
+	/// `expected`: the expected type
+	/// `got`: original input which failed to be parsed
+	Parsing { expected: String, got: Option<String> },
+
+	/// `expected`: the expected type
+	NoData { expected: String },
 
 	/// `status_code`: HTTP Status Code
 	/// `raw_message`: the message returned by the GlobalAPI (if there is one)
-	GlobalAPI {
-		status_code: Option<String>,
-		raw_message: Option<String>,
-	},
-
-	NoData,
+	GlobalAPI { status_code: Option<String>, raw_message: Option<String> },
 }
 
 /// A unique identifier for a [Steam](https://www.steamcommunity.com/) Account.
 ///
-/// Note: [official definition](https://developer.valvesoftware.com/wiki/SteamID).
-#[derive(Debug, Clone, Serialize, Deserialize)]
+/// NOTE: [Official Documentation by Valve](https://developer.valvesoftware.com/wiki/SteamID).
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct SteamID(String);
 
 impl SteamID {
@@ -62,17 +94,22 @@ impl SteamID {
 	/// assert!(!invalid3);
 	/// ```
 	pub fn test(input: &str) -> bool {
-		let regex = Regex::new(r#"^STEAM_[0-1]:[0-1]:[0-9]+$"#).expect("This is a valid regex.");
-		regex.is_match(input)
+		Regex::new(r#"^STEAM_[0-5]:[0-1]:[0-9]+$"#)
+			.expect("This is a valid regex.")
+			.is_match(input)
 	}
 
 	pub fn new(steam_id: &str) -> Result<Self, Error> {
-		let steam_id = steam_id.to_owned();
+		let steam_id = String::from(steam_id);
+
 		if Self::test(&steam_id) {
 			Ok(SteamID(steam_id))
 		} else {
 			Err(Error {
-				kind: ErrorKind::InvalidInput { input: steam_id.clone() },
+				kind: ErrorKind::InvalidInput {
+					expected: String::from("valid SteamID"),
+					got: steam_id.clone(),
+				},
 				msg: format!("`{}` is not a valid SteamID.", steam_id),
 			})
 		}
@@ -110,9 +147,30 @@ impl TryFrom<PlayerIdentifier> for SteamID {
 		}
 
 		Err(Error {
-			kind: ErrorKind::InvalidInput { input: value.to_string() },
+			kind: ErrorKind::InvalidInput {
+				expected: String::from("PlayerIdentifier::SteamID"),
+				got: value.to_string(),
+			},
 			msg: format!("`{}` is a name, not a SteamID.", value),
 		})
+	}
+}
+
+impl From<u64> for SteamID {
+	/// NOTE: [Documentation](https://developer.valvesoftware.com/wiki/SteamID#As_Represented_in_Computer_Programs)
+	fn from(value: u64) -> Self {
+		// universe of the account
+		let x = value >> 56;
+
+		// ID number part
+		let y = value & 1;
+
+		// account number
+		let z = (value >> 1) & 0b0111_1111_1111_1111_1111_1111_1111_1111;
+
+		let steam_id = format!("STEAM_{}:{}:{}", x, y, z);
+
+		Self(steam_id)
 	}
 }
 
@@ -170,7 +228,10 @@ impl std::str::FromStr for Mode {
 			"simplekz" | "simple_kz" | "kz_simple" | "skz" => Ok(Self::SimpleKZ),
 			"vanilla" | "vanillakz" | "vanilla_kz" | "kz_vanilla" | "vnl" => Ok(Self::Vanilla),
 			input => Err(Error {
-				kind: ErrorKind::InvalidInput { input: input.to_owned() },
+				kind: ErrorKind::InvalidInput {
+					expected: String::from("Mode"),
+					got: input.to_owned(),
+				},
 				msg: format!("`{}` is not a valid Mode.", input),
 			}),
 		}
@@ -193,9 +254,12 @@ impl TryFrom<u8> for Mode {
 			200 => Ok(Self::KZTimer),
 			201 => Ok(Self::SimpleKZ),
 			202 => Ok(Self::Vanilla),
-			_ => Err(Error {
-				kind: ErrorKind::InvalidInput { input: value.to_string() },
-				msg: format!("`{}` is not a valid Mode ID.", value),
+			id => Err(Error {
+				kind: ErrorKind::InvalidInput {
+					expected: String::from("valid ModeID (200/201/202)"),
+					got: id.to_string(),
+				},
+				msg: format!("`{}` is not a valid Mode ID.", id),
 			}),
 		}
 	}
@@ -216,7 +280,7 @@ impl From<Mode> for u8 {
 /// - ID => `992`
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum MapIdentifier {
-	ID(u16),
+	ID(u32),
 	Name(String),
 }
 
@@ -336,7 +400,10 @@ impl TryFrom<PlayerIdentifier> for u64 {
 		}
 
 		Err(Error {
-			kind: ErrorKind::InvalidInput { input: value.to_string() },
+			kind: ErrorKind::InvalidInput {
+				expected: String::from("SteamID64"),
+				got: value.to_string(),
+			},
 			msg: format!("`{}` is not a SteamID64.", value),
 		})
 	}
@@ -345,7 +412,7 @@ impl TryFrom<PlayerIdentifier> for u64 {
 /// Every player who has joined a [GOKZ](https://github.com/KZGlobalTeam/gokz) server with version 3.0.0 or higher will get a [`Rank`]
 /// assigned to them. Which [`Rank`] they will have is based on the player's total points in a
 /// given [`Mode`].
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
 pub enum Rank {
 	Legend,
 	Master,
@@ -481,14 +548,17 @@ impl std::str::FromStr for Rank {
 			"beginner-" | "beginnerminus" => Ok(Rank::BeginnerMinus),
 			"new" => Ok(Rank::New),
 			input => Err(Error {
-				kind: ErrorKind::InvalidInput { input: input.to_owned() },
+				kind: ErrorKind::InvalidInput {
+					expected: String::from("Rank"),
+					got: input.to_owned(),
+				},
 				msg: format!("`{}` is not a valid Rank.", input),
 			}),
 		}
 	}
 }
 
-/* --------------------------------------------------------------------------------------------- */
+/* ---------------------------------------------------------------------------------------------- */
 
 #[cfg(test)]
 mod tests {
@@ -516,6 +586,39 @@ mod tests {
 		assert!(SteamID::try_from(name).is_err());
 		assert!(SteamID::try_from(steam_id).is_ok());
 		assert!(SteamID::try_from(steam_id64).is_err());
+	}
+
+	#[test]
+	fn steam_id_from_u64() {
+		let alphakeks_64 = 76561198282622073;
+		let alphakeks_32 = "STEAM_1:1:161178172";
+		assert_eq!(alphakeks_32, SteamID::from(alphakeks_64).to_string());
+
+		println!("{}", SteamID::from(76561198231238712));
+
+		let blacky_64 = 76561198091592005;
+		let blacky_32 = "STEAM_1:1:65663138";
+		assert_eq!(blacky_32, SteamID::from(blacky_64).to_string());
+
+		let charlie_64 = 76561198054062420;
+		let charlie_32 = "STEAM_1:0:46898346";
+		assert_eq!(charlie_32, SteamID::from(charlie_64).to_string());
+
+		let idot_64 = 76561198955057247;
+		let idot_32 = "STEAM_1:1:497395759";
+		assert_eq!(idot_32, SteamID::from(idot_64).to_string());
+
+		let ibra_64 = 76561198264939817;
+		let ibra_32 = "STEAM_1:1:152337044";
+		assert_eq!(ibra_32, SteamID::from(ibra_64).to_string());
+
+		let szwagi_64 = 76561198857828380;
+		let szwagi_32 = "STEAM_1:0:448781326";
+		assert_eq!(szwagi_32, SteamID::from(szwagi_64).to_string());
+
+		let gosh_64 = 76561198292029626;
+		let gosh_32 = "STEAM_1:0:165881949";
+		assert_eq!(gosh_32, SteamID::from(gosh_64).to_string());
 	}
 
 	#[test]

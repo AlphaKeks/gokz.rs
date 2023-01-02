@@ -1,17 +1,23 @@
-pub mod top;
-pub mod top30;
+pub(crate) mod top;
+pub(crate) mod top30;
 
-use {super::GlobalAPI, crate::prelude::*};
+use {
+	super::{GlobalAPI, GlobalAPIParams, GlobalAPIResponse},
+	crate::prelude::*,
+};
 
 #[allow(dead_code)]
 /// Route: `/jumpstats`
 /// - Lets you fetch "global" jumpstats from legacy KZTimer servers
-pub(super) async fn get(params: Params, client: &crate::Client) -> Result<Vec<Response>, Error> {
-	match GlobalAPI::get_raw::<Vec<Response>, Params>("/jumpstats", params, client).await {
+pub(crate) async fn get(params: Params, client: &crate::Client) -> Result<Vec<Response>, Error> {
+	match GlobalAPI::get::<Vec<Response>, Params>("/jumpstats", params, client).await {
 		Err(why) => Err(why),
 		Ok(response) => {
 			if response.is_empty() {
-				Err(Error { kind: ErrorKind::NoData, msg: String::from("No jumpstats found.") })
+				Err(Error {
+					kind: ErrorKind::NoData { expected: String::from("jumpstats or something") },
+					msg: String::from("No jumpstats found."),
+				})
 			} else {
 				Ok(response)
 			}
@@ -20,30 +26,9 @@ pub(super) async fn get(params: Params, client: &crate::Client) -> Result<Vec<Re
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct Response {
-	pub id: u32,
-	pub server_id: u16,
-	pub steamid64: u64,
-	pub player_name: String,
-	pub steam_id: String,
-	pub jump_type: u8,
-	pub distance: f32,
-	pub tickrate: u8,
-	pub msl_count: u8,
-	pub strafe_count: u8,
-	pub is_crouch_bind: u8,
-	pub is_forward_bind: u8,
-	pub is_crouch_boost: u8,
-	pub updated_by_id: u64,
-	pub created_on: String,
-	pub updated_on: String,
-}
-impl super::GlobalAPIResponse for Response {}
-
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Params {
 	pub id: Option<u32>,
-	pub server_id: Option<u16>,
+	pub server_id: Option<u32>,
 	pub steamid64: Option<u64>,
 	pub steam_id: Option<String>,
 	pub jump_type: Option<u8>,
@@ -62,7 +47,8 @@ pub struct Params {
 	pub offset: Option<i32>,
 	pub limit: Option<u32>,
 }
-impl super::GlobalAPIParams for Params {}
+
+impl GlobalAPIParams for Params {}
 
 impl Default for Params {
 	fn default() -> Self {
@@ -89,3 +75,25 @@ impl Default for Params {
 		}
 	}
 }
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct Response {
+	pub id: u32,
+	pub server_id: u32,
+	pub steamid64: u64,
+	pub player_name: String,
+	pub steam_id: String,
+	pub jump_type: u8,
+	pub distance: f32,
+	pub tickrate: u8,
+	pub msl_count: u8,
+	pub strafe_count: u8,
+	pub is_crouch_bind: u8,
+	pub is_forward_bind: u8,
+	pub is_crouch_boost: u8,
+	pub updated_by_id: u64,
+	pub created_on: String,
+	pub updated_on: String,
+}
+
+impl GlobalAPIResponse for Response {}

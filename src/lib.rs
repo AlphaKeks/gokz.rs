@@ -4,6 +4,6 @@
 pub mod prelude;
 
 mod global_api;
-pub use global_api::{GlobalAPI, Route};
+pub use global_api::GlobalAPI;
 
 pub use reqwest::Client;

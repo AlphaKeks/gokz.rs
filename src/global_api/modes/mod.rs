@@ -1,0 +1,47 @@
+pub mod id;
+pub mod name;
+
+use {
+	super::{GlobalAPI, GlobalAPIParams, GlobalAPIResponse},
+	crate::prelude::*,
+};
+
+/// Route: `/modes`
+/// - Lets you fetch all modes stored in the GlobalAPI
+pub(crate) async fn get(client: &crate::Client) -> Result<Vec<Response>, Error> {
+	match GlobalAPI::get::<Vec<Response>, Params>("/modes?", Params::default(), client).await {
+		Err(why) => Err(why),
+		Ok(response) => {
+			if response.is_empty() {
+				Err(Error {
+					kind: ErrorKind::NoData { expected: String::from("Vec<Mode>") },
+					msg: String::from("No modes found."),
+				})
+			} else {
+				Ok(response)
+			}
+		},
+	}
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct Response {
+	pub id: u8,
+	pub name: String,
+	pub description: String,
+	pub latest_version: u8,
+	pub latest_version_description: String,
+	pub website: String,
+	pub repo: String,
+	pub contact_steamid64: String,
+	pub supported_tickrates: Option<u8>,
+	pub created_on: String,
+	pub updated_on: String,
+	pub updated_by_id: String,
+}
+
+impl GlobalAPIResponse for Response {}
+
+#[derive(Default, Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct Params;
+impl GlobalAPIParams for Params {}

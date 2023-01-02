@@ -1,36 +1,25 @@
-use {super::GlobalAPI, crate::prelude::*};
+use {
+	super::{GlobalAPI, GlobalAPIParams, GlobalAPIResponse},
+	crate::prelude::*,
+};
 
 /// Route: `/bans`
 /// - Lets you fetch ban entries of players
-pub(super) async fn get(params: Params, client: &crate::Client) -> Result<Vec<Response>, Error> {
-	match GlobalAPI::get_raw::<Vec<Response>, Params>("/bans?", params, client).await {
+pub(crate) async fn get(params: Params, client: &crate::Client) -> Result<Vec<Response>, Error> {
+	match GlobalAPI::get::<Vec<Response>, Params>("/bans?", params, client).await {
 		Err(why) => Err(why),
 		Ok(response) => {
 			if response.is_empty() {
-				Err(Error { kind: ErrorKind::NoData, msg: String::from("No bans found.") })
+				Err(Error {
+					kind: ErrorKind::NoData { expected: String::from("ban data") },
+					msg: String::from("No bans found."),
+				})
 			} else {
 				Ok(response)
 			}
 		},
 	}
 }
-
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct Response {
-	pub id: u32,
-	pub ban_type: String,
-	pub expires_on: String,
-	pub steamid64: String,
-	pub player_name: String,
-	pub steam_id: String,
-	pub notes: String,
-	pub stats: String,
-	pub server_id: u16,
-	pub updated_by_id: String,
-	pub created_on: String,
-	pub updated_on: String,
-}
-impl super::GlobalAPIResponse for Response {}
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Params {
@@ -48,7 +37,8 @@ pub struct Params {
 	pub offset: Option<i32>,
 	pub limit: Option<u32>,
 }
-impl super::GlobalAPIParams for Params {}
+
+impl GlobalAPIParams for Params {}
 
 impl Default for Params {
 	fn default() -> Self {
@@ -69,3 +59,21 @@ impl Default for Params {
 		}
 	}
 }
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct Response {
+	pub id: u32,
+	pub ban_type: String,
+	pub expires_on: String,
+	pub steamid64: String,
+	pub player_name: String,
+	pub steam_id: String,
+	pub notes: String,
+	pub stats: String,
+	pub server_id: u32,
+	pub updated_by_id: String,
+	pub created_on: String,
+	pub updated_on: String,
+}
+
+impl GlobalAPIResponse for Response {}

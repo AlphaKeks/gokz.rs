@@ -1,16 +1,22 @@
-pub mod id;
-pub mod name;
+pub(crate) mod id;
+pub(crate) mod name;
 
-use {super::GlobalAPI, crate::prelude::*};
+use {
+	super::{GlobalAPI, GlobalAPIParams, GlobalAPIResponse},
+	crate::prelude::*,
+};
 
 /// Route: `/maps`
 /// - Lets you fetch all maps stored in the GlobalAPI
-pub(super) async fn get(params: Params, client: &crate::Client) -> Result<Vec<Response>, Error> {
-	match GlobalAPI::get_raw::<Vec<Response>, Params>("/maps?", params, client).await {
+pub(crate) async fn get(params: Params, client: &crate::Client) -> Result<Vec<Response>, Error> {
+	match GlobalAPI::get::<Vec<Response>, Params>("/maps?", params, client).await {
 		Err(why) => Err(why),
 		Ok(response) => {
 			if response.is_empty() {
-				Err(Error { kind: ErrorKind::NoData, msg: String::from("No maps found.") })
+				Err(Error {
+					kind: ErrorKind::NoData { expected: String::from("Vec<Map>") },
+					msg: String::from("No maps found."),
+				})
 			} else {
 				Ok(response)
 			}
@@ -20,7 +26,7 @@ pub(super) async fn get(params: Params, client: &crate::Client) -> Result<Vec<Re
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Response {
-	pub id: i16,
+	pub id: u32,
 	pub name: String,
 	pub filesize: u64,
 	pub validated: bool,
@@ -31,11 +37,12 @@ pub struct Response {
 	pub workshop_url: String,
 	pub download_url: Option<String>,
 }
-impl super::GlobalAPIResponse for Response {}
+
+impl GlobalAPIResponse for Response {}
 
 #[derive(Default, Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Params {
-	pub id: Option<u16>,
+	pub id: Option<u32>,
 	pub name: Option<String>,
 	pub larger_than_filesize: Option<u32>,
 	pub smaller_than_filesize: Option<u32>,
@@ -46,4 +53,5 @@ pub struct Params {
 	pub offset: Option<i32>,
 	pub limit: Option<u32>,
 }
-impl super::GlobalAPIParams for Params {}
+
+impl GlobalAPIParams for Params {}
