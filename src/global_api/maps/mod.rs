@@ -1,15 +1,15 @@
-pub(crate) mod id;
-pub(crate) mod name;
+pub mod id;
+pub mod name;
 
 use {
-	super::{GlobalAPI, GlobalAPIParams, GlobalAPIResponse},
+	super::{api_params, api_response, GlobalAPI, GlobalAPIParams, GlobalAPIResponse},
 	crate::prelude::*,
 };
 
 /// Route: `/maps`
 /// - Lets you fetch all maps stored in the GlobalAPI
-pub(crate) async fn get(params: Params, client: &crate::Client) -> Result<Vec<Response>, Error> {
-	match GlobalAPI::get::<Vec<Response>, Params>("/maps?", params, client).await {
+pub async fn get(params: Params, client: &crate::Client) -> Result<Vec<Response>, Error> {
+	match GlobalAPI::get::<Vec<_>, _>("/maps?", params, client).await {
 		Err(why) => Err(why),
 		Ok(response) => {
 			if response.is_empty() {
@@ -38,7 +38,7 @@ pub struct Response {
 	pub download_url: Option<String>,
 }
 
-impl GlobalAPIResponse for Response {}
+api_response!(Response);
 
 #[derive(Default, Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Params {
@@ -54,4 +54,4 @@ pub struct Params {
 	pub limit: Option<u32>,
 }
 
-impl GlobalAPIParams for Params {}
+api_params!(Params);

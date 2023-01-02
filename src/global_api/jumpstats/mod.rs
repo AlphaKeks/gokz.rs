@@ -1,16 +1,16 @@
-pub(crate) mod top;
-pub(crate) mod top30;
+pub mod top;
+pub mod top30;
 
 use {
-	super::{GlobalAPI, GlobalAPIParams, GlobalAPIResponse},
+	super::{api_params, api_response, GlobalAPI, GlobalAPIParams, GlobalAPIResponse},
 	crate::prelude::*,
 };
 
 #[allow(dead_code)]
 /// Route: `/jumpstats`
 /// - Lets you fetch "global" jumpstats from legacy KZTimer servers
-pub(crate) async fn get(params: Params, client: &crate::Client) -> Result<Vec<Response>, Error> {
-	match GlobalAPI::get::<Vec<Response>, Params>("/jumpstats", params, client).await {
+pub async fn get(params: Params, client: &crate::Client) -> Result<Vec<Response>, Error> {
+	match GlobalAPI::get::<Vec<_>, _>("/jumpstats", params, client).await {
 		Err(why) => Err(why),
 		Ok(response) => {
 			if response.is_empty() {
@@ -48,7 +48,7 @@ pub struct Params {
 	pub limit: Option<u32>,
 }
 
-impl GlobalAPIParams for Params {}
+api_params!(Params);
 
 impl Default for Params {
 	fn default() -> Self {
@@ -96,4 +96,4 @@ pub struct Response {
 	pub updated_on: String,
 }
 
-impl GlobalAPIResponse for Response {}
+api_response!(Response);

@@ -1,15 +1,12 @@
 use {
-	super::{GlobalAPI, GlobalAPIParams},
+	super::{api_params, GlobalAPI, GlobalAPIParams},
 	crate::prelude::*,
 };
 
 /// Route: `/records/top`
 /// - Lets you fetch records stored in the GlobalAPI
-pub(crate) async fn get(
-	params: Params,
-	client: &crate::Client,
-) -> Result<Vec<super::Response>, Error> {
-	match GlobalAPI::get::<Vec<super::Response>, Params>("/records/top?", params, client).await {
+pub async fn get(params: Params, client: &crate::Client) -> Result<Vec<super::Response>, Error> {
+	match GlobalAPI::get::<Vec<_>, _>("/records/top?", params, client).await {
 		Err(why) => Err(why),
 		Ok(response) => {
 			if response.is_empty() {
@@ -35,14 +32,14 @@ pub struct Params {
 	pub overall: Option<bool>,
 	pub stage: Option<u8>,
 	pub modes_list_string: Option<String>,
-	pub modes_list: Option<Vec<String>>,
+	pub modes_list: Option<String>,
 	pub has_teleports: Option<bool>,
 	pub player_name: Option<String>,
 	pub offset: Option<i32>,
 	pub limit: Option<u32>,
 }
 
-impl GlobalAPIParams for Params {}
+api_params!(Params);
 
 impl Default for Params {
 	fn default() -> Self {

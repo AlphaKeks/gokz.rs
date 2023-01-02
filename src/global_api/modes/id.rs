@@ -1,5 +1,5 @@
 use crate::{
-	global_api::{GlobalAPI, GlobalAPIParams},
+	global_api::{api_params, GlobalAPI, GlobalAPIParams},
 	prelude::*,
 };
 
@@ -13,10 +13,10 @@ use crate::{
 ///
 /// All of these are accessible by casting a [Mode](crate::prelude::Mode) to an integer using
 /// the [as](https://doc.rust-lang.org/std/keyword.as.html) keyword.
-pub(crate) async fn get(mode_id: u8, client: &crate::Client) -> Result<super::Response, Error> {
+pub async fn get(mode_id: u8, client: &crate::Client) -> Result<super::Response, Error> {
 	let route = format!("/modes/id/{}", mode_id);
-	GlobalAPI::get::<super::Response, Params>(&route, Params::default(), client).await
+	GlobalAPI::get(&route, Params::default(), client).await
 }
 #[derive(Default, Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Params;
-impl GlobalAPIParams for Params {}
+api_params!(Params);

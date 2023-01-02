@@ -1,12 +1,12 @@
 use {
-	super::{GlobalAPI, GlobalAPIParams, GlobalAPIResponse},
+	super::{api_params, api_response, GlobalAPI, GlobalAPIParams, GlobalAPIResponse},
 	crate::prelude::*,
 };
 
 /// Route: `/record_filters`
 /// - Lets you fetch record filters for individual courses
-pub(crate) async fn get(params: Params, client: &crate::Client) -> Result<Vec<Response>, Error> {
-	match GlobalAPI::get::<Vec<Response>, Params>("/record_filters?", params, client).await {
+pub async fn get(params: Params, client: &crate::Client) -> Result<Vec<Response>, Error> {
+	match GlobalAPI::get::<Vec<_>, _>("/record_filters?", params, client).await {
 		Err(why) => Err(why),
 		Ok(response) => {
 			if response.is_empty() {
@@ -33,7 +33,7 @@ pub struct Response {
 	pub updated_by_id: String,
 }
 
-impl GlobalAPIResponse for Response {}
+api_response!(Response);
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Params {
@@ -47,7 +47,7 @@ pub struct Params {
 	pub limit: Option<u32>,
 }
 
-impl GlobalAPIParams for Params {}
+api_params!(Params);
 
 impl Default for Params {
 	fn default() -> Self {

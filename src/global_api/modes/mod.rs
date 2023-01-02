@@ -2,14 +2,14 @@ pub mod id;
 pub mod name;
 
 use {
-	super::{GlobalAPI, GlobalAPIParams, GlobalAPIResponse},
+	super::{api_params, api_response, GlobalAPI, GlobalAPIParams, GlobalAPIResponse},
 	crate::prelude::*,
 };
 
 /// Route: `/modes`
 /// - Lets you fetch all modes stored in the GlobalAPI
-pub(crate) async fn get(client: &crate::Client) -> Result<Vec<Response>, Error> {
-	match GlobalAPI::get::<Vec<Response>, Params>("/modes?", Params::default(), client).await {
+pub async fn get(client: &crate::Client) -> Result<Vec<Response>, Error> {
+	match GlobalAPI::get::<Vec<_>, _>("/modes?", Params::default(), client).await {
 		Err(why) => Err(why),
 		Ok(response) => {
 			if response.is_empty() {
@@ -40,8 +40,8 @@ pub struct Response {
 	pub updated_by_id: String,
 }
 
-impl GlobalAPIResponse for Response {}
+api_response!(Response);
 
 #[derive(Default, Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Params;
-impl GlobalAPIParams for Params {}
+api_params!(Params);

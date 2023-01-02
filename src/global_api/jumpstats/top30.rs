@@ -1,5 +1,5 @@
 use crate::{
-	global_api::{GlobalAPI, GlobalAPIParams},
+	global_api::{api_params, GlobalAPI, GlobalAPIParams},
 	prelude::*,
 };
 
@@ -7,13 +7,13 @@ use crate::{
 /// Route: `/jumpstats/{jump_type}/top30`
 /// - `jump_type`: not documented anywhere.
 /// - Note: The last time I tried using this route it didn't work.
-pub(crate) async fn get(
+pub async fn get(
 	params: Params,
 	jump_type: u8,
 	client: &crate::Client,
 ) -> Result<Vec<super::Response>, Error> {
 	let route = format!("/jumpstats/{jump_type}/top30");
-	match GlobalAPI::get::<Vec<super::Response>, Params>(&route, params, client).await {
+	match GlobalAPI::get::<Vec<_>, _>(&route, params, client).await {
 		Err(why) => Err(why),
 		Ok(response) => {
 			if response.is_empty() {
@@ -29,5 +29,5 @@ pub(crate) async fn get(
 }
 
 #[derive(Default, Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct Params {}
-impl GlobalAPIParams for Params {}
+pub struct Params;
+api_params!(Params);

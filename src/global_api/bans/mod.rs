@@ -1,12 +1,12 @@
 use {
-	super::{GlobalAPI, GlobalAPIParams, GlobalAPIResponse},
+	super::{api_params, api_response, GlobalAPI, GlobalAPIParams, GlobalAPIResponse},
 	crate::prelude::*,
 };
 
 /// Route: `/bans`
 /// - Lets you fetch ban entries of players
-pub(crate) async fn get(params: Params, client: &crate::Client) -> Result<Vec<Response>, Error> {
-	match GlobalAPI::get::<Vec<Response>, Params>("/bans?", params, client).await {
+pub async fn get(params: Params, client: &crate::Client) -> Result<Vec<Response>, Error> {
+	match GlobalAPI::get::<Vec<_>, _>("/bans?", params, client).await {
 		Err(why) => Err(why),
 		Ok(response) => {
 			if response.is_empty() {
@@ -24,7 +24,7 @@ pub(crate) async fn get(params: Params, client: &crate::Client) -> Result<Vec<Re
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Params {
 	pub ban_types: Option<String>,
-	pub ban_types_list: Option<Vec<String>>,
+	pub ban_types_list: Option<String>,
 	pub is_expired: Option<bool>,
 	pub ip: Option<String>,
 	pub steamid64: Option<String>,
@@ -38,7 +38,7 @@ pub struct Params {
 	pub limit: Option<u32>,
 }
 
-impl GlobalAPIParams for Params {}
+api_params!(Params);
 
 impl Default for Params {
 	fn default() -> Self {
@@ -76,4 +76,4 @@ pub struct Response {
 	pub updated_on: String,
 }
 
-impl GlobalAPIResponse for Response {}
+api_response!(Response);

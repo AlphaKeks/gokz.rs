@@ -1,9 +1,10 @@
 use {
 	crate::prelude::*,
-	log::{info, trace, warn},
+	futures::future::join_all,
+	log::{debug, info, trace, warn},
 };
 
-pub(crate) mod bans;
+pub mod bans;
 use bans::Response as BanResponse;
 
 pub mod jumpstats;
@@ -21,11 +22,32 @@ pub mod record_filters;
 use record_filters::Response as RecordFilterResponse;
 
 pub mod records;
-use records::{place::Response as PlaceResponse, Response as RecordResponse};
+use records::{
+	place::Response as PlaceResponse, recent::Response as RecentResponse,
+	Response as RecordResponse,
+};
 
-pub(crate) trait GlobalAPIResponse {}
+/// Marker trait for possible API response bodies. Feel free to implement this for your own types
+/// but keep in mind that this trait doesn't actually guarantee anything.
+pub trait GlobalAPIResponse: std::fmt::Debug + serde::de::DeserializeOwned {}
+macro_rules! api_response {
+	($type_name:ident) => {
+		impl GlobalAPIResponse for $type_name {}
+		impl GlobalAPIResponse for Vec<$type_name> {}
+	};
+}
+pub(crate) use api_response;
 
-pub(crate) trait GlobalAPIParams {}
+/// Marker trait for possible API request parameters. Feel free to implement this for your own
+/// types but keep in mind that this trait doesn't actually guarantee anything.
+pub trait GlobalAPIParams: std::fmt::Debug + serde::Serialize {}
+macro_rules! api_params {
+	($type_name:ident) => {
+		impl GlobalAPIParams for $type_name {}
+		impl GlobalAPIParams for Vec<$type_name> {}
+	};
+}
+pub(crate) use api_params;
 
 pub struct GlobalAPI;
 impl GlobalAPI {
@@ -41,12 +63,12 @@ impl GlobalAPI {
 		client: &crate::Client,
 	) -> Result<Response, Error>
 	where
-		Response: std::fmt::Debug + serde::de::DeserializeOwned,
-		Params: std::fmt::Debug + Clone + serde::Serialize,
+		Params: GlobalAPIParams,
+		Response: GlobalAPIResponse,
 	{
 		info!("[GlobalAPI::request] starting...");
-		trace!("[GlobalAPI::request] `route`: {:?}", route);
-		trace!("[GlobalAPI::request] `params`: {:?}", &params);
+		debug!("[GlobalAPI::request] `route`: {:?}", route);
+		debug!("[GlobalAPI::request] `params`: {:?}", &params);
 
 		// construct full URL
 		// e.g. `https://kztimerglobal.com/api/v2/records/top?`
@@ -54,7 +76,6 @@ impl GlobalAPI {
 		let url = match reqwest::Url::parse(&full_route) {
 			Err(why) => {
 				warn!("[GlobalAPI::request] Failed to parse URL: {:?}", why);
-
 				return Err(Error {
 					kind: ErrorKind::Parsing {
 						expected: String::from("valid URL"),
@@ -64,7 +85,7 @@ impl GlobalAPI {
 				});
 			},
 			Ok(url) => {
-				trace!("[GlobalAPI::request] Successfully constructed URL `{}`.", &url);
+				debug!("[GlobalAPI::request] Successfully constructed route `{}`.", &url);
 				url
 			},
 		};
@@ -73,10 +94,8 @@ impl GlobalAPI {
 		let response = match client.get(url).query(&params).send().await {
 			Err(why) => {
 				warn!("[GlobalAPI::request] HTTPS Request failed.");
-
 				if let Some(code) = why.status() {
 					warn!("[GlobalAPI::request] Request failed with status code `{}`.", &code);
-
 					return Err(Error {
 						kind: ErrorKind::GlobalAPI {
 							status_code: Some(code.to_string()),
@@ -87,7 +106,6 @@ impl GlobalAPI {
 				}
 
 				warn!("[GlobalAPI::request] Request failed with no status code.");
-
 				return Err(Error {
 					kind: ErrorKind::GlobalAPI {
 						status_code: None,
@@ -98,12 +116,37 @@ impl GlobalAPI {
 					),
 				});
 			},
-			Ok(response) => {
-				trace!(
-					"[GlobalAPI::request] GlobalAPI responded successfully with code `{}`.",
-					response.status()
-				);
-				response
+			Ok(response) => match response.error_for_status() {
+				Err(why) => {
+					let Some(code) = why.status() else {
+				        warn!("[GlobalAPI::request] Request failed with no status code.");
+				        return Err(Error {
+					        kind: ErrorKind::GlobalAPI {
+						        status_code: None,
+						        raw_message: Some(why.to_string()),
+					        },
+					        msg: String::from(
+						        "GlobalAPI request failed, but no status code has been returned.",
+					        ),
+				        });
+					};
+
+					warn!("[GlobalAPI::request] Request failed with status code `{}`.", &code);
+					return Err(Error {
+						kind: ErrorKind::GlobalAPI {
+							status_code: Some(code.to_string()),
+							raw_message: Some(why.to_string()),
+						},
+						msg: format!("GlobalAPI request failed with code `{}`.", code),
+					});
+				},
+				Ok(response) => {
+					trace!(
+						"[GlobalAPI::request] GlobalAPI responded successfully with code `{}`.",
+						response.status()
+					);
+					response
+				},
 			},
 		};
 
@@ -376,6 +419,163 @@ impl GlobalAPI {
 		info!("[GlobalAPI::get_records] completed successfully.");
 
 		Ok(response)
+	}
+
+	/// Route: `/records/top/recent`
+	/// - Lets you fetch the most recently created records
+	/// - Some notes:
+	///   - `mode` is required because if you don't specify one, the API will return an `internal
+	///      server error`.
+	///   - will only yield personal bests
+	///   - endpoint is pretty slow; it will take a while until a record appears here
+	///
+	/// Comparison to `[GlobalAPI::get_recent]`:
+	/// - less reliable, because records take a while until they show up here
+	/// - not player-specific
+	///   - if you want more control over the parameters, consider using [`records::recent::get`].
+	pub async fn get_recent_lossy(
+		mode: &Mode,
+		limit: Option<u32>,
+		client: &crate::Client,
+	) -> Result<Vec<RecentResponse>, Error> {
+		info!("[GlobalAPI::get_recent_slow] starting...");
+
+		let params = records::recent::Params {
+			modes_list_string: Some(mode.to_string()),
+			limit,
+			..Default::default()
+		};
+
+		let response = records::recent::get(params, client).await?;
+		info!("[GlobalAPI::get_recent] completed successfully.");
+
+		Ok(response)
+	}
+
+	/// Route: `/records/top`
+	/// - Lets you fetch a player's most recently set PB
+	/// - Some notes:
+	///   - will only yield personal bests
+	///   - 6 requests are necessary here, as the API returns unreliable results if you're not
+	///     specific enough.
+	///
+	/// Comparison to `[GlobalAPI::get_recent_lossy]`:
+	/// - more reliable, because _all_ of a player's records get fetched, no matter how old they
+	///   are
+	/// - player-specific
+	pub async fn get_recent(
+		player_identifier: &PlayerIdentifier,
+		client: &crate::Client,
+	) -> Result<RecordResponse, Error> {
+		info!("[GlobalAPI::get_recent] starting...");
+
+		// convenience closure for later, since we will need to make 6 requests;
+		// this is necessary because if we're not specific enough, the API might not return all the
+		// data we want
+		let fetch_rec = |mode: String, has_teleports: bool| {
+			let mut params = records::top::Params {
+				modes_list_string: Some(mode),
+				has_teleports: Some(has_teleports),
+				stage: Some(0),
+				limit: Some(9999),
+				..Default::default()
+			};
+			match player_identifier {
+				PlayerIdentifier::Name(name) => params.player_name = Some(name.to_owned()),
+				PlayerIdentifier::SteamID(steam_id) => params.steam_id = Some(steam_id.to_string()),
+				PlayerIdentifier::SteamID64(steam_id64) => params.steamid64 = Some(*steam_id64),
+			}
+			records::top::get(params, client)
+		};
+
+		// if the API returns an error that is not `NoData` in any of the requests, we want to
+		// return that error later. these errors include but are not limited to:
+		//   - no status code
+		//   - internal server error
+		let mut potential_err = None;
+
+		// make requests
+		let mut records = join_all([
+			fetch_rec(String::from("kz_timer"), true),
+			fetch_rec(String::from("kz_timer"), false),
+			fetch_rec(String::from("kz_simple"), true),
+			fetch_rec(String::from("kz_simple"), false),
+			fetch_rec(String::from("kz_vanilla"), true),
+			fetch_rec(String::from("kz_vanilla"), false),
+		])
+		.await
+		.into_iter()
+		.filter_map(|res| {
+			// We want to filter out `NoData` records
+			match res {
+				Err(why) => {
+					// `NoData` is fine; a player might just not have any times in a certain mode
+					if let ErrorKind::NoData { expected: _ } = why.kind {
+						return None;
+					}
+					potential_err = Some(why);
+					None
+				},
+				Ok(records) => Some(records),
+			}
+		})
+		.flatten()
+		.collect::<Vec<_>>();
+
+		// return if we had a "bad" error
+		if let Some(why) = potential_err {
+			return Err(why);
+		}
+
+		// check that there are records
+		if records.is_empty() {
+			warn!("[GlobalAPI::get_recent] empty response from the API");
+			return Err(Error {
+				kind: ErrorKind::NoData { expected: String::from("Vec<Record>") },
+				msg: String::from("No recent PB found."),
+			});
+		}
+
+		let (mut timestamp, mut idx) = (0, 0);
+
+		// find the newest record
+		for (current_idx, record) in records.iter().enumerate() {
+			let Ok(date) = chrono::NaiveDateTime::parse_from_str(
+				&record.created_on,
+				"%Y-%m-%dT%H:%M:%S"
+			) else {
+				return Err(Error {
+					kind: ErrorKind::Parsing { expected: String::from("Date"), got: Some(record.created_on.clone()) },
+					msg: String::from("Failed to parse date.")
+				})
+			};
+
+			// if we find a record with a larger timestamp, we know it's newer
+			if date.timestamp() > timestamp {
+				timestamp = date.timestamp();
+				idx = current_idx;
+			}
+		}
+
+		// return the record with the largest timestamp
+		Ok(records.remove(idx))
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+
+	#[test_log::test(tokio::test)]
+	async fn penis() {
+		let client = crate::Client::new();
+		log::info!("PENIS");
+
+		let h = GlobalAPI::get_recent(&PlayerIdentifier::Name(String::from("AlphaKeks")), &client)
+			.await
+			.unwrap();
+
+		println!("{:?}", h);
 	}
 }
 

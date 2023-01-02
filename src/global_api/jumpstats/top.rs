@@ -4,13 +4,13 @@ use crate::{global_api::GlobalAPI, prelude::*};
 /// Route: `/jumpstats/{jump_type}/top`
 /// - `jump_type`: not documented anywhere.
 /// - Lets you fetch the top "global" jumpstats from legacy KZTimer servers
-pub(crate) async fn get(
+pub async fn get(
 	params: super::Params,
 	jump_type: u8,
 	client: &crate::Client,
 ) -> Result<Vec<super::Response>, Error> {
 	let route = format!("/jumpstats/{jump_type}/top");
-	match GlobalAPI::get::<Vec<super::Response>, super::Params>(&route, params, client).await {
+	match GlobalAPI::get::<Vec<_>, _>(&route, params, client).await {
 		Err(why) => Err(why),
 		Ok(response) => {
 			if response.is_empty() {

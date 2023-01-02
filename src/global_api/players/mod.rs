@@ -1,16 +1,16 @@
-pub(crate) mod alts;
-pub(crate) mod ip;
-pub(crate) mod steam_id;
+pub mod alts;
+pub mod ip;
+pub mod steam_id;
 
 use {
-	super::{GlobalAPI, GlobalAPIParams, GlobalAPIResponse},
+	super::{api_params, api_response, GlobalAPI, GlobalAPIParams, GlobalAPIResponse},
 	crate::prelude::*,
 };
 
 /// Route: `/players`
 /// - Lets you fetch player information
-pub(crate) async fn get(params: Params, client: &crate::Client) -> Result<Vec<Response>, Error> {
-	match GlobalAPI::get::<Vec<Response>, Params>("/players?", params, client).await {
+pub async fn get(params: Params, client: &crate::Client) -> Result<Vec<Response>, Error> {
+	match GlobalAPI::get::<Vec<_>, _>("/players?", params, client).await {
 		Err(why) => Err(why),
 		Ok(response) => {
 			if response.is_empty() {
@@ -34,7 +34,7 @@ pub struct Response {
 	pub name: String,
 }
 
-impl GlobalAPIResponse for Response {}
+api_response!(Response);
 
 #[derive(Default, Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Params {
@@ -48,4 +48,4 @@ pub struct Params {
 	pub limit: Option<u32>,
 }
 
-impl GlobalAPIParams for Params {}
+api_params!(Params);

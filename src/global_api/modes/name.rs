@@ -1,5 +1,5 @@
 use crate::{
-	global_api::{GlobalAPI, GlobalAPIParams},
+	global_api::{api_params, GlobalAPI, GlobalAPIParams},
 	prelude::*,
 };
 
@@ -10,11 +10,11 @@ use crate::{
 ///
 /// All of these are accessible via [this method](crate::prelude::Mode::api).
 #[allow(dead_code)]
-pub(crate) async fn get(mode_name: &str, client: &crate::Client) -> Result<super::Response, Error> {
+pub async fn get(mode_name: &str, client: &crate::Client) -> Result<super::Response, Error> {
 	let route = format!("/modes/name/{}", mode_name);
-	GlobalAPI::get::<super::Response, Params>(&route, Params::default(), client).await
+	GlobalAPI::get(&route, Params::default(), client).await
 }
 
 #[derive(Default, Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Params;
-impl GlobalAPIParams for Params {}
+api_params!(Params);

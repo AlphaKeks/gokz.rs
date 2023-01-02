@@ -1,17 +1,18 @@
-pub(crate) mod place;
-pub(crate) mod top;
+pub mod place;
+pub mod recent;
+pub mod top;
 
 use {
-	super::{GlobalAPI, GlobalAPIParams, GlobalAPIResponse},
+	super::{api_params, api_response, GlobalAPI, GlobalAPIParams, GlobalAPIResponse},
 	crate::prelude::*,
 };
 
 /// Route: `/records/{id}`
 /// - Lets you fetch a record stored in the GlobalAPI
 /// - `id`: `record_id` property on a [Map](crate::global_api::maps::Response)
-pub(crate) async fn get(record_id: u32, client: &crate::Client) -> Result<Response, Error> {
+pub async fn get(record_id: u32, client: &crate::Client) -> Result<Response, Error> {
 	let route = format!("/records/{}", record_id);
-	GlobalAPI::get::<Response, Params>(&route, Params::default(), client).await
+	GlobalAPI::get(&route, Params::default(), client).await
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -37,9 +38,8 @@ pub struct Response {
 	pub replay_id: u32,
 }
 
-impl GlobalAPIResponse for Response {}
+api_response!(Response);
 
 #[derive(Default, Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
 pub struct Params;
-
-impl GlobalAPIParams for Params {}
+api_params!(Params);
