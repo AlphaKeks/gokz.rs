@@ -22,10 +22,10 @@ pub mod record_filters;
 use record_filters::Response as RecordFilterResponse;
 
 pub mod records;
-use records::{
-	place::Response as PlaceResponse, recent::Response as RecentResponse,
-	Response as RecordResponse,
-};
+use records::{recent::Response as RecentResponse, Response as RecordResponse};
+
+pub mod servers;
+use servers::Response as ServerResponse;
 
 /// Marker trait for possible API response bodies. Feel free to implement this for your own types
 /// but keep in mind that this trait doesn't actually guarantee anything.
@@ -85,7 +85,7 @@ impl GlobalAPI {
 				});
 			},
 			Ok(url) => {
-				debug!("[GlobalAPI::request] Successfully constructed route `{}`.", &url);
+				debug!("[GlobalAPI::request] Successfully constructed URL `{}`.", &url);
 				url
 			},
 		};
@@ -168,7 +168,7 @@ impl GlobalAPI {
 		};
 
 		info!("[GlobalAPI::request] completed successfully.");
-		info!("[GlobalAPI::request] Response: {:?}", &parsed_response);
+		debug!("[GlobalAPI::request] Response: {:?}", &parsed_response);
 
 		// return the `Response`
 		Ok(parsed_response)
@@ -177,7 +177,7 @@ impl GlobalAPI {
 	/// Route: `/bans`
 	/// - Lets you fetch ban entries of players
 	pub async fn get_bans(
-		steam_id: SteamID,
+		steam_id: &SteamID,
 		limit: u32,
 		client: &crate::Client,
 	) -> Result<Vec<BanResponse>, Error> {
@@ -216,7 +216,7 @@ impl GlobalAPI {
 		Ok(response)
 	}
 
-	/// Route: `/maps/id/{map_id}` _OR_ `/maps/name/{map_name}`
+	/// Route: `/maps/{map_id}` _OR_ `/maps/name/{map_name}`
 	/// - Lets you fetch a map stored in the GlobalAPI
 	pub async fn get_map(
 		map_identifier: &MapIdentifier,
@@ -305,7 +305,7 @@ impl GlobalAPI {
 		// This is usually faster, so we prioritize it.
 		if let PlayerIdentifier::SteamID(steam_id) = player_identifier {
 			let response = players::steam_id::get(steam_id, client).await?;
-			info!("[GlobalAPI::get_players] completed successfully.");
+			info!("[GlobalAPI::get_player] completed successfully.");
 
 			return Ok(response);
 		}
@@ -319,7 +319,7 @@ impl GlobalAPI {
 		}
 
 		let mut response = players::get(params, client).await?;
-		info!("[GlobalAPI::get_players] completed successfully.");
+		info!("[GlobalAPI::get_player] completed successfully.");
 
 		// this is safe to do since `players::get` would've returned early already if the response
 		// was empty
@@ -377,10 +377,10 @@ impl GlobalAPI {
 	/// Route: `/records/place/{id}`
 	/// - Lets you fetch the leaderboard spot of a given record
 	/// - `id`: `record_id` property on a [Map](maps::Response)
-	pub async fn get_place(record_id: u32, client: &crate::Client) -> Result<PlaceResponse, Error> {
+	pub async fn get_place(record_id: u32, client: &crate::Client) -> Result<u32, Error> {
 		info!("[GlobalAPI::get_place] starting...");
 
-		let response = records::place::get(record_id, client).await?;
+		let response = records::place::get(record_id, client).await?.into();
 		info!("[GlobalAPI::get_place] completed successfully.");
 
 		Ok(response)
@@ -421,6 +421,41 @@ impl GlobalAPI {
 		Ok(response)
 	}
 
+	/// Route: `/records/top`
+	/// - Lets you fetch all records of a player
+	///
+	/// NOTE: if you want access to more parameters, consider directly using [`records::top::get`]
+	/// instead.
+	pub async fn get_player_records(
+		player_identifier: &PlayerIdentifier,
+		mode: &Mode,
+		has_teleports: bool,
+		course: u8,
+		limit: Option<u32>,
+		client: &crate::Client,
+	) -> Result<Vec<RecordResponse>, Error> {
+		info!("[GlobalAPI::get_player_records] starting...");
+
+		let mut params = records::top::Params {
+			modes_list_string: Some(mode.api()),
+			has_teleports: Some(has_teleports),
+			stage: Some(course),
+			limit,
+			..Default::default()
+		};
+
+		match player_identifier {
+			PlayerIdentifier::Name(name) => params.player_name = Some(name.to_owned()),
+			PlayerIdentifier::SteamID(steam_id) => params.steam_id = Some(steam_id.to_string()),
+			PlayerIdentifier::SteamID64(steam_id64) => params.steamid64 = Some(*steam_id64),
+		};
+
+		let response = records::top::get(params, client).await?;
+		info!("[GlobalAPI::get_player_records] completed successfully.");
+
+		Ok(response)
+	}
+
 	/// Route: `/records/top/recent`
 	/// - Lets you fetch the most recently created records
 	/// - Some notes:
@@ -438,16 +473,16 @@ impl GlobalAPI {
 		limit: Option<u32>,
 		client: &crate::Client,
 	) -> Result<Vec<RecentResponse>, Error> {
-		info!("[GlobalAPI::get_recent_slow] starting...");
+		info!("[GlobalAPI::get_recent_lossy] starting...");
 
 		let params = records::recent::Params {
-			modes_list_string: Some(mode.to_string()),
+			modes_list_string: Some(mode.api()),
 			limit,
 			..Default::default()
 		};
 
 		let response = records::recent::get(params, client).await?;
-		info!("[GlobalAPI::get_recent] completed successfully.");
+		info!("[GlobalAPI::get_lossy] completed successfully.");
 
 		Ok(response)
 	}
@@ -469,25 +504,8 @@ impl GlobalAPI {
 	) -> Result<RecordResponse, Error> {
 		info!("[GlobalAPI::get_recent] starting...");
 
-		// convenience closure for later, since we will need to make 6 requests;
 		// this is necessary because if we're not specific enough, the API might not return all the
 		// data we want
-		let fetch_rec = |mode: String, has_teleports: bool| {
-			let mut params = records::top::Params {
-				modes_list_string: Some(mode),
-				has_teleports: Some(has_teleports),
-				stage: Some(0),
-				limit: Some(9999),
-				..Default::default()
-			};
-			match player_identifier {
-				PlayerIdentifier::Name(name) => params.player_name = Some(name.to_owned()),
-				PlayerIdentifier::SteamID(steam_id) => params.steam_id = Some(steam_id.to_string()),
-				PlayerIdentifier::SteamID64(steam_id64) => params.steamid64 = Some(*steam_id64),
-			}
-			records::top::get(params, client)
-		};
-
 		// if the API returns an error that is not `NoData` in any of the requests, we want to
 		// return that error later. these errors include but are not limited to:
 		//   - no status code
@@ -495,13 +513,14 @@ impl GlobalAPI {
 		let mut potential_err = None;
 
 		// make requests
+		let (kzt, skz, vnl) = (Mode::KZTimer, Mode::SimpleKZ, Mode::Vanilla);
 		let mut records = join_all([
-			fetch_rec(String::from("kz_timer"), true),
-			fetch_rec(String::from("kz_timer"), false),
-			fetch_rec(String::from("kz_simple"), true),
-			fetch_rec(String::from("kz_simple"), false),
-			fetch_rec(String::from("kz_vanilla"), true),
-			fetch_rec(String::from("kz_vanilla"), false),
+			Self::get_player_records(player_identifier, &kzt, true, 0, Some(9999), client),
+			Self::get_player_records(player_identifier, &kzt, false, 0, Some(9999), client),
+			Self::get_player_records(player_identifier, &skz, true, 0, Some(9999), client),
+			Self::get_player_records(player_identifier, &skz, false, 0, Some(9999), client),
+			Self::get_player_records(player_identifier, &vnl, true, 0, Some(9999), client),
+			Self::get_player_records(player_identifier, &vnl, false, 0, Some(9999), client),
 		])
 		.await
 		.into_iter()
@@ -558,24 +577,77 @@ impl GlobalAPI {
 		}
 
 		// return the record with the largest timestamp
+		info!("[GlobalAPI::get_recent] completed successfully.");
 		Ok(records.remove(idx))
 	}
-}
 
-#[cfg(test)]
-mod tests {
-	use super::*;
+	/// - Returns a download link to a replay
+	/// Route: `/records/replay/{replay_id}`
+	/// - `replay_id`: `replay_id` property on a [Record](records::Response)
+	/// - Some notes:
+	///   - only works for records created on servers with GOKZ version 3.0.0 or higher
+	///   - not all of those records made it to the API; expect some missing ones
+	pub fn get_replay_by_id(replay_id: u32) -> String {
+		info!("[GlobalAPI::get_replay_by_id] completed successfully.");
+		format!("{}/records/replay/{}", Self::BASE_URL, replay_id)
+	}
 
-	#[test_log::test(tokio::test)]
-	async fn penis() {
-		let client = crate::Client::new();
-		log::info!("PENIS");
+	/// Route: `/records/{record_id}/replay`
+	/// - Returns a download link to the replay file of a record.
+	/// - `record_id`: `id` property on a [Record](records::Response)
+	/// - Some notes:
+	///   - only works for records created on servers with GOKZ version 3.0.0 or higher
+	///   - not all of those records made it to the API; expect some missing ones
+	pub fn get_replay_by_record_id(record_id: u32) -> String {
+		info!("[GlobalAPI::get_replay_by_record_id] completed successfully.");
+		format!("{}/records/{}/replay", Self::BASE_URL, record_id)
+	}
 
-		let h = GlobalAPI::get_recent(&PlayerIdentifier::Name(String::from("AlphaKeks")), &client)
-			.await
-			.unwrap();
+	/// Route: `/servers`
+	/// - Lets you fetch information about global servers
+	pub async fn get_servers(
+		limit: Option<u32>,
+		client: &crate::Client,
+	) -> Result<Vec<ServerResponse>, Error> {
+		info!("[GlobalAPI::get_servers] starting...");
 
-		println!("{:?}", h);
+		// not quite sure what to put here yet
+		let params = servers::Params { limit, ..Default::default() };
+
+		let response = servers::get(params, client).await?;
+		info!("[GlobalAPI::get_servers] completed successfully.");
+
+		Ok(response)
+	}
+
+	/// Route: `/servers/{id}`
+	/// - Lets you fetch information about global servers
+	/// - `id`: `id` property on a [Server](servers::Response)
+	pub async fn get_server_by_id(
+		server_id: u32,
+		client: &crate::Client,
+	) -> Result<ServerResponse, Error> {
+		info!("[GlobalAPI::get_server_by_id] starting...");
+
+		let response = servers::id::get(server_id, client).await?;
+		info!("[GlobalAPI::get_server_by_id] completed successfully.");
+
+		Ok(response)
+	}
+
+	/// Route: `/servers/name/{server_name}`
+	/// - Lets you fetch information about global servers
+	/// - `server_name`: `server_name` property on a [Server](servers::Response)
+	pub async fn get_server_by_name(
+		server_name: &str,
+		client: &crate::Client,
+	) -> Result<ServerResponse, Error> {
+		info!("[GlobalAPI::get_server_by_name] starting...");
+
+		let response = servers::name::get(server_name, client).await?;
+		info!("[GlobalAPI::get_server_by_name] completed successfully.");
+
+		Ok(response)
 	}
 }
 
@@ -585,51 +657,9 @@ mod tests {
 /// - Lets you fetch world records stored in the GlobalAPI
 RecordsTopWorldRecords,
 
-/// Route: `/records/top/recent`
-/// - Lets you fetch the most recently created records
-/// - Some notes:
-///   - only works for personal bests
-///   - this endpoint is pretty slow, so expect to wait some time before a record actually
-///     appears here
-RecordsTopRecent,
-
-/// Route: `/records/record_filter`
-/// - I have no idea what this does, but it returns some information.
-RecordsRecordFilter,
-
-/// Route: `/records/{record_id}/replay`
-/// - Returns a download link to the replay file of a record.
-/// - Some notes:
-///   - only works for records created on servers with GOKZ version 3.0.0 or higher
-///   - not all of those records made it to the API; expect some missing ones
-/// - `record_id`: `id` property on a [Record]()
-RecordsIDReplay,
-
-/// Route: `/records/replay/{replay_id}`
-/// - Returns a download link to a replay
-/// - Some notes:
-///   - only works for records created on servers with GOKZ version 3.0.0 or higher
-///   - not all of those records made it to the API; expect some missing ones
-/// - `replay_id`: `replay_id` property on a [Record]()
-RecordsReplayID,
-
 /// Route: `/records/replay/list`
 /// - Seems to return some information about replays, no idea.
 /// - You can not filter this by anything, so the endpoint is pretty useless.
 RecordsReplayList,
-
-/// Route: `/servers`
-/// - Lets you fetch information about global servers
-Servers,
-
-/// Route: `/servers/{id}`
-/// - Lets you fetch information about a global server
-/// - `id`: if you are a server owner, you can get your server's ID [here](https://portal.global-api.com/dashboard/servers/owned).
-ServersID,
-
-/// Route: `/servers/name/{server_name}`
-/// - Lets you fetch information about a global server
-/// - `server_name`: name of a server
-ServersName,
 
 */

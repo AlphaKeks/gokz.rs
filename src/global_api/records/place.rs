@@ -15,6 +15,12 @@ pub async fn get(record_id: u32, client: &crate::Client) -> Result<Response, Err
 pub struct Response(pub u32);
 api_response!(Response);
 
+impl From<Response> for u32 {
+	fn from(value: Response) -> Self {
+		value.0
+	}
+}
+
 #[derive(Default, Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Params;
 api_params!(Params);

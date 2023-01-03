@@ -54,7 +54,7 @@ impl Default for Params {
 			map_id: None,
 			map_name: None,
 			has_teleports: None,
-			tickrate: None,
+			tickrate: Some(128),
 			stage: None,
 			modes_list_string: Some(String::from("kz_timer")),
 			modes_list: None,

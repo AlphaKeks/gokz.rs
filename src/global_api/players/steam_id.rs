@@ -7,8 +7,10 @@ use crate::{
 /// - Lets you fetch player information
 /// - `steamid`: any valid [SteamID](crate::prelude::SteamID) (as a string)
 pub async fn get(steam_id: &SteamID, client: &crate::Client) -> Result<super::Response, Error> {
-	let route = format!("/players/steam_id/{}", steam_id);
-	GlobalAPI::get(&route, Params::default(), client).await
+	let route = format!("/players/steamid/{}", steam_id);
+	let mut players =
+		GlobalAPI::get::<Vec<super::Response>, Params>(&route, Params::default(), client).await?;
+	Ok(players.remove(0))
 }
 #[derive(Default, Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Params;

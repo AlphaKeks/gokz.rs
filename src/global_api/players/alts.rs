@@ -10,7 +10,7 @@ pub async fn get(
 	steam_id: &SteamID,
 	client: &crate::Client,
 ) -> Result<Vec<super::Response>, Error> {
-	let route = format!("/players/steam_id/{}/alts", steam_id);
+	let route = format!("/players/steamid/{}/alts", steam_id);
 	GlobalAPI::get::<Vec<_>, _>(&route, Params::default(), client).await
 }
 #[derive(Default, Debug, Clone, serde::Serialize, serde::Deserialize)]

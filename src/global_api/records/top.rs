@@ -49,7 +49,7 @@ impl Default for Params {
 			steamid64: None,
 			map_id: None,
 			map_name: None,
-			tickrate: None,
+			tickrate: Some(128),
 			overall: None,
 			stage: None,
 			modes_list_string: None,
