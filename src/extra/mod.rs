@@ -39,9 +39,9 @@ pub async fn get_unfinished(
 	)
 	.await?
 	.into_iter()
-	.filter_map(|filter| {
-		if !completed_maps.contains(&filter.map_id) {
-			return Some(filter.map_id);
+	.filter_map(|record_filter| {
+		if !completed_maps.contains(&record_filter.map_id) {
+			return Some(record_filter.map_id);
 		}
 		None
 	})

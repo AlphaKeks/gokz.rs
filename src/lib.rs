@@ -12,6 +12,6 @@ pub use global_api::{
 mod kzgo;
 pub use kzgo::KZGO;
 
-mod extra;
+pub mod extra;
 
 pub use reqwest::Client;
