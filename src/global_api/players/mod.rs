@@ -9,7 +9,7 @@ use {
 
 /// Route: `/players`
 /// - Lets you fetch player information
-pub async fn get(params: Params, client: &crate::Client) -> Result<Vec<Response>, Error> {
+pub async fn get(params: Params, client: &crate::Client) -> Result<Vec<Player>, Error> {
 	match GlobalAPI::get::<Vec<_>, _>("/players?", params, client).await {
 		Err(why) => Err(why),
 		Ok(response) => {
@@ -26,7 +26,7 @@ pub async fn get(params: Params, client: &crate::Client) -> Result<Vec<Response>
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct Response {
+pub struct Player {
 	pub steamid64: String,
 	pub steam_id: String,
 	pub is_banned: bool,
@@ -34,7 +34,7 @@ pub struct Response {
 	pub name: String,
 }
 
-api_response!(Response);
+api_response!(Player);
 
 #[derive(Default, Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Params {

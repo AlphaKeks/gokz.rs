@@ -8,7 +8,7 @@ use {
 
 /// Route: `/servers`
 /// - Lets you fetch information about global servers
-pub async fn get(params: Params, client: &crate::Client) -> Result<Vec<Response>, Error> {
+pub async fn get(params: Params, client: &crate::Client) -> Result<Vec<Server>, Error> {
 	match GlobalAPI::get::<Vec<_>, _>("/servers?", params, client).await {
 		Err(why) => Err(why),
 		Ok(response) => {
@@ -25,7 +25,7 @@ pub async fn get(params: Params, client: &crate::Client) -> Result<Vec<Response>
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct Response {
+pub struct Server {
 	pub id: u32,
 	pub port: u32,
 	pub ip: String,
@@ -33,7 +33,7 @@ pub struct Response {
 	pub owner_steamid64: String,
 }
 
-api_response!(Response);
+api_response!(Server);
 
 #[derive(Default, Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Params {

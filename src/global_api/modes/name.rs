@@ -10,7 +10,7 @@ use crate::{
 ///
 /// All of these are accessible via [this method](crate::prelude::Mode::api).
 #[allow(dead_code)]
-pub async fn get(mode_name: &str, client: &crate::Client) -> Result<super::Response, Error> {
+pub async fn get(mode_name: &str, client: &crate::Client) -> Result<super::APIMode, Error> {
 	let route = format!("/modes/name/{}", mode_name);
 	GlobalAPI::get(&route, Params::default(), client).await
 }

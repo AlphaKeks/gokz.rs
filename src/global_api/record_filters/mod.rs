@@ -5,7 +5,7 @@ use {
 
 /// Route: `/record_filters`
 /// - Lets you fetch record filters for individual courses
-pub async fn get(params: Params, client: &crate::Client) -> Result<Vec<Response>, Error> {
+pub async fn get(params: Params, client: &crate::Client) -> Result<Vec<RecordFilter>, Error> {
 	match GlobalAPI::get::<Vec<_>, _>("/record_filters?", params, client).await {
 		Err(why) => Err(why),
 		Ok(response) => {
@@ -22,7 +22,7 @@ pub async fn get(params: Params, client: &crate::Client) -> Result<Vec<Response>
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct Response {
+pub struct RecordFilter {
 	pub id: u32,
 	pub map_id: u32,
 	pub stage: u8,
@@ -33,7 +33,7 @@ pub struct Response {
 	pub updated_by_id: String,
 }
 
-api_response!(Response);
+api_response!(RecordFilter);
 
 #[derive(Default, Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Params {

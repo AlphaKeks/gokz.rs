@@ -10,7 +10,7 @@ use {
 ///      server error`.
 ///   - will only yield personal bests
 ///   - endpoint is pretty slow; it will take a while until a record appears here
-pub async fn get(params: Params, client: &crate::Client) -> Result<Vec<Response>, Error> {
+pub async fn get(params: Params, client: &crate::Client) -> Result<Vec<RecentRecord>, Error> {
 	match GlobalAPI::get::<Vec<_>, _>("/records/top/recent?", params, client).await {
 		Err(why) => Err(why),
 		Ok(response) => {
@@ -68,7 +68,7 @@ impl Default for Params {
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct Response {
+pub struct RecentRecord {
 	pub id: u32,
 	pub steamid64: String,
 	pub player_name: Option<String>,
@@ -93,4 +93,4 @@ pub struct Response {
 	pub replay_id: u32,
 }
 
-api_response!(Response);
+api_response!(RecentRecord);

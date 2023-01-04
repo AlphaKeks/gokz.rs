@@ -44,6 +44,16 @@ impl std::fmt::Display for Error {
 				warn!("Raw Message: {:?}", raw_message);
 				msg
 			},
+			ErrorKind::KZGO { status_code, raw_message } => {
+				let msg = if let Some(status_code) = status_code {
+					format!("KZ:GO API request failed with Status Code `{}`.", status_code)
+				} else {
+					String::from("KZ:GO API request failed, but returned no Status Code.")
+				};
+				warn!("{}", &msg);
+				warn!("Raw Message: {:?}", raw_message);
+				msg
+			},
 		};
 
 		write!(f, "{}", msg)
@@ -52,22 +62,41 @@ impl std::fmt::Display for Error {
 
 impl std::error::Error for Error {}
 
+/// The type of [`Error`]
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum ErrorKind {
-	/// `expected`: the expected type
-	/// `got`: original input which is invalid
-	InvalidInput { expected: String, got: String },
+	InvalidInput {
+		/// the expected type
+		expected: String,
+		/// original input which is invalid
+		got: String,
+	},
 
-	/// `expected`: the expected type
-	/// `got`: original input which failed to be parsed
-	Parsing { expected: String, got: Option<String> },
+	Parsing {
+		/// the expected type
+		expected: String,
+		/// original input which failed to be parsed
+		got: Option<String>,
+	},
 
-	/// `expected`: the expected type
-	NoData { expected: String },
+	NoData {
+		/// the expected type
+		expected: String,
+	},
 
-	/// `status_code`: HTTP Status Code
-	/// `raw_message`: the message returned by the GlobalAPI (if there is one)
-	GlobalAPI { status_code: Option<String>, raw_message: Option<String> },
+	GlobalAPI {
+		/// HTTP Status Code
+		status_code: Option<String>,
+		/// the message returned by the GlobalAPI (if there is one)
+		raw_message: Option<String>,
+	},
+
+	KZGO {
+		/// HTTP Status Code
+		status_code: Option<String>,
+		/// the message returned by the GlobalAPI (if there is one)
+		raw_message: Option<String>,
+	},
 }
 
 /// A unique identifier for a [Steam](https://www.steamcommunity.com/) Account.
@@ -276,8 +305,8 @@ impl From<Mode> for u8 {
 }
 
 /// A Map can be represented in multiple ways when making requests to the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V).
-/// - Name => `"kz_lionharder"`
 /// - ID => `992`
+/// - Name => `"kz_lionharder"`
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum MapIdentifier {
 	ID(u32),

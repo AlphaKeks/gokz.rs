@@ -8,7 +8,7 @@ use {
 
 /// Route: `/modes`
 /// - Lets you fetch all modes stored in the GlobalAPI
-pub async fn get(client: &crate::Client) -> Result<Vec<Response>, Error> {
+pub async fn get(client: &crate::Client) -> Result<Vec<APIMode>, Error> {
 	match GlobalAPI::get::<Vec<_>, _>("/modes?", Params::default(), client).await {
 		Err(why) => Err(why),
 		Ok(response) => {
@@ -25,7 +25,7 @@ pub async fn get(client: &crate::Client) -> Result<Vec<Response>, Error> {
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct Response {
+pub struct APIMode {
 	pub id: u8,
 	pub name: String,
 	pub description: String,
@@ -40,7 +40,7 @@ pub struct Response {
 	pub updated_by_id: String,
 }
 
-api_response!(Response);
+api_response!(APIMode);
 
 #[derive(Default, Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Params;

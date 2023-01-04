@@ -10,13 +10,13 @@ use {
 /// Route: `/records/{id}`
 /// - Lets you fetch a record stored in the GlobalAPI
 /// - `id`: `record_id` property on a [Map](crate::global_api::maps::Response)
-pub async fn get(record_id: u32, client: &crate::Client) -> Result<Response, Error> {
+pub async fn get(record_id: u32, client: &crate::Client) -> Result<Record, Error> {
 	let route = format!("/records/{}", record_id);
 	GlobalAPI::get(&route, Params::default(), client).await
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct Response {
+pub struct Record {
 	pub id: u32,
 	pub steamid64: String,
 	pub player_name: Option<String>,
@@ -38,7 +38,7 @@ pub struct Response {
 	pub replay_id: u32,
 }
 
-api_response!(Response);
+api_response!(Record);
 
 #[derive(Default, Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
 pub struct Params;

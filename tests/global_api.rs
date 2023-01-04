@@ -5,7 +5,7 @@ use gokz_rs::prelude::*;
 use gokz_rs::GlobalAPI;
 use log::info;
 
-// #[ignore = "expensive"]
+#[ignore = "expensive"]
 #[test_log::test(tokio::test)]
 async fn get_bans() -> anyhow::Result<()> {
 	let steam_id = SteamID::new("STEAM_1:1:161178172")?;
@@ -23,7 +23,7 @@ async fn get_bans() -> anyhow::Result<()> {
 	Ok(())
 }
 
-// #[ignore = "expensive"]
+#[ignore = "expensive"]
 #[test_log::test(tokio::test)]
 async fn get_maps() -> anyhow::Result<()> {
 	let client = gokz_rs::Client::new();
@@ -35,7 +35,7 @@ async fn get_maps() -> anyhow::Result<()> {
 	Ok(())
 }
 
-// #[ignore = "expensive"]
+#[ignore = "expensive"]
 #[test_log::test(tokio::test)]
 async fn get_map_() -> anyhow::Result<()> {
 	let client = gokz_rs::Client::new();
@@ -57,7 +57,7 @@ async fn get_map_() -> anyhow::Result<()> {
 	Ok(())
 }
 
-// #[ignore = "expensive"]
+#[ignore = "expensive"]
 #[test_log::test(tokio::test)]
 async fn get_modes() -> anyhow::Result<()> {
 	let client = gokz_rs::Client::new();
@@ -69,7 +69,7 @@ async fn get_modes() -> anyhow::Result<()> {
 	Ok(())
 }
 
-// #[ignore = "expensive"]
+#[ignore = "expensive"]
 #[test_log::test(tokio::test)]
 async fn get_mode_() -> anyhow::Result<()> {
 	let client = gokz_rs::Client::new();
@@ -92,7 +92,7 @@ async fn get_mode_() -> anyhow::Result<()> {
 	Ok(())
 }
 
-// #[ignore = "expensive"]
+#[ignore = "expensive"]
 #[test_log::test(tokio::test)]
 async fn get_players() -> anyhow::Result<()> {
 	let client = gokz_rs::Client::new();
@@ -103,7 +103,7 @@ async fn get_players() -> anyhow::Result<()> {
 	Ok(())
 }
 
-// #[ignore = "expensive"]
+#[ignore = "expensive"]
 #[test_log::test(tokio::test)]
 async fn get_player_t() -> anyhow::Result<()> {
 	let client = gokz_rs::Client::new();
@@ -122,7 +122,7 @@ async fn get_player_t() -> anyhow::Result<()> {
 	Ok(())
 }
 
-// #[ignore = "expensive"]
+#[ignore = "expensive"]
 #[test_log::test(tokio::test)]
 async fn get_player_alts() -> anyhow::Result<()> {
 	let client = gokz_rs::Client::new();
@@ -134,7 +134,7 @@ async fn get_player_alts() -> anyhow::Result<()> {
 	Ok(())
 }
 
-// #[ignore = "expensive"]
+#[ignore = "expensive"]
 #[test_log::test(tokio::test)]
 async fn get_filters() -> anyhow::Result<()> {
 	let client = gokz_rs::Client::new();
@@ -145,7 +145,7 @@ async fn get_filters() -> anyhow::Result<()> {
 	Ok(())
 }
 
-// #[ignore = "expensive"]
+#[ignore = "expensive"]
 #[test_log::test(tokio::test)]
 async fn get_place() -> anyhow::Result<()> {
 	let client = gokz_rs::Client::new();
@@ -156,7 +156,7 @@ async fn get_place() -> anyhow::Result<()> {
 	Ok(())
 }
 
-// #[ignore = "expensive"]
+#[ignore = "expensive"]
 #[test_log::test(tokio::test)]
 async fn get_record() -> anyhow::Result<()> {
 	let client = gokz_rs::Client::new();
@@ -169,7 +169,7 @@ async fn get_record() -> anyhow::Result<()> {
 	Ok(())
 }
 
-// #[ignore = "expensive"]
+#[ignore = "expensive"]
 #[test_log::test(tokio::test)]
 async fn get_recent_lossy() -> anyhow::Result<()> {
 	let client = gokz_rs::Client::new();
@@ -182,7 +182,7 @@ async fn get_recent_lossy() -> anyhow::Result<()> {
 	Ok(())
 }
 
-// #[ignore = "expensive"]
+#[ignore = "expensive"]
 #[test_log::test(tokio::test)]
 async fn get_recent_t() -> anyhow::Result<()> {
 	let client = gokz_rs::Client::new();
@@ -195,7 +195,7 @@ async fn get_recent_t() -> anyhow::Result<()> {
 	Ok(())
 }
 
-// #[ignore = "expensive"]
+#[ignore = "expensive"]
 #[test_log::test(tokio::test)]
 async fn get_replay_by_id() -> anyhow::Result<()> {
 	let replay_link = GlobalAPI::get_replay_by_id(60107);
@@ -204,7 +204,7 @@ async fn get_replay_by_id() -> anyhow::Result<()> {
 	Ok(())
 }
 
-// #[ignore = "expensive"]
+#[ignore = "expensive"]
 #[test_log::test(tokio::test)]
 async fn get_replay_by_record_id() -> anyhow::Result<()> {
 	let replay_link = GlobalAPI::get_replay_by_record_id(16557384);

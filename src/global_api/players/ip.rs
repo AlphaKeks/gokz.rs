@@ -12,7 +12,7 @@ pub async fn get(
 	steam_id: &SteamID,
 	ip: &str,
 	client: &crate::Client,
-) -> Result<super::Response, Error> {
+) -> Result<super::Player, Error> {
 	let route = format!("/players/steam_id/{}/ip/{}", steam_id, ip);
 	GlobalAPI::get(&route, Params::default(), client).await
 }

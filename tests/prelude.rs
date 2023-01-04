@@ -7,10 +7,10 @@ fn steam_id_constructor() {
 	let invalid2 = SteamID::new("STEAM_1:1:161178172word");
 	let invalid3 = SteamID::new("some random text");
 
-	assert!(dbg!(valid).is_ok());
-	assert!(dbg!(invalid1).is_err());
-	assert!(dbg!(invalid2).is_err());
-	assert!(dbg!(invalid3).is_err());
+	assert!(valid.is_ok());
+	assert!(invalid1.is_err());
+	assert!(invalid2.is_err());
+	assert!(invalid3.is_err());
 }
 
 #[test]
@@ -29,8 +29,6 @@ fn steam_id_from_u64() {
 	let alphakeks_64 = 76561198282622073;
 	let alphakeks_32 = "STEAM_1:1:161178172";
 	assert_eq!(alphakeks_32, SteamID::from(alphakeks_64).to_string());
-
-	println!("{}", SteamID::from(76561198231238712));
 
 	let blacky_64 = 76561198091592005;
 	let blacky_32 = "STEAM_1:1:65663138";

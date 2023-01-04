@@ -5,7 +5,7 @@ use {
 
 /// Route: `/bans`
 /// - Lets you fetch ban entries of players
-pub async fn get(params: Params, client: &crate::Client) -> Result<Vec<Response>, Error> {
+pub async fn get(params: Params, client: &crate::Client) -> Result<Vec<Ban>, Error> {
 	match GlobalAPI::get::<Vec<_>, _>("/bans?", params, client).await {
 		Err(why) => Err(why),
 		Ok(response) => {
@@ -61,7 +61,7 @@ impl Default for Params {
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct Response {
+pub struct Ban {
 	pub id: u32,
 	pub ban_type: String,
 	pub expires_on: String,
@@ -76,4 +76,4 @@ pub struct Response {
 	pub updated_on: String,
 }
 
-api_response!(Response);
+api_response!(Ban);

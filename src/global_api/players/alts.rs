@@ -9,7 +9,7 @@ use crate::{
 pub async fn get(
 	steam_id: &SteamID,
 	client: &crate::Client,
-) -> Result<Vec<super::Response>, Error> {
+) -> Result<Vec<super::Player>, Error> {
 	let route = format!("/players/steamid/{}/alts", steam_id);
 	GlobalAPI::get::<Vec<_>, _>(&route, Params::default(), client).await
 }

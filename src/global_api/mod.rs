@@ -5,27 +5,13 @@ use {
 };
 
 pub mod bans;
-use bans::Response as BanResponse;
-
 pub mod jumpstats;
-
 pub mod maps;
-use maps::Response as MapResponse;
-
 pub mod modes;
-use modes::Response as ModeResponse;
-
 pub mod players;
-use players::Response as PlayerResponse;
-
 pub mod record_filters;
-use record_filters::Response as RecordFilterResponse;
-
 pub mod records;
-use records::{recent::Response as RecentResponse, Response as RecordResponse};
-
 pub mod servers;
-use servers::Response as ServerResponse;
 
 /// Marker trait for possible API response bodies. Feel free to implement this for your own types
 /// but keep in mind that this trait doesn't actually guarantee anything.
@@ -49,6 +35,7 @@ macro_rules! api_params {
 }
 pub(crate) use api_params;
 
+/// Methods for the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2)
 pub struct GlobalAPI;
 impl GlobalAPI {
 	pub const BASE_URL: &str = "https://kztimerglobal.com/api/v2";
@@ -66,16 +53,16 @@ impl GlobalAPI {
 		Params: GlobalAPIParams,
 		Response: GlobalAPIResponse,
 	{
-		info!("[GlobalAPI::request] starting...");
-		debug!("[GlobalAPI::request] `route`: {:?}", route);
-		debug!("[GlobalAPI::request] `params`: {:?}", &params);
+		info!("[GlobalAPI::get] starting...");
+		debug!("[GlobalAPI::get] `route`: {:?}", route);
+		debug!("[GlobalAPI::get] `params`: {:?}", &params);
 
 		// construct full URL
 		// e.g. `https://kztimerglobal.com/api/v2/records/top?`
 		let full_route = format!("{}{}", Self::BASE_URL, route);
 		let url = match reqwest::Url::parse(&full_route) {
 			Err(why) => {
-				warn!("[GlobalAPI::request] Failed to parse URL: {:?}", why);
+				warn!("[GlobalAPI::get] Failed to parse URL: {:?}", why);
 				return Err(Error {
 					kind: ErrorKind::Parsing {
 						expected: String::from("valid URL"),
@@ -85,7 +72,7 @@ impl GlobalAPI {
 				});
 			},
 			Ok(url) => {
-				debug!("[GlobalAPI::request] Successfully constructed URL `{}`.", &url);
+				debug!("[GlobalAPI::get] Successfully constructed URL `{}`.", &url);
 				url
 			},
 		};
@@ -93,9 +80,9 @@ impl GlobalAPI {
 		// make a GET request to the GlobalAPI
 		let response = match client.get(url).query(&params).send().await {
 			Err(why) => {
-				warn!("[GlobalAPI::request] HTTPS Request failed.");
+				warn!("[GlobalAPI::get] HTTPS Request failed.");
 				if let Some(code) = why.status() {
-					warn!("[GlobalAPI::request] Request failed with status code `{}`.", &code);
+					warn!("[GlobalAPI::get] Request failed with status code `{}`.", &code);
 					return Err(Error {
 						kind: ErrorKind::GlobalAPI {
 							status_code: Some(code.to_string()),
@@ -105,7 +92,7 @@ impl GlobalAPI {
 					});
 				}
 
-				warn!("[GlobalAPI::request] Request failed with no status code.");
+				warn!("[GlobalAPI::get] Request failed with no status code.");
 				return Err(Error {
 					kind: ErrorKind::GlobalAPI {
 						status_code: None,
@@ -119,7 +106,7 @@ impl GlobalAPI {
 			Ok(response) => match response.error_for_status() {
 				Err(why) => {
 					let Some(code) = why.status() else {
-				        warn!("[GlobalAPI::request] Request failed with no status code.");
+				        warn!("[GlobalAPI::get] Request failed with no status code.");
 				        return Err(Error {
 					        kind: ErrorKind::GlobalAPI {
 						        status_code: None,
@@ -131,7 +118,7 @@ impl GlobalAPI {
 				        });
 					};
 
-					warn!("[GlobalAPI::request] Request failed with status code `{}`.", &code);
+					warn!("[GlobalAPI::get] Request failed with status code `{}`.", &code);
 					return Err(Error {
 						kind: ErrorKind::GlobalAPI {
 							status_code: Some(code.to_string()),
@@ -142,7 +129,7 @@ impl GlobalAPI {
 				},
 				Ok(response) => {
 					trace!(
-						"[GlobalAPI::request] GlobalAPI responded successfully with code `{}`.",
+						"[GlobalAPI::get] GlobalAPI responded successfully with code `{}`.",
 						response.status()
 					);
 					response
@@ -153,8 +140,8 @@ impl GlobalAPI {
 		// parse the response into the desired `Response` format
 		let parsed_response = match response.json::<Response>().await {
 			Err(why) => {
-				warn!("[GlobalAPI::request] Failed to parse response.");
-				warn!("[GlobalAPI::request] {:?}", why);
+				warn!("[GlobalAPI::get] Failed to parse response.");
+				warn!("[GlobalAPI::get] {:?}", why);
 
 				return Err(Error {
 					kind: ErrorKind::Parsing { expected: String::from("JSON"), got: None },
@@ -162,13 +149,13 @@ impl GlobalAPI {
 				});
 			},
 			Ok(parsed_response) => {
-				trace!("[GlobalAPI::request] Successfully parsed response.");
+				trace!("[GlobalAPI::get] Successfully parsed response.");
 				parsed_response
 			},
 		};
 
-		info!("[GlobalAPI::request] completed successfully.");
-		debug!("[GlobalAPI::request] Response: {:?}", &parsed_response);
+		info!("[GlobalAPI::get] completed successfully.");
+		debug!("[GlobalAPI::get] Response: {:?}", &parsed_response);
 
 		// return the `Response`
 		Ok(parsed_response)
@@ -180,7 +167,7 @@ impl GlobalAPI {
 		steam_id: &SteamID,
 		limit: u32,
 		client: &crate::Client,
-	) -> Result<Vec<BanResponse>, Error> {
+	) -> Result<Vec<bans::Ban>, Error> {
 		info!("[GlobalAPI::get_bans] starting...");
 
 		let params = bans::Params {
@@ -201,7 +188,7 @@ impl GlobalAPI {
 		validated_only: bool,
 		limit: Option<u32>,
 		client: &crate::Client,
-	) -> Result<Vec<MapResponse>, Error> {
+	) -> Result<Vec<maps::Map>, Error> {
 		info!("[GlobalAPI::get_maps] starting...");
 
 		let params = maps::Params {
@@ -221,7 +208,7 @@ impl GlobalAPI {
 	pub async fn get_map(
 		map_identifier: &MapIdentifier,
 		client: &crate::Client,
-	) -> Result<MapResponse, Error> {
+	) -> Result<maps::Map, Error> {
 		info!("[GlobalAPI::get_map] starting...");
 
 		let response = match map_identifier {
@@ -235,7 +222,7 @@ impl GlobalAPI {
 
 	/// Route: `/modes`
 	/// - Lets you fetch all modes stored in the GlobalAPI
-	pub async fn get_modes(client: &crate::Client) -> Result<Vec<ModeResponse>, Error> {
+	pub async fn get_modes(client: &crate::Client) -> Result<Vec<modes::APIMode>, Error> {
 		info!("[GlobalAPI::get_modes] starting...");
 
 		let response = modes::get(client).await?;
@@ -249,22 +236,22 @@ impl GlobalAPI {
 	/// Routes:
 	///
 	/// - `/modes/id/{id}`:
-	///   - `200` (KZTimer)
-	///   - `201` (SimpleKZ)
-	///   - `202` (Vanilla)
+	///   - `200` ([KZTimer](crate::prelude::Mode::KZTimer))
+	///   - `201` ([SimpleKZ](crate::prelude::Mode::SimpleKZ))
+	///   - `202` ([Vanilla](crate::prelude::Mode::Vanilla))
 	///
-	/// All of these are accessible by casting a [Mode](crate::prelude::Mode) to an integer using
-	/// the [as](https://doc.rust-lang.org/std/keyword.as.html) keyword.
+	///   -> All of these are accessible by casting a [Mode](crate::prelude::Mode) to an integer
+	///      using the [as](https://doc.rust-lang.org/std/keyword.as.html) keyword.
 	///
 	/// - `/modes/name/{mode_name}`
-	///   - `kz_timer`
-	///   - `kz_simple`
-	///   - `kz_vanilla`
+	///   - `kz_timer` ([KZTimer](crate::prelude::Mode::KZTimer))
+	///   - `kz_simple` ([SimpleKZ](crate::prelude::Mode::SimpleKZ))
+	///   - `kz_vanilla` ([Vanilla](crate::prelude::Mode::Vanilla))
 	///
-	/// All of these are accessible via [this method](crate::prelude::Mode::api).
+	///   -> All of these are accessible via [this method](crate::prelude::Mode::api).
 	///
-	/// This function uses `/modes/id/{id}` because I wanted to. There is not objective choice here.
-	pub async fn get_mode(mode: &Mode, client: &crate::Client) -> Result<ModeResponse, Error> {
+	/// This function uses `/modes/id/{id}` because I wanted to.
+	pub async fn get_mode(mode: &Mode, client: &crate::Client) -> Result<modes::APIMode, Error> {
 		info!("[GlobalAPI::get_mode] starting...");
 
 		let response = modes::id::get(*mode as u8, client).await?;
@@ -276,12 +263,12 @@ impl GlobalAPI {
 	/// Route: `/players`
 	/// - Lets you fetch player information
 	///
-	/// NOTE: if you want access to more parameters than just `limit`, consider directly using
-	/// [`players::get`] instead.
+	/// NOTE: if you want access to more parameters than just `limit`, consider directly using the
+	/// [players](crate::global_api::players) module.
 	pub async fn get_players(
 		limit: Option<u32>,
 		client: &crate::Client,
-	) -> Result<Vec<PlayerResponse>, Error> {
+	) -> Result<Vec<players::Player>, Error> {
 		info!("[GlobalAPI::get_players] starting...");
 
 		// not quite sure what to put here yet
@@ -299,7 +286,7 @@ impl GlobalAPI {
 	pub async fn get_player(
 		player_identifier: &PlayerIdentifier,
 		client: &crate::Client,
-	) -> Result<PlayerResponse, Error> {
+	) -> Result<players::Player, Error> {
 		info!("[GlobalAPI::get_player] starting...");
 
 		// This is usually faster, so we prioritize it.
@@ -335,7 +322,7 @@ impl GlobalAPI {
 		steam_id: &SteamID,
 		ip: String,
 		client: &crate::Client,
-	) -> Result<PlayerResponse, Error> {
+	) -> Result<players::Player, Error> {
 		info!("[GlobalAPI::get_player_by_ip] starting...");
 
 		let response = players::ip::get(steam_id, &ip, client).await?;
@@ -350,7 +337,7 @@ impl GlobalAPI {
 	pub async fn get_player_alts(
 		steam_id: &SteamID,
 		client: &crate::Client,
-	) -> Result<Vec<PlayerResponse>, Error> {
+	) -> Result<Vec<players::Player>, Error> {
 		info!("[GlobalAPI::get_player_alts] starting...");
 
 		let response = players::alts::get(steam_id, client).await?;
@@ -364,7 +351,7 @@ impl GlobalAPI {
 	pub async fn get_filters(
 		map_id: u32,
 		client: &crate::Client,
-	) -> Result<Vec<RecordFilterResponse>, Error> {
+	) -> Result<Vec<record_filters::RecordFilter>, Error> {
 		info!("[GlobalAPI::get_filters] starting...");
 		let params = record_filters::Params { map_ids: Some(map_id), ..Default::default() };
 
@@ -376,7 +363,7 @@ impl GlobalAPI {
 
 	/// Route: `/records/place/{id}`
 	/// - Lets you fetch the leaderboard spot of a given record
-	/// - `id`: `record_id` property on a [Map](maps::Response)
+	/// - `id`: `record_id` field on a [Map](maps::Response)
 	pub async fn get_place(record_id: u32, client: &crate::Client) -> Result<u32, Error> {
 		info!("[GlobalAPI::get_place] starting...");
 
@@ -388,11 +375,11 @@ impl GlobalAPI {
 
 	/// Route: `/records/{id}`
 	/// - Lets you fetch a record stored in the GlobalAPI
-	/// - `id`: `record_id` property on a [Map](maps::Response)
+	/// - `id`: `record_id` field on a [Map](maps::Response)
 	pub async fn get_record(
 		record_id: u32,
 		client: &crate::Client,
-	) -> Result<RecordResponse, Error> {
+	) -> Result<records::Record, Error> {
 		info!("[GlobalAPI::get_record] starting...");
 
 		let response = records::get(record_id, client).await?;
@@ -404,12 +391,12 @@ impl GlobalAPI {
 	/// Route: `/records/top`
 	/// - Lets you fetch records stored in the GlobalAPI
 	///
-	/// NOTE: if you want access to more parameters than just `limit`, consider directly using
-	/// [`records::top::get`] instead.
+	/// NOTE: if you want access to more parameters than just `limit`, consider directly using the
+	/// [records::top](crate::global_api::records::top) module.
 	pub async fn get_records(
 		limit: Option<u32>,
 		client: &crate::Client,
-	) -> Result<Vec<RecordResponse>, Error> {
+	) -> Result<Vec<records::Record>, Error> {
 		info!("[GlobalAPI::get_records] starting...");
 
 		// not quite sure what to put here yet
@@ -424,8 +411,8 @@ impl GlobalAPI {
 	/// Route: `/records/top`
 	/// - Lets you fetch all records of a player
 	///
-	/// NOTE: if you want access to more parameters, consider directly using [`records::top::get`]
-	/// instead.
+	/// NOTE: if you want access to more parameters, consider directly using the
+	/// [records::top](crate::global_api::records::top) module.
 	pub async fn get_player_records(
 		player_identifier: &PlayerIdentifier,
 		mode: &Mode,
@@ -433,7 +420,7 @@ impl GlobalAPI {
 		course: u8,
 		limit: Option<u32>,
 		client: &crate::Client,
-	) -> Result<Vec<RecordResponse>, Error> {
+	) -> Result<Vec<records::Record>, Error> {
 		info!("[GlobalAPI::get_player_records] starting...");
 
 		let mut params = records::top::Params {
@@ -459,20 +446,21 @@ impl GlobalAPI {
 	/// Route: `/records/top/recent`
 	/// - Lets you fetch the most recently created records
 	/// - Some notes:
+	///   - endpoint is pretty slow; it will take a while until a record appears here
+	///   - will only yield personal bests
 	///   - `mode` is required because if you don't specify one, the API will return an `internal
 	///      server error`.
-	///   - will only yield personal bests
-	///   - endpoint is pretty slow; it will take a while until a record appears here
 	///
-	/// Comparison to `[GlobalAPI::get_recent]`:
+	/// Comparison to [get_recent](Self::get_recent):
 	/// - less reliable, because records take a while until they show up here
 	/// - not player-specific
-	///   - if you want more control over the parameters, consider using [`records::recent::get`].
+	///   - if you want more control over the parameters, consider directly using the
+	///     [records::recent](crate::global_api::records::recent) module.
 	pub async fn get_recent_lossy(
 		mode: &Mode,
 		limit: Option<u32>,
 		client: &crate::Client,
-	) -> Result<Vec<RecentResponse>, Error> {
+	) -> Result<Vec<records::recent::RecentRecord>, Error> {
 		info!("[GlobalAPI::get_recent_lossy] starting...");
 
 		let params = records::recent::Params {
@@ -494,14 +482,15 @@ impl GlobalAPI {
 	///   - 6 requests are necessary here, as the API returns unreliable results if you're not
 	///     specific enough.
 	///
-	/// Comparison to `[GlobalAPI::get_recent_lossy]`:
+	/// Comparison to [get_recent_lossy](Self::get_recent_lossy):
 	/// - more reliable, because _all_ of a player's records get fetched, no matter how old they
 	///   are
+	/// - more expensive, because 6 requests
 	/// - player-specific
 	pub async fn get_recent(
 		player_identifier: &PlayerIdentifier,
 		client: &crate::Client,
-	) -> Result<RecordResponse, Error> {
+	) -> Result<records::Record, Error> {
 		info!("[GlobalAPI::get_recent] starting...");
 
 		// this is necessary because if we're not specific enough, the API might not return all the
@@ -583,7 +572,7 @@ impl GlobalAPI {
 
 	/// - Returns a download link to a replay
 	/// Route: `/records/replay/{replay_id}`
-	/// - `replay_id`: `replay_id` property on a [Record](records::Response)
+	/// - `replay_id`: `replay_id` field on a [Record](records::Response)
 	/// - Some notes:
 	///   - only works for records created on servers with GOKZ version 3.0.0 or higher
 	///   - not all of those records made it to the API; expect some missing ones
@@ -594,7 +583,7 @@ impl GlobalAPI {
 
 	/// Route: `/records/{record_id}/replay`
 	/// - Returns a download link to the replay file of a record.
-	/// - `record_id`: `id` property on a [Record](records::Response)
+	/// - `record_id`: `id` field on a [Record](records::Response)
 	/// - Some notes:
 	///   - only works for records created on servers with GOKZ version 3.0.0 or higher
 	///   - not all of those records made it to the API; expect some missing ones
@@ -608,7 +597,7 @@ impl GlobalAPI {
 	pub async fn get_servers(
 		limit: Option<u32>,
 		client: &crate::Client,
-	) -> Result<Vec<ServerResponse>, Error> {
+	) -> Result<Vec<servers::Server>, Error> {
 		info!("[GlobalAPI::get_servers] starting...");
 
 		// not quite sure what to put here yet
@@ -622,11 +611,11 @@ impl GlobalAPI {
 
 	/// Route: `/servers/{id}`
 	/// - Lets you fetch information about global servers
-	/// - `id`: `id` property on a [Server](servers::Response)
+	/// - `id`: `id` field on a [Server](servers::Response)
 	pub async fn get_server_by_id(
 		server_id: u32,
 		client: &crate::Client,
-	) -> Result<ServerResponse, Error> {
+	) -> Result<servers::Server, Error> {
 		info!("[GlobalAPI::get_server_by_id] starting...");
 
 		let response = servers::id::get(server_id, client).await?;
@@ -637,11 +626,11 @@ impl GlobalAPI {
 
 	/// Route: `/servers/name/{server_name}`
 	/// - Lets you fetch information about global servers
-	/// - `server_name`: `server_name` property on a [Server](servers::Response)
+	/// - `server_name`: `server_name` field on a [Server](servers::Response)
 	pub async fn get_server_by_name(
 		server_name: &str,
 		client: &crate::Client,
-	) -> Result<ServerResponse, Error> {
+	) -> Result<servers::Server, Error> {
 		info!("[GlobalAPI::get_server_by_name] starting...");
 
 		let response = servers::name::get(server_name, client).await?;

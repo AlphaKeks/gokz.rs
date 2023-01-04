@@ -8,7 +8,7 @@ use {
 
 /// Route: `/maps`
 /// - Lets you fetch all maps stored in the GlobalAPI
-pub async fn get(params: Params, client: &crate::Client) -> Result<Vec<Response>, Error> {
+pub async fn get(params: Params, client: &crate::Client) -> Result<Vec<Map>, Error> {
 	match GlobalAPI::get::<Vec<_>, _>("/maps?", params, client).await {
 		Err(why) => Err(why),
 		Ok(response) => {
@@ -25,7 +25,7 @@ pub async fn get(params: Params, client: &crate::Client) -> Result<Vec<Response>
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct Response {
+pub struct Map {
 	pub id: u32,
 	pub name: String,
 	pub filesize: u64,
@@ -38,7 +38,7 @@ pub struct Response {
 	pub download_url: Option<String>,
 }
 
-api_response!(Response);
+api_response!(Map);
 
 #[derive(Default, Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Params {

@@ -5,7 +5,7 @@ use {
 
 /// Route: `/records/top`
 /// - Lets you fetch records stored in the GlobalAPI
-pub async fn get(params: Params, client: &crate::Client) -> Result<Vec<super::Response>, Error> {
+pub async fn get(params: Params, client: &crate::Client) -> Result<Vec<super::Record>, Error> {
 	match GlobalAPI::get::<Vec<_>, _>("/records/top?", params, client).await {
 		Err(why) => Err(why),
 		Ok(response) => {
