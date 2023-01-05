@@ -297,7 +297,7 @@ async fn get_replay_by_record_id() -> anyhow::Result<()> {
 	Ok(())
 }
 
-// #[ignore = "expensive"]
+#[ignore = "expensive"]
 #[test_log::test(tokio::test)]
 async fn checkhealth() -> anyhow::Result<()> {
 	let health = GlobalAPI::checkhealth(&gokz_rs::Client::new()).await?;

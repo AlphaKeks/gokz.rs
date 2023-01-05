@@ -71,7 +71,7 @@ pub async fn get(client: &crate::Client) -> Result<HealthReport, Error> {
 	};
 
 	// parse the response into the desired `Response` format
-	let parsed_response = match response.json::<HealthReport>().await {
+	let parsed_response = match response.json::<RawHealthReport>().await {
 		Err(why) => {
 			warn!("[GlobalAPI::checkhealth] Failed to parse response.");
 			warn!("[GlobalAPI::checkhealth] {:?}", why);
@@ -87,11 +87,21 @@ pub async fn get(client: &crate::Client) -> Result<HealthReport, Error> {
 		},
 	};
 
-	info!("[GlobalAPI::checkhealth] completed successfully.");
-	debug!("[GlobalAPI::checkhealth] Response: {:?}", &parsed_response);
+	let result = HealthReport {
+		successful_responses: parsed_response.results[0..10]
+			.iter()
+			.filter(|e| e.condition_results[0].success)
+			.count() as u8,
+		fast_responses: parsed_response.results[0..10]
+			.iter()
+			.filter(|e| e.condition_results[1].success)
+			.count() as u8,
+	};
 
-	// return the `Response`
-	Ok(parsed_response)
+	info!("[GlobalAPI::checkhealth] completed successfully.");
+	debug!("[GlobalAPI::checkhealth] Response: {:?}", &result);
+
+	Ok(result)
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -118,9 +128,15 @@ pub struct StatusEvent {
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-pub struct HealthReport {
+pub struct RawHealthReport {
 	pub name: String,
 	pub key: String,
 	pub results: Vec<StatusResult>,
 	pub events: Vec<StatusEvent>,
+}
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct HealthReport {
+	pub successful_responses: u8,
+	pub fast_responses: u8,
 }
