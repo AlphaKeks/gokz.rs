@@ -59,6 +59,45 @@ async fn get_map_() -> anyhow::Result<()> {
 
 #[ignore = "expensive"]
 #[test_log::test(tokio::test)]
+async fn get_mapcycle() -> anyhow::Result<()> {
+	let client = gokz_rs::Client::new();
+
+	let mapcycle = GlobalAPI::get_mapcycle(None, &client).await?;
+	let mapcycle_tier3 = GlobalAPI::get_mapcycle(Some(3), &client).await?;
+
+	info!("{:#?}\n{} maps", mapcycle, mapcycle.len());
+	info!("{:#?}\n{} tier 3 maps", mapcycle_tier3, mapcycle_tier3.len());
+
+	Ok(())
+}
+
+#[ignore = "expensive"]
+#[test_log::test(tokio::test)]
+async fn is_global() -> anyhow::Result<()> {
+	let client = gokz_rs::Client::new();
+
+	assert_eq!(
+		Some(String::from("kz_lionharder")),
+		GlobalAPI::is_global("kz_lionharder", &client).await
+	);
+	assert_eq!(
+		Some(String::from("kz_lionharder")),
+		GlobalAPI::is_global("lionharder", &client).await
+	);
+	assert_eq!(
+		Some(String::from("kz_lionharder")),
+		GlobalAPI::is_global("lionHARDER", &client).await
+	);
+	assert_eq!(
+		Some(String::from("kz_micropenis")),
+		GlobalAPI::is_global("penis", &client).await
+	);
+
+	Ok(())
+}
+
+#[ignore = "expensive"]
+#[test_log::test(tokio::test)]
 async fn get_modes() -> anyhow::Result<()> {
 	let client = gokz_rs::Client::new();
 
@@ -77,15 +116,15 @@ async fn get_mode_() -> anyhow::Result<()> {
 	let skz = Mode::SimpleKZ;
 	let vnl = Mode::Vanilla;
 
-	let kzt = GlobalAPI::get_mode(&kzt, &client).await;
+	let kzt = GlobalAPI::get_mode(kzt, &client).await;
 	assert!(matches!(kzt, Ok(_)));
 	info!("{:#?}", kzt);
 
-	let skz = GlobalAPI::get_mode(&skz, &client).await;
+	let skz = GlobalAPI::get_mode(skz, &client).await;
 	assert!(matches!(skz, Ok(_)));
 	info!("{:#?}", skz);
 
-	let vnl = GlobalAPI::get_mode(&vnl, &client).await;
+	let vnl = GlobalAPI::get_mode(vnl, &client).await;
 	assert!(matches!(vnl, Ok(_)));
 	info!("{:#?}", vnl);
 
@@ -174,7 +213,7 @@ async fn get_record() -> anyhow::Result<()> {
 async fn get_recent_lossy() -> anyhow::Result<()> {
 	let client = gokz_rs::Client::new();
 
-	let recent = GlobalAPI::get_recent_lossy(&Mode::Vanilla, Some(5), &client).await?;
+	let recent = GlobalAPI::get_recent_lossy(Mode::Vanilla, Some(5), &client).await?;
 	assert_eq!(5, recent.len());
 
 	info!("{:#?}", recent);
@@ -197,6 +236,51 @@ async fn get_recent_t() -> anyhow::Result<()> {
 
 #[ignore = "expensive"]
 #[test_log::test(tokio::test)]
+async fn get_wr() -> anyhow::Result<()> {
+	let client = gokz_rs::Client::new();
+	let lionharder = MapIdentifier::Name(String::from("kz_lionharder"));
+
+	let lionharder_pro = GlobalAPI::get_wr(&lionharder, Mode::KZTimer, false, 0, &client).await?;
+	info!("{:#?}", lionharder_pro);
+
+	Ok(())
+}
+
+#[ignore = "expensive"]
+#[test_log::test(tokio::test)]
+async fn get_pb() -> anyhow::Result<()> {
+	let client = gokz_rs::Client::new();
+	let alphakeks = PlayerIdentifier::Name(String::from("AlphaKeks"));
+	let lionharder = MapIdentifier::Name(String::from("kz_lionharder"));
+
+	let lionharder_tp =
+		GlobalAPI::get_pb(&alphakeks, &lionharder, Mode::SimpleKZ, true, 0, &client).await?;
+	info!("{:#?}", lionharder_tp);
+
+	Ok(())
+}
+
+#[ignore = "expensive"]
+#[test_log::test(tokio::test)]
+async fn get_maptop() -> anyhow::Result<()> {
+	let client = gokz_rs::Client::new();
+	let lionharder = MapIdentifier::Name(String::from("kz_lionharder"));
+
+	let lionharder_pro =
+		GlobalAPI::get_maptop(&lionharder, Mode::SimpleKZ, false, 0, &client).await?;
+	info!("{:#?}", lionharder_pro);
+
+	let beginnerblock = MapIdentifier::Name(String::from("kz_beginnerblock_go"));
+
+	let beginnerblock_pro =
+		GlobalAPI::get_maptop(&beginnerblock, Mode::KZTimer, false, 0, &client).await?;
+	assert_eq!(100, beginnerblock_pro.len());
+
+	Ok(())
+}
+
+#[ignore = "expensive"]
+#[test_log::test(tokio::test)]
 async fn get_replay_by_id() -> anyhow::Result<()> {
 	let replay_link = GlobalAPI::get_replay_by_id(60107);
 	info!("{}", replay_link);
@@ -209,6 +293,15 @@ async fn get_replay_by_id() -> anyhow::Result<()> {
 async fn get_replay_by_record_id() -> anyhow::Result<()> {
 	let replay_link = GlobalAPI::get_replay_by_record_id(16557384);
 	info!("{}", replay_link);
+
+	Ok(())
+}
+
+// #[ignore = "expensive"]
+#[test_log::test(tokio::test)]
+async fn checkhealth() -> anyhow::Result<()> {
+	let health = GlobalAPI::checkhealth(&gokz_rs::Client::new()).await?;
+	info!("{:#?}", health);
 
 	Ok(())
 }

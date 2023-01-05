@@ -3,7 +3,7 @@ use {super::KZGO, crate::prelude::*};
 /// Route: `/completions/{mode_name}`
 /// - `mode_name`: obtainable via [this method](crate::prelude::Mode::api)
 /// - Lets you fetch the amount of completable maps for a given mode
-pub async fn get(mode: &Mode, client: &crate::Client) -> Result<Response, Error> {
+pub async fn get(mode: Mode, client: &crate::Client) -> Result<Response, Error> {
 	let route = format!("/completions/{}", mode.api());
 	KZGO::get(&route, client).await
 }

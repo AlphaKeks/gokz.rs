@@ -9,7 +9,7 @@ use {
 /// Creates a list of names of maps a player hasn't completed.
 pub async fn get_unfinished(
 	player_identifier: &PlayerIdentifier,
-	mode: &Mode,
+	mode: Mode,
 	runtype: bool,
 	tier: Option<u8>,
 	client: &crate::Client,
@@ -17,7 +17,7 @@ pub async fn get_unfinished(
 	info!("[extra::get_unfinished] starting...");
 
 	// fetch all ids of maps completed by the player
-	let completed_maps =
+	let completed_map_ids =
 		GlobalAPI::get_player_records(player_identifier, mode, runtype, 0, Some(9999), client)
 			.await?
 			.into_iter()
@@ -26,13 +26,13 @@ pub async fn get_unfinished(
 
 	// fetch filters for current mode and runtype and filter against the maps the player has
 	// completed
-	let uncompleted_ids = global_api::record_filters::get(
+	let uncompleted_map_ids = global_api::record_filters::get(
 		global_api::record_filters::Params {
 			stages: Some(0),
-			mode_ids: Some(*mode as u8),
+			mode_ids: Some(mode as u8),
 			tickrates: Some(128),
 			has_teleports: Some(runtype),
-			limit: Some(9999),
+			limit: Some(99999),
 			..Default::default()
 		},
 		client,
@@ -40,7 +40,7 @@ pub async fn get_unfinished(
 	.await?
 	.into_iter()
 	.filter_map(|record_filter| {
-		if !completed_maps.contains(&record_filter.map_id) {
+		if !completed_map_ids.contains(&record_filter.map_id) {
 			return Some(record_filter.map_id);
 		}
 		None
@@ -58,11 +58,14 @@ pub async fn get_unfinished(
 			};
 
 			let runtype_matches = match runtype {
+				// If we only want TP maps we need to filter out kzpro maps; for some reason some
+				// kzpro maps have TP filters.
 				true => !&map.name.starts_with("kzpro_"),
+				// Otherwise we don't care (there are no TP-only maps we would need to filter out).
 				false => true,
 			};
 
-			if uncompleted_ids.contains(&map.id) && tier_matches && runtype_matches {
+			if uncompleted_map_ids.contains(&map.id) && tier_matches && runtype_matches {
 				return Some(map.name);
 			}
 			None

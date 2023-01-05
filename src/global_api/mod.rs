@@ -5,6 +5,7 @@ use {
 };
 
 pub mod bans;
+pub mod health;
 pub mod jumpstats;
 pub mod maps;
 pub mod modes;
@@ -106,16 +107,16 @@ impl GlobalAPI {
 			Ok(response) => match response.error_for_status() {
 				Err(why) => {
 					let Some(code) = why.status() else {
-				        warn!("[GlobalAPI::get] Request failed with no status code.");
-				        return Err(Error {
-					        kind: ErrorKind::GlobalAPI {
-						        status_code: None,
-						        raw_message: Some(why.to_string()),
-					        },
-					        msg: String::from(
-						        "GlobalAPI request failed, but no status code has been returned.",
-					        ),
-				        });
+						warn!("[GlobalAPI::get] Request failed with no status code.");
+						return Err(Error {
+							kind: ErrorKind::GlobalAPI {
+								status_code: None,
+								raw_message: Some(why.to_string()),
+							},
+							msg: String::from(
+								"GlobalAPI request failed, but no status code has been returned.",
+							),
+						});
 					};
 
 					warn!("[GlobalAPI::get] Request failed with status code `{}`.", &code);
@@ -220,6 +221,116 @@ impl GlobalAPI {
 		Ok(response)
 	}
 
+	pub async fn get_mapcycle(
+		tier: Option<u8>,
+		client: &crate::Client,
+	) -> Result<Vec<String>, Error> {
+		info!("[GlobalAPI::is_global] completed successfully.");
+
+		let url = format!(
+			"https://maps.global-api.com/mapcycles/{}",
+			match tier {
+				Some(tier) => format!("tier{}.txt", tier),
+				None => String::from("gokz.txt"),
+			}
+		);
+
+		let response = match client.get(url).send().await {
+			Err(why) => {
+				warn!("[GlobalAPI::get_mapcycle] HTTPS Request failed.");
+				if let Some(code) = why.status() {
+					warn!("[GlobalAPI::get_mapcycle] Request failed with status code `{}`.", &code);
+					return Err(Error {
+						kind: ErrorKind::GlobalAPI {
+							status_code: Some(code.to_string()),
+							raw_message: Some(why.to_string()),
+						},
+						msg: format!("GlobalAPI request failed with code `{}`.", code),
+					});
+				}
+
+				warn!("[GlobalAPI::get_mapcycle] Request failed with no status code.");
+				return Err(Error {
+					kind: ErrorKind::GlobalAPI {
+						status_code: None,
+						raw_message: Some(why.to_string()),
+					},
+					msg: String::from(
+						"GlobalAPI request failed, but no status code has been returned.",
+					),
+				});
+			},
+			Ok(response) => match response.error_for_status() {
+				Err(why) => {
+					let Some(code) = why.status() else {
+						warn!("[GlobalAPI::get_mapcycle] Request failed with no status code.");
+						return Err(Error {
+							kind: ErrorKind::GlobalAPI {
+								status_code: None,
+								raw_message: Some(why.to_string()),
+							},
+							msg: String::from(
+								"GlobalAPI request failed, but no status code has been returned.",
+							),
+						});
+					};
+
+					warn!("[GlobalAPI::get_mapcycle] Request failed with status code `{}`.", &code);
+					return Err(Error {
+						kind: ErrorKind::GlobalAPI {
+							status_code: Some(code.to_string()),
+							raw_message: Some(why.to_string()),
+						},
+						msg: format!("GlobalAPI request failed with code `{}`.", code),
+					});
+				},
+				Ok(response) => {
+					trace!(
+						"[GlobalAPI::get_mapcycle] GlobalAPI responded successfully with code `{}`.",
+						response.status()
+					);
+					response
+				},
+			},
+		};
+
+		let parsed_response = match response.text().await {
+			Err(why) => {
+				warn!("[GlobalAPI::get_mapcycle] Failed to parse response.");
+				warn!("[GlobalAPI::get_mapcycle] {:?}", why);
+
+				return Err(Error {
+					kind: ErrorKind::Parsing { expected: String::from("Text"), got: None },
+					msg: String::from("Failed to parse GlobalAPI response."),
+				});
+			},
+			Ok(parsed_response) => {
+				trace!("[GlobalAPI::get_mapcycle] Successfully parsed response.");
+				parsed_response.lines().map(ToOwned::to_owned).collect::<Vec<String>>()
+			},
+		};
+
+		info!("[GlobalAPI::get_mapcycle] completed successfully.");
+		debug!("[GlobalAPI::get_mapcycle] Response: {:?}", &parsed_response);
+
+		// return the `Response`
+		Ok(parsed_response)
+	}
+
+	/// Will fetch all global map names and try to find one that matches the given `map_identifier`.
+	pub async fn is_global(map_name: &str, client: &crate::Client) -> Option<String> {
+		info!("[GlobalAPI::is_global] starting...");
+
+		let result = Self::get_mapcycle(None, client)
+			.await
+			.ok()?
+			.into_iter()
+			.find(|name| name.contains(&map_name.to_lowercase()))?;
+		info!("[GlobalAPI::is_global] completed successfully.");
+
+		Some(result)
+	}
+
 	/// Route: `/modes`
 	/// - Lets you fetch all modes stored in the GlobalAPI
 	pub async fn get_modes(client: &crate::Client) -> Result<Vec<modes::APIMode>, Error> {
@@ -251,10 +362,10 @@ impl GlobalAPI {
 	///   -> All of these are accessible via [this method](crate::prelude::Mode::api).
 	///
 	/// This function uses `/modes/id/{id}` because I wanted to.
-	pub async fn get_mode(mode: &Mode, client: &crate::Client) -> Result<modes::APIMode, Error> {
+	pub async fn get_mode(mode: Mode, client: &crate::Client) -> Result<modes::APIMode, Error> {
 		info!("[GlobalAPI::get_mode] starting...");
 
-		let response = modes::id::get(*mode as u8, client).await?;
+		let response = modes::id::get(mode as u8, client).await?;
 		info!("[GlobalAPI::get_mode] completed successfully.");
 
 		Ok(response)
@@ -415,7 +526,7 @@ impl GlobalAPI {
 	/// [records::top](crate::global_api::records::top) module.
 	pub async fn get_player_records(
 		player_identifier: &PlayerIdentifier,
-		mode: &Mode,
+		mode: Mode,
 		has_teleports: bool,
 		course: u8,
 		limit: Option<u32>,
@@ -457,7 +568,7 @@ impl GlobalAPI {
 	///   - if you want more control over the parameters, consider directly using the
 	///     [records::recent](crate::global_api::records::recent) module.
 	pub async fn get_recent_lossy(
-		mode: &Mode,
+		mode: Mode,
 		limit: Option<u32>,
 		client: &crate::Client,
 	) -> Result<Vec<records::recent::RecentRecord>, Error> {
@@ -504,12 +615,12 @@ impl GlobalAPI {
 		// make requests
 		let (kzt, skz, vnl) = (Mode::KZTimer, Mode::SimpleKZ, Mode::Vanilla);
 		let mut records = join_all([
-			Self::get_player_records(player_identifier, &kzt, true, 0, Some(9999), client),
-			Self::get_player_records(player_identifier, &kzt, false, 0, Some(9999), client),
-			Self::get_player_records(player_identifier, &skz, true, 0, Some(9999), client),
-			Self::get_player_records(player_identifier, &skz, false, 0, Some(9999), client),
-			Self::get_player_records(player_identifier, &vnl, true, 0, Some(9999), client),
-			Self::get_player_records(player_identifier, &vnl, false, 0, Some(9999), client),
+			Self::get_player_records(player_identifier, kzt, true, 0, Some(9999), client),
+			Self::get_player_records(player_identifier, kzt, false, 0, Some(9999), client),
+			Self::get_player_records(player_identifier, skz, true, 0, Some(9999), client),
+			Self::get_player_records(player_identifier, skz, false, 0, Some(9999), client),
+			Self::get_player_records(player_identifier, vnl, true, 0, Some(9999), client),
+			Self::get_player_records(player_identifier, vnl, false, 0, Some(9999), client),
 		])
 		.await
 		.into_iter()
@@ -568,6 +679,108 @@ impl GlobalAPI {
 		// return the record with the largest timestamp
 		info!("[GlobalAPI::get_recent] completed successfully.");
 		Ok(records.remove(idx))
+	}
+
+	/// Route: `/records/top`
+	/// - Lets you fetch the World Record on a map
+	pub async fn get_wr(
+		map_identifier: &MapIdentifier,
+		mode: Mode,
+		runtype: bool,
+		course: u8,
+		client: &crate::Client,
+	) -> Result<records::Record, Error> {
+		info!("[GlobalAPI::get_wr] starting...");
+
+		let mut params = records::top::Params {
+			tickrate: Some(128),
+			stage: Some(course),
+			modes_list_string: Some(mode.api()),
+			has_teleports: Some(runtype),
+			limit: Some(1),
+			..Default::default()
+		};
+
+		match map_identifier {
+			MapIdentifier::ID(map_id) => params.map_id = Some(*map_id),
+			MapIdentifier::Name(map_name) => params.map_name = Some(map_name.to_owned()),
+		};
+
+		let mut response = records::top::get(params, client).await?;
+		info!("[GlobalAPI::get_wr] completed successfully.");
+
+		Ok(response.remove(0))
+	}
+
+	/// Route: `/records/top`
+	/// - Lets you fetch a player's personal best on a map
+	pub async fn get_pb(
+		player_identifier: &PlayerIdentifier,
+		map_identifier: &MapIdentifier,
+		mode: Mode,
+		runtype: bool,
+		course: u8,
+		client: &crate::Client,
+	) -> Result<records::Record, Error> {
+		info!("[GlobalAPI::get_pb] starting...");
+
+		let mut params = records::top::Params {
+			tickrate: Some(128),
+			stage: Some(course),
+			modes_list_string: Some(mode.api()),
+			has_teleports: Some(runtype),
+			limit: Some(1),
+			..Default::default()
+		};
+
+		match player_identifier {
+			PlayerIdentifier::Name(player_name) => {
+				params.player_name = Some(player_name.to_owned())
+			},
+			PlayerIdentifier::SteamID(steam_id) => params.steam_id = Some(steam_id.to_string()),
+			PlayerIdentifier::SteamID64(steam_id64) => params.steamid64 = Some(*steam_id64),
+		};
+
+		match map_identifier {
+			MapIdentifier::ID(map_id) => params.map_id = Some(*map_id),
+			MapIdentifier::Name(map_name) => params.map_name = Some(map_name.to_owned()),
+		};
+
+		let mut response = records::top::get(params, client).await?;
+		info!("[GlobalAPI::get_pb] completed successfully.");
+
+		Ok(response.remove(0))
+	}
+
+	/// Route: `/records/top`
+	/// - Lets you fetch the top 100 records on a map
+	pub async fn get_maptop(
+		map_identifier: &MapIdentifier,
+		mode: Mode,
+		runtype: bool,
+		course: u8,
+		client: &crate::Client,
+	) -> Result<Vec<records::Record>, Error> {
+		info!("[GlobalAPI::get_maptop] starting...");
+
+		let mut params = records::top::Params {
+			tickrate: Some(128),
+			stage: Some(course),
+			modes_list_string: Some(mode.api()),
+			has_teleports: Some(runtype),
+			limit: Some(100),
+			..Default::default()
+		};
+
+		match map_identifier {
+			MapIdentifier::ID(map_id) => params.map_id = Some(*map_id),
+			MapIdentifier::Name(map_name) => params.map_name = Some(map_name.to_owned()),
+		};
+
+		let response = records::top::get(params, client).await?;
+		info!("[GlobalAPI::get_maptop] completed successfully.");
+
+		Ok(response)
 	}
 
 	/// - Returns a download link to a replay
@@ -635,6 +848,18 @@ impl GlobalAPI {
 
 		let response = servers::name::get(server_name, client).await?;
 		info!("[GlobalAPI::get_server_by_name] completed successfully.");
+
+		Ok(response)
+	}
+
+	/// GlobalAPI Health Report
+	///
+	/// NOTE: [source](https://health.global-api.com/api/v1/endpoints/_globalapi/statuses?page=1)
+	pub async fn checkhealth(client: &crate::Client) -> Result<health::HealthReport, Error> {
+		info!("[GlobalAPI::checkhealth] starting...");
+
+		let response = health::get(client).await?;
+		info!("[GlobalAPI::checkhealth] completed successfully.");
 
 		Ok(response)
 	}

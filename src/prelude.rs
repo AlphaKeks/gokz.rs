@@ -4,7 +4,7 @@ use {
 	serde::{Deserialize, Serialize},
 };
 
-/// The default Error type which gets returned from any function exposed by this crate.
+/// The default Error type which gets returned from any fallible function exposed by this crate.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Error {
 	pub kind: ErrorKind,
@@ -322,53 +322,6 @@ impl std::fmt::Display for MapIdentifier {
 	}
 }
 
-// impl std::str::FromStr for MapIdentifier {
-// 	type Err = Error;
-//
-// 	fn from_str(s: &str) -> Result<Self, Self::Err> {
-// 		match s.parse::<u16>() {
-// 			Ok(map_id) => {
-// 				// use mapcycle
-// 				let total_maps = todo!();
-// 				(200..=total_maps).contains(map_id)
-// 			}
-// 			_ => if let Ok(map) = global_api::is_global(s.to_owned()) {
-// 				Self::Name(map.name)
-// 			}
-// 		}
-//
-// 		Err(Error {
-// 			kind: ErrorKind::InvalidInput {
-// 				input: s.to_owned(),
-// 			},
-// 			msg: format!("`{}` is not a global map.", s)
-// 		})
-// 	}
-// }
-
-// impl TryFrom<u16> for MapIdentifier {
-// 	type Error = Error;
-//
-// 	fn try_from(value: u16) -> Result<Self, Self::Error> {
-// 		&(value.to_string()).parse()
-// 	}
-// }
-
-// impl TryFrom<MapIdentifier> for u16 {
-// 	type Error = Error;
-//
-// 	fn try_from(value: MapIdentifier) -> Result<Self, Self::Error> {
-// 		if let MapIdentifier::ID(map_id) = value {
-// 			return Ok(map_id);
-// 		}
-//
-// 		Err(Error {
-// 			kind: ErrorKind::InvalidInput { input: value.to_string() },
-// 			msg: format!("`{}` is not a MapID.", value),
-// 		})
-// 	}
-// }
-
 /// A Player can be represented in multiple ways when making requests to the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V).
 /// - Name => `"AlphaKeks"`
 /// - SteamID => `SteamID("STEAM_1:1:161178172")`
@@ -469,49 +422,52 @@ pub enum Rank {
 }
 
 impl Rank {
-	pub fn from_points(points: u32, mode: &Mode) -> Self {
-		let is_kzt = mode == &Mode::KZTimer;
-		let is_skz = mode == &Mode::SimpleKZ;
-		let is_vnl = mode == &Mode::Vanilla;
+	pub fn from_points(points: u32, mode: Mode) -> Self {
+		use Rank::*;
 
+		let is_kzt = mode == Mode::KZTimer;
+		let is_skz = mode == Mode::SimpleKZ;
+		let is_vnl = mode == Mode::Vanilla;
+
+		// This was harder than I want to admit.
 		match points {
-			0 => Self::New,
-			1..=499 => Self::BeginnerMinus,
-			500..=999 => Self::Beginner,
-			1_000..=1_999 => Self::BeginnerPlus,
-			2_000..=4_999 => Self::AmateurMinus,
-			5_000..=9_999 => Self::Amateur,
-			10_000..=19_999 => Self::AmateurPlus,
-			20_000..=29_999 => Self::CasualMinus,
-			30_000..=39_999 => Self::Casual,
-			40_000..=59_999 => Self::CasualPlus,
-			60_000..=69_999 => Self::RegularMinus,
-			70_000..=79_999 => Self::Regular,
-			80_000..=99_999 => Self::RegularPlus,
-			100_000..=119_999 => Self::SkilledMinus,
-			120_000..=139_999 if is_vnl => Self::Skilled,
-			120_000..=149_999 if is_vnl => Self::Skilled,
-			140_000..=159_999 if is_vnl => Self::SkilledPlus,
-			150_000..=199_999 if is_vnl => Self::SkilledPlus,
-			160_000..=179_999 if is_vnl => Self::ExpertMinus,
-			200_000..=229_999 if is_vnl => Self::ExpertMinus,
-			180_000..=199_999 if is_vnl => Self::Expert,
-			230_000..=249_999 if is_vnl => Self::Expert,
-			200_000..=249_999 if is_vnl => Self::ExpertPlus,
-			250_000..=299_999 if is_skz => Self::ExpertPlus,
-			250_000..=399_999 if is_kzt => Self::ExpertPlus,
-			250_000..=299_999 if is_vnl => Self::Semipro,
-			300_000..=399_999 if is_skz => Self::Semipro,
-			400_000..=599_999 if is_kzt => Self::Semipro,
-			300_000..=399_999 if is_vnl => Self::Pro,
-			400_000..=499_999 if is_skz => Self::Pro,
-			600_000..=799_999 if is_kzt => Self::Pro,
-			400_000..=599_999 if is_vnl => Self::Master,
-			500_000..=799_999 if is_skz => Self::Master,
-			800_000..=999_999 if is_kzt => Self::Master,
-			(600_000..) if is_vnl => Self::Legend,
-			(800_000..) if is_skz => Self::Legend,
-			(1_000_000..) if is_kzt => Self::Legend,
+			0 => New,
+			1..=499 => BeginnerMinus,
+			500..=999 => Beginner,
+			1_000..=1_999 => BeginnerPlus,
+			2_000..=4_999 => AmateurMinus,
+			5_000..=9_999 => Amateur,
+			10_000..=19_999 => AmateurPlus,
+			20_000..=29_999 => CasualMinus,
+			30_000..=39_999 => Casual,
+			40_000..=59_999 => CasualPlus,
+			60_000..=69_999 => RegularMinus,
+			70_000..=79_999 => Regular,
+			80_000..=99_999 => RegularPlus,
+			100_000..=119_999 => SkilledMinus,
+			120_000..=139_999 if is_vnl => Skilled,
+			120_000..=149_999 if (is_skz || is_kzt) => Skilled,
+			140_000..=159_999 if is_vnl => SkilledPlus,
+			150_000..=199_999 if (is_skz || is_kzt) => SkilledPlus,
+			160_000..=179_999 if is_vnl => ExpertMinus,
+			200_000..=229_999 if (is_skz || is_kzt) => ExpertMinus,
+			180_000..=199_999 if is_vnl => Expert,
+			230_000..=249_999 if (is_skz || is_kzt) => Expert,
+			200_000..=249_999 if is_vnl => ExpertPlus,
+			250_000..=299_999 if is_skz => ExpertPlus,
+			250_000..=399_999 if is_kzt => ExpertPlus,
+			250_000..=299_999 if is_vnl => Semipro,
+			300_000..=399_999 if is_skz => Semipro,
+			400_000..=599_999 if is_kzt => Semipro,
+			300_000..=399_999 if is_vnl => Pro,
+			400_000..=499_999 if is_skz => Pro,
+			600_000..=799_999 if is_kzt => Pro,
+			400_000..=599_999 if is_vnl => Master,
+			500_000..=799_999 if is_skz => Master,
+			800_000..=999_999 if is_kzt => Master,
+			(600_000..) if is_vnl => Legend,
+			(800_000..) if is_skz => Legend,
+			(1_000_000..) if is_kzt => Legend,
 			_ => unreachable!(),
 		}
 	}

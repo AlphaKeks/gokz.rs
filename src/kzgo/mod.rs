@@ -128,7 +128,7 @@ impl KZGO {
 	/// - `mode_name`: obtainable via [this method](crate::prelude::Mode::api)
 	/// - Lets you fetch the amount of completable maps for a given mode
 	pub async fn get_completion_count(
-		mode: &Mode,
+		mode: Mode,
 		client: &crate::Client,
 	) -> Result<CompletionResponse, Error> {
 		completions::get(mode, client).await

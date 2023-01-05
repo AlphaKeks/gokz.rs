@@ -21,7 +21,7 @@ async fn get_map() -> anyhow::Result<()> {
 async fn get_completion() -> anyhow::Result<()> {
 	let client = gokz_rs::Client::new();
 
-	let response = KZGO::get_completion_count(&Mode::SimpleKZ, &client).await?;
+	let response = KZGO::get_completion_count(Mode::SimpleKZ, &client).await?;
 	info!("{:#?}", response);
 
 	Ok(())
