@@ -7,6 +7,7 @@ pub mod prelude;
 mod global_api;
 pub use global_api::{
 	bans, jumpstats, maps, modes, players, record_filters, records, servers, GlobalAPI,
+	GlobalAPIParams, GlobalAPIResponse,
 };
 
 mod kzgo;
