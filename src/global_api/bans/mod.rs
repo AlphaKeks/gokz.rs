@@ -1,14 +1,30 @@
-/// Constructs the API route for this module so it can be used in combination with the
-/// [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2)'s base URL.
-pub fn get_url() -> String {
-	String::from("bans?")
+use {
+	super::{api_params, api_response, GlobalAPI, GlobalAPIParams, GlobalAPIResponse},
+	crate::prelude::*,
+};
+
+/// Route: `/bans`
+/// - Lets you fetch ban entries of players
+pub async fn get(params: Params, client: &crate::Client) -> Result<Vec<Ban>, Error> {
+	match GlobalAPI::get::<Vec<_>, _>("/bans?", params, client).await {
+		Err(why) => Err(why),
+		Ok(response) => {
+			if response.is_empty() {
+				Err(Error {
+					kind: ErrorKind::NoData { expected: String::from("ban data") },
+					msg: String::from("No bans found."),
+				})
+			} else {
+				Ok(response)
+			}
+		},
+	}
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-/// All possible parameters for this route
-pub struct BanParams {
+pub struct Params {
 	pub ban_types: Option<String>,
-	pub ban_types_list: Option<Vec<String>>,
+	pub ban_types_list: Option<String>,
 	pub is_expired: Option<bool>,
 	pub ip: Option<String>,
 	pub steamid64: Option<String>,
@@ -22,9 +38,11 @@ pub struct BanParams {
 	pub limit: Option<u32>,
 }
 
-impl Default for BanParams {
+api_params!(Params);
+
+impl Default for Params {
 	fn default() -> Self {
-		BanParams {
+		Self {
 			ban_types: None,
 			ban_types_list: None,
 			is_expired: None,
@@ -37,15 +55,12 @@ impl Default for BanParams {
 			created_since: None,
 			updated_since: None,
 			offset: None,
-			limit: Some(99),
+			limit: Some(1),
 		}
 	}
 }
 
-impl super::IsParams for BanParams {}
-
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-/// The shape of the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2)'s response on this route
 pub struct Ban {
 	pub id: u32,
 	pub ban_type: String,
@@ -55,11 +70,10 @@ pub struct Ban {
 	pub steam_id: String,
 	pub notes: String,
 	pub stats: String,
-	pub server_id: u16,
+	pub server_id: u32,
 	pub updated_by_id: String,
 	pub created_on: String,
 	pub updated_on: String,
 }
 
-impl super::IsResponse for Ban {}
-impl super::IsResponse for Vec<Ban> {}
+api_response!(Ban);

@@ -1,9 +1,13 @@
 [package]
 name = "gokz_rs"
-version = "0.10.7"
-edition = "2021"
+version = "0.11.0"
 description = "Rust wrapper for the CS:GO KZ GlobalAPI"
+authors = ["AlphaKeks <alphakeks@dawn.sh>"]
+edition = "2021"
+readme = "./README.md"
+repository = "https://github.com/AlphaKeks/gokz.rs"
 license = "MIT"
+publish = true
 
 [dependencies]
 reqwest = { version = "0.11", features = ["json"] }
@@ -16,4 +20,7 @@ log = "0.4"
 
 [dev-dependencies]
 tokio = { version = "1", features = ["full"] }
+log = "0.4"
 env_logger = "0.10"
+test-log = "0.2"
+anyhow = "1"

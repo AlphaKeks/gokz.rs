@@ -1,14 +1,30 @@
 pub mod id;
 pub mod name;
 
-/// Constructs the API route for this module so it can be used in combination with the
-/// [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2)'s base URL.
-pub fn get_url() -> String {
-	String::from("modes?")
+use {
+	super::{api_params, api_response, GlobalAPI, GlobalAPIParams, GlobalAPIResponse},
+	crate::prelude::*,
+};
+
+/// Route: `/modes`
+/// - Lets you fetch all modes stored in the GlobalAPI
+pub async fn get(client: &crate::Client) -> Result<Vec<APIMode>, Error> {
+	match GlobalAPI::get::<Vec<_>, _>("/modes?", Params::default(), client).await {
+		Err(why) => Err(why),
+		Ok(response) => {
+			if response.is_empty() {
+				Err(Error {
+					kind: ErrorKind::NoData { expected: String::from("Vec<Mode>") },
+					msg: String::from("No modes found."),
+				})
+			} else {
+				Ok(response)
+			}
+		},
+	}
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-/// The shape of the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2)'s response on this route
 pub struct APIMode {
 	pub id: u8,
 	pub name: String,
@@ -24,5 +40,8 @@ pub struct APIMode {
 	pub updated_by_id: String,
 }
 
-impl super::IsResponse for APIMode {}
-impl super::IsResponse for Vec<APIMode> {}
+api_response!(APIMode);
+
+#[derive(Default, Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct Params;
+api_params!(Params);

@@ -1,1445 +1,879 @@
-#![allow(dead_code)]
-use {crate::prelude::*, futures::future::join_all, reqwest::StatusCode};
+use {
+	crate::prelude::*,
+	futures::future::join_all,
+	log::{debug, info, trace, warn},
+};
 
 pub mod bans;
 pub mod health;
+pub mod jumpstats;
 pub mod maps;
 pub mod modes;
-pub mod player_ranks;
 pub mod players;
 pub mod record_filters;
 pub mod records;
+pub mod servers;
 
-/// Constructs the base API route for the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2).
-fn get_url() -> String {
-	String::from("https://kztimerglobal.com/api/v2/")
+/// Marker trait for possible API response bodies. Feel free to implement this for your own types
+/// but keep in mind that this trait doesn't actually guarantee anything.
+pub trait GlobalAPIResponse: std::fmt::Debug + serde::de::DeserializeOwned {}
+macro_rules! api_response {
+	($type_name:ident) => {
+		impl GlobalAPIResponse for $type_name {}
+		impl GlobalAPIResponse for Vec<$type_name> {}
+	};
 }
+pub(crate) use api_response;
 
-trait IsResponse {}
-trait IsParams {}
+/// Marker trait for possible API request parameters. Feel free to implement this for your own
+/// types but keep in mind that this trait doesn't actually guarantee anything.
+pub trait GlobalAPIParams: std::fmt::Debug + serde::Serialize {}
+macro_rules! api_params {
+	($type_name:ident) => {
+		impl GlobalAPIParams for $type_name {}
+		impl GlobalAPIParams for Vec<$type_name> {}
+	};
+}
+pub(crate) use api_params;
 
-#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
-struct EmptyParams;
-impl IsParams for EmptyParams {}
+/// Methods for the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2)
+pub struct GlobalAPI;
+impl GlobalAPI {
+	pub const BASE_URL: &str = "https://kztimerglobal.com/api/v2";
 
-/// Makes an HTTPS GET request using a [`reqwest::Client`] and parses the response into a struct.
-async fn api_request<'a, T, P>(
-	route: &'a str,
-	params: P,
-	client: &reqwest::Client,
-) -> Result<T, Error>
-where
-	T: std::fmt::Debug + serde::de::DeserializeOwned + IsResponse,
-	P: std::fmt::Debug + serde::Serialize + IsParams,
-{
-	log::trace!("Making a request to the GlobalAPI.");
-	log::trace!("{{ route: {}, params: {:?} }}", route, &params);
+	/// Base request to the GlobalAPI
+	///
+	/// - `route`: **NOT** the full URL. Only the relevant part. (e.g. `/records/top?`)
+	/// - `params`: the parameters for the request
+	pub async fn get<Response, Params>(
+		route: &str,
+		params: Params,
+		client: &crate::Client,
+	) -> Result<Response, Error>
+	where
+		Params: GlobalAPIParams,
+		Response: GlobalAPIResponse,
+	{
+		info!("[GlobalAPI::get] starting...");
+		debug!("[GlobalAPI::get] `route`: {:?}", route);
+		debug!("[GlobalAPI::get] `params`: {:?}", &params);
 
-	match client.get(get_url() + route).query(&params).send().await {
-		Ok(response) => {
-			log::trace!("Successful GlobalAPI request");
-			log::trace!("Response: {:?}", &response);
-			match response.status() {
-				StatusCode::OK => match response.json::<T>().await {
-					Ok(parsed_response) => {
-						log::trace!("Successfully parsed GlobalAPI response.");
-						log::trace!("Parsed Response: {:?}", &parsed_response);
-						return Ok(parsed_response);
+		// construct full URL
+		// e.g. `https://kztimerglobal.com/api/v2/records/top?`
+		let full_route = format!("{}{}", Self::BASE_URL, route);
+		let url = match reqwest::Url::parse(&full_route) {
+			Err(why) => {
+				warn!("[GlobalAPI::get] Failed to parse URL: {:?}", why);
+				return Err(Error {
+					kind: ErrorKind::Parsing {
+						expected: String::from("valid URL"),
+						got: Some(format!("route: {:?}\nparams: {:?}", route, params)),
 					},
-					Err(why) => {
-						log::warn!("Failed parsing GlobalAPI response.");
+					msg: String::from("Failed to parse URL."),
+				});
+			},
+			Ok(url) => {
+				debug!("[GlobalAPI::get] Successfully constructed URL `{}`.", &url);
+				url
+			},
+		};
+
+		// make a GET request to the GlobalAPI
+		let response = match client.get(url).query(&params).send().await {
+			Err(why) => {
+				warn!("[GlobalAPI::get] HTTPS Request failed.");
+				if let Some(code) = why.status() {
+					warn!("[GlobalAPI::get] Request failed with status code `{}`.", &code);
+					return Err(Error {
+						kind: ErrorKind::GlobalAPI {
+							status_code: Some(code.to_string()),
+							raw_message: Some(why.to_string()),
+						},
+						msg: format!("GlobalAPI request failed with code `{}`.", code),
+					});
+				}
+
+				warn!("[GlobalAPI::get] Request failed with no status code.");
+				return Err(Error {
+					kind: ErrorKind::GlobalAPI {
+						status_code: None,
+						raw_message: Some(why.to_string()),
+					},
+					msg: String::from(
+						"GlobalAPI request failed, but no status code has been returned.",
+					),
+				});
+			},
+			Ok(response) => match response.error_for_status() {
+				Err(why) => {
+					let Some(code) = why.status() else {
+						warn!("[GlobalAPI::get] Request failed with no status code.");
 						return Err(Error {
-							kind: ErrorKind::Parsing,
-							origin: String::from("gokz_rs::global_api::api_request"),
-							tldr: String::from("Failed to parse JSON."),
-							raw: Some(why.to_string()),
+							kind: ErrorKind::GlobalAPI {
+								status_code: None,
+								raw_message: Some(why.to_string()),
+							},
+							msg: String::from(
+								"GlobalAPI request failed, but no status code has been returned.",
+							),
 						});
-					},
-				},
-				StatusCode::INTERNAL_SERVER_ERROR => {
-					log::warn!("GlobalAPI Internal Server Error");
+					};
+
+					warn!("[GlobalAPI::get] Request failed with status code `{}`.", &code);
 					return Err(Error {
-						kind: ErrorKind::GlobalAPI,
-						origin: String::from("gokz_rs::global_api::api_request"),
-						tldr: String::from("GlobalAPI returned an internal server error. You can check it's health via `/apistatus`."),
-						raw: None
+						kind: ErrorKind::GlobalAPI {
+							status_code: Some(code.to_string()),
+							raw_message: Some(why.to_string()),
+						},
+						msg: format!("GlobalAPI request failed with code `{}`.", code),
 					});
 				},
-				StatusCode::TOO_MANY_REQUESTS => {
-					log::warn!("We're getting rate limited");
-					return Err(Error {
-						kind: ErrorKind::GlobalAPI,
-						origin: String::from("gokz_rs::global_api::api_request"),
-						tldr: String::from("Currently too many requests are being made. Please wait a bit before using the next command."),
-						raw: None
-					});
-				},
-				code => {
-					log::warn!("Got a response from the GlobalAPI, but not an `OK` Code.");
-					log::warn!("Code: {}", &code);
-					return Err(Error {
-						kind: ErrorKind::GlobalAPI,
-						origin: String::from("gokz_rs::global_api::api_request"),
-						tldr: String::from("GlobalAPI request failed."),
-						raw: Some(code.to_string()),
-					});
-				},
-			}
-		},
-		Err(why) => {
-			log::warn!("Failed GlobalAPI request");
-			log::warn!("Error: {}", why);
-			return Err(Error {
-				kind: ErrorKind::GlobalAPI,
-				origin: String::from("gokz_rs::global_api::api_request"),
-				tldr: String::from("GlobalAPI request failed."),
-				raw: Some(why.to_string()),
-			});
-		},
-	}
-}
-
-/// Will make an API request for all ban records of a given player, identified by their [`SteamID`].
-pub async fn get_bans(
-	steam_id: SteamID,
-	client: &reqwest::Client,
-) -> Result<Vec<bans::Ban>, Error> {
-	let params = bans::BanParams { steam_id: Some(steam_id.to_string()), ..Default::default() };
-
-	log::info!("[START] get_bans() => Params {:?}", &params);
-
-	let result = match api_request::<Vec<bans::Ban>, _>(&bans::get_url(), params, client).await {
-		Ok(response) => {
-			if response.len() > 0 {
-				Ok(response)
-			} else {
-				log::warn!("Received an empty response from the GlobalAPI.");
-				return Err(Error {
-					kind: ErrorKind::NoData,
-					origin: String::from("gokz_rs::global_api::get_ban"),
-					tldr: String::from("No bans found."),
-					raw: None,
-				});
-			}
-		},
-		Err(why) => {
-			return Err(Error { origin: why.origin + " > gokz_rs::global_api::get_bans", ..why })
-		},
-	};
-
-	log::info!("[END] get_bans() => Result {:?}", &result);
-
-	return result;
-}
-
-/// Will make an API request for all _validated_ global maps. Since the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2) contains more maps than
-/// actually valid / "global" maps, this function will ensure to only request maps marked as
-/// `validated`.
-pub async fn get_maps(client: &reqwest::Client) -> Result<Vec<maps::KZMap>, Error> {
-	let params = maps::MapParams { is_validated: Some(true), ..Default::default() };
-
-	log::info!("[START] get_maps() => Params {:?}", &params);
-
-	let result = match api_request::<Vec<maps::KZMap>, _>(&maps::get_url(), params, client).await {
-		Ok(maps) => {
-			if maps.len() > 0 {
-				Ok(maps)
-			} else {
-				log::warn!("Received an empty response from the GlobalAPI.");
-				return Err(Error {
-					kind: ErrorKind::GlobalAPI,
-					origin: String::from("gokz_rs::global_api::get_maps"),
-					tldr: String::from("No maps found."),
-					raw: None,
-				});
-			}
-		},
-		Err(why) => {
-			return Err(Error { origin: why.origin + " > gokz_rs::global_api::get_maps", ..why })
-		},
-	};
-
-	log::info!("[END] get_maps() => Result {:?}", &result);
-
-	return result;
-}
-
-/// Will make an API request for all global maps.
-pub async fn get_all_maps(client: &reqwest::Client) -> Result<Vec<maps::KZMap>, Error> {
-	log::info!("[START] get_maps()");
-
-	let result = match api_request::<Vec<maps::KZMap>, _>(
-		&maps::get_url(),
-		maps::MapParams::default(),
-		client,
-	)
-	.await
-	{
-		Ok(maps) => {
-			if maps.len() > 0 {
-				Ok(maps)
-			} else {
-				log::warn!("Received an empty response from the GlobalAPI.");
-				return Err(Error {
-					kind: ErrorKind::GlobalAPI,
-					origin: String::from("gokz_rs::global_api::get_maps"),
-					tldr: String::from("No maps found."),
-					raw: None,
-				});
-			}
-		},
-		Err(why) => {
-			return Err(Error { origin: why.origin + " > gokz_rs::global_api::get_maps", ..why })
-		},
-	};
-
-	log::info!("[END] get_maps() => Result {:?}", &result);
-
-	return result;
-}
-
-/// Will request info about a specified map from the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2).
-pub async fn get_map(
-	map_identifier: &MapIdentifier,
-	client: &reqwest::Client,
-) -> Result<maps::KZMap, Error> {
-	let mut params =
-		maps::MapParams { is_validated: Some(true), limit: Some(1), ..Default::default() };
-
-	match map_identifier {
-		MapIdentifier::ID(map_id) => params.id = Some(*map_id),
-		MapIdentifier::Name(map_name) => params.name = Some(map_name.to_owned()),
-	}
-
-	log::info!("[START] get_map() => Params {:?}", &params);
-
-	let result = match api_request::<Vec<maps::KZMap>, _>(&maps::get_url(), params, client).await {
-		Ok(mut maps) => {
-			if maps.len() > 0 {
-				Ok(maps.remove(0))
-			} else {
-				log::warn!("Received an empty response from the GlobalAPI.");
-				return Err(Error {
-					kind: ErrorKind::Input,
-					origin: String::from("gokz_rs::global_api::get_map"),
-					tldr: String::from("This map is not global."),
-					raw: None,
-				});
-			}
-		},
-		Err(why) => {
-			return Err(Error { origin: why.origin + " > gokz_rs::global_api::get_map", ..why })
-		},
-	};
-
-	log::info!("[END] get_map() => Result {:?}", &result);
-
-	return result;
-}
-
-/// Will request all 3 [Modes](`crate::prelude::Mode`) from the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2).
-pub async fn get_modes(client: &reqwest::Client) -> Result<Vec<modes::APIMode>, Error> {
-	log::info!("[START] get_modes()");
-
-	let result = match api_request::<Vec<modes::APIMode>, _>(&modes::get_url(), EmptyParams, client)
-		.await
-	{
-		Ok(modes) => {
-			if modes.len() > 0 {
-				Ok(modes)
-			} else {
-				log::warn!("Received an empty response from the GlobalAPI.");
-				return Err(Error {
-					kind: ErrorKind::NoData,
-					origin: String::from("gokz_rs::global_api::get_modes"),
-					tldr: String::from("No modes found."),
-					raw: None,
-				});
-			}
-		},
-		Err(why) => {
-			return Err(Error { origin: why.origin + " > gokz_rs::global_api::get_modes", ..why })
-		},
-	};
-
-	log::info!("[END] get_modes() => Result {:?}", &result);
-
-	return result;
-}
-
-/// Will request a single mode from the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2).
-///
-/// Note: You could either use a name or an id for this, it technically does not matter. I chose to
-/// use an id.
-pub async fn get_mode(mode: &Mode, client: &reqwest::Client) -> Result<modes::APIMode, Error> {
-	log::info!("[START] get_mode() => Params {:?}", mode);
-
-	let result = match api_request::<modes::APIMode, _>(
-		&modes::id::get_url(mode),
-		EmptyParams,
-		client,
-	)
-	.await
-	{
-		Ok(mode) => Ok(mode),
-		Err(why) => {
-			return Err(Error { origin: why.origin + " > gokz_rs::global_api::get_mode", ..why })
-		},
-	};
-
-	log::info!("[END] get_mode() => Result {:?}", &result);
-
-	return result;
-}
-
-/// Will request info about a player from the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2).
-pub async fn get_player(
-	player: &PlayerIdentifier,
-	client: &reqwest::Client,
-) -> Result<players::APIPlayer, Error> {
-	let mut params = players::PlayerParams::default();
-
-	match player {
-		PlayerIdentifier::Name(name) => params.name = Some(name.to_owned()),
-		PlayerIdentifier::SteamID(steam_id) => params.steam_id = Some(steam_id.to_string()),
-		PlayerIdentifier::SteamID64(steam_id64) => params.steamid64_list = Some(*steam_id64),
-	}
-
-	log::info!("[START] get_player() => Params {:?}", &params);
-
-	let result = match api_request::<Vec<players::APIPlayer>, _>(
-		&players::get_url(),
-		params,
-		client,
-	)
-	.await
-	{
-		Ok(mut players) => {
-			if players.len() > 0 {
-				Ok(players.remove(0))
-			} else {
-				log::warn!("Received an empty response from the GlobalAPI.");
-				return Err(Error {
-					kind: ErrorKind::NoData,
-					origin: String::from("gokz_rs::global_api::get_player"),
-					tldr: String::from("No player found."),
-					raw: None,
-				});
-			}
-		},
-		Err(why) => {
-			return Err(Error { origin: why.origin + " > gokz_rs::global_api::get_player", ..why })
-		},
-	};
-
-	log::info!("[END] get_player() => Result {:?}", &result);
-
-	return result;
-}
-
-/// Will request all record filters for a map.
-pub async fn get_filters(
-	map_id: i16,
-	client: &reqwest::Client,
-) -> Result<Vec<record_filters::RecordFilter>, Error> {
-	let params = record_filters::RecordFilterParams { map_ids: Some(map_id), ..Default::default() };
-
-	log::info!("[START] get_filters() => Params {:?}", &params);
-
-	let result = match api_request::<Vec<record_filters::RecordFilter>, _>(
-		&record_filters::get_url(),
-		params,
-		client,
-	)
-	.await
-	{
-		Ok(filters) => Ok(filters),
-		Err(why) => {
-			return Err(Error { origin: why.origin + " > gokz_rs::global_api::get_filters", ..why })
-		},
-	};
-
-	log::info!("[END] get_filters() => Result {:?}", &result);
-
-	return result;
-}
-
-/// Will request all filters for a given [`Mode`] and runtype (TP / PRO). This will result in the
-/// distribution of record filters per [`Mode`].
-pub async fn get_filter_dist(
-	mode: &Mode,
-	runtype: bool,
-	client: &reqwest::Client,
-) -> Result<Vec<record_filters::RecordFilter>, Error> {
-	let params = record_filters::RecordFilterParams {
-		mode_ids: Some((*mode).into()),
-		has_teleports: Some(runtype),
-		stages: Some(0),
-		limit: Some(9999),
-		..Default::default()
-	};
-
-	log::info!("[START] get_filter_dist() => Params {:?}", &params);
-
-	let result = match api_request::<
-		Vec<record_filters::RecordFilter>,
-		record_filters::RecordFilterParams,
-	>(&record_filters::get_url(), params, client)
-	.await
-	{
-		Ok(filters) => Ok(filters),
-		Err(why) => {
-			return Err(Error {
-				origin: why.origin + " > gokz_rs::global_api::get_filter_dist",
-				..why
-			})
-		},
-	};
-
-	log::info!("[END] get_filter_dist() => Result {:?}", &result);
-
-	return result;
-}
-
-/// Will gather a list of maps which have not yet been completed by a given player and return their
-/// names.
-///
-/// Note: the function needs to be this specific because the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2) will return inconsistent
-/// results if not enough arguments are provided.
-pub async fn get_unfinished(
-	player_identifier: &PlayerIdentifier,
-	mode: &Mode,
-	runtype: bool,
-	tier: Option<u8>,
-	client: &reqwest::Client,
-) -> Result<Vec<String>, Error> {
-	log::info!(
-		"[START] get_unfinished() => Function Input {{ player_identifier: {}, mode: {}, runtype: {}, tier: {:?} }}",
-		player_identifier,
-		mode,
-		runtype,
-		&tier
-	);
-
-	let doable = match get_filter_dist(mode, runtype, &client).await {
-		Ok(filters) => filters,
-		Err(why) => {
-			return Err(Error {
-				origin: why.origin + " > gokz_rs::global_api::get_unfinished",
-				..why
-			})
-		},
-	};
-
-	let completed = match get_records(player_identifier, mode, runtype, 0, client).await {
-		Ok(records) => records,
-		Err(why) => {
-			return Err(Error {
-				origin: why.origin + " > gokz_rs::global_api::get_unfinished",
-				..why
-			})
-		},
-	};
-
-	let completed = completed.into_iter().map(|rec| rec.map_id).collect::<Vec<i16>>();
-	let mut uncomp_ids = Vec::new();
-
-	for filter in doable {
-		if !completed.contains(&filter.map_id) {
-			uncomp_ids.push(filter.map_id);
-		}
-	}
-
-	let global_maps = match get_maps(&client).await {
-		Ok(maps) => maps,
-		Err(why) => {
-			return Err(Error {
-				origin: why.origin + " > gokz_rs::global_api::get_unfinished",
-				..why
-			})
-		},
-	};
-	let mut uncompleted = Vec::new();
-
-	for map in global_maps {
-		let matches_tier = match tier {
-			Some(x) => map.difficulty == x,
-			None => true,
-		};
-		let matches_runtype = if runtype { !&map.name.starts_with("kzpro_") } else { true };
-
-		if uncomp_ids.contains(&map.id) && matches_tier && matches_runtype {
-			uncompleted.push(map.name);
-		}
-	}
-
-	log::info!("[END] get_unfinished() => Result {:?}", &uncompleted);
-
-	return Ok(uncompleted);
-}
-
-/// Will request the #1 record on a given map.
-pub async fn get_wr(
-	map_identifier: &MapIdentifier,
-	mode: &Mode,
-	runtype: bool,
-	course: u8,
-	client: &reqwest::Client,
-) -> Result<records::top::Record, Error> {
-	let mut params = records::top::RecordParams {
-		modes_list_string: Some(mode.as_str().to_owned()),
-		has_teleports: Some(runtype),
-		stage: Some(course),
-		..Default::default()
-	};
-
-	match map_identifier {
-		MapIdentifier::Name(map_name) => params.map_name = Some(map_name.to_owned()),
-		MapIdentifier::ID(map_id) => params.map_id = Some(*map_id),
-	}
-
-	log::info!("[START] get_wr() => Params {:?}", &params);
-
-	let result =
-		match api_request::<Vec<records::top::Record>, _>(&records::top::get_url(), params, client)
-			.await
-		{
-			Ok(mut records) => {
-				if records.len() > 0 {
-					Ok(records.remove(0))
-				} else {
-					log::warn!("Received an empty response from the GlobalAPI.");
-					return Err(Error {
-						kind: ErrorKind::NoData,
-						origin: String::from("gokz_rs::global_api::get_wr"),
-						tldr: String::from("No WR found."),
-						raw: None,
-					});
-				}
-			},
-			Err(why) => {
-				return Err(Error { origin: why.origin + " > gokz_rs::global_api::get_wr", ..why })
-			},
-		};
-
-	log::info!("[END] get_wr() => Result {:?}", &result);
-
-	return result;
-}
-
-/// Will request a player's personal best on a given map.
-pub async fn get_pb(
-	player: &PlayerIdentifier,
-	map_identifier: &MapIdentifier,
-	mode: &Mode,
-	runtype: bool,
-	course: u8,
-	client: &reqwest::Client,
-) -> Result<records::top::Record, Error> {
-	let mut params = records::top::RecordParams {
-		modes_list_string: Some(mode.as_str().to_owned()),
-		has_teleports: Some(runtype),
-		stage: Some(course),
-		..Default::default()
-	};
-
-	match player {
-		PlayerIdentifier::Name(name) => params.player_name = Some(name.to_owned()),
-		PlayerIdentifier::SteamID(steam_id) => params.steam_id = Some(steam_id.to_string()),
-		PlayerIdentifier::SteamID64(steam_id64) => params.steamid64 = Some(*steam_id64),
-	}
-
-	match map_identifier {
-		MapIdentifier::Name(map_name) => params.map_name = Some(map_name.to_owned()),
-		MapIdentifier::ID(map_id) => params.map_id = Some(*map_id),
-	}
-
-	log::info!("[START] get_pb() => Params {:?}", &params);
-
-	let result =
-		match api_request::<Vec<records::top::Record>, _>(&records::top::get_url(), params, client)
-			.await
-		{
-			Ok(mut records) => {
-				if records.len() > 0 {
-					Ok(records.remove(0))
-				} else {
-					log::warn!("Received an empty response from the GlobalAPI.");
-					return Err(Error {
-						kind: ErrorKind::NoData,
-						origin: String::from("gokz_rs::global_api::get_wr"),
-						tldr: String::from("No PB found."),
-						raw: None,
-					});
-				}
-			},
-			Err(why) => {
-				return Err(Error { origin: why.origin + " > gokz_rs::global_api::get_pb", ..why })
-			},
-		};
-
-	log::info!("[END] get_pb() => Result {:?}", &result);
-
-	return result;
-}
-
-/// Will request the top 100 records on a given map.
-pub async fn get_maptop(
-	map_identifier: &MapIdentifier,
-	mode: &Mode,
-	runtype: bool,
-	course: u8,
-	client: &reqwest::Client,
-) -> Result<Vec<records::top::Record>, Error> {
-	let mut params = records::top::RecordParams {
-		modes_list_string: Some(mode.as_str().to_owned()),
-		has_teleports: Some(runtype),
-		stage: Some(course),
-		limit: Some(100),
-		..Default::default()
-	};
-
-	match map_identifier {
-		MapIdentifier::Name(map_name) => params.map_name = Some(map_name.to_owned()),
-		MapIdentifier::ID(map_id) => params.map_id = Some(*map_id),
-	}
-
-	log::info!("[START] get_maptop() => Params {:?}", &params);
-
-	let result =
-		match api_request::<Vec<records::top::Record>, _>(&records::top::get_url(), params, client)
-			.await
-		{
-			Ok(records) => {
-				if records.len() > 0 {
-					Ok(records)
-				} else {
-					log::warn!("Received an empty response from the GlobalAPI.");
-					return Err(Error {
-						kind: ErrorKind::NoData,
-						origin: String::from("gokz_rs::global_api::get_wr"),
-						tldr: String::from("No PB found."),
-						raw: None,
-					});
-				}
-			},
-			Err(why) => {
-				return Err(Error {
-					origin: why.origin + " > gokz_rs::global_api::get_maptop",
-					..why
-				})
-			},
-		};
-
-	log::info!("[END] get_maptop() => Result {:?}", &result);
-
-	return result;
-}
-
-/// Will request all records of a player.
-///
-/// Note: the function needs to be this specific because the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2) will return inconsistent
-/// results if not enough arguments are provided.
-///
-/// Note: this function returns **ALL** records from the API, even records on non-global maps.
-pub async fn get_records(
-	player: &PlayerIdentifier,
-	mode: &Mode,
-	runtype: bool,
-	course: u8,
-	client: &reqwest::Client,
-) -> Result<Vec<records::top::Record>, Error> {
-	let mut params = records::top::RecordParams {
-		modes_list_string: Some(mode.as_str().to_owned()),
-		has_teleports: Some(runtype),
-		stage: Some(course),
-		limit: Some(9999),
-		..Default::default()
-	};
-
-	match player {
-		PlayerIdentifier::Name(name) => params.player_name = Some(name.to_owned()),
-		PlayerIdentifier::SteamID(steam_id) => params.steam_id = Some(steam_id.to_string()),
-		PlayerIdentifier::SteamID64(steam_id64) => params.steamid64 = Some(*steam_id64),
-	}
-
-	log::info!("[START] get_records() => Params {:?}", &params);
-
-	let result =
-		match api_request::<Vec<records::top::Record>, _>(&records::top::get_url(), params, client)
-			.await
-		{
-			Ok(records) => {
-				if records.len() > 0 {
-					Ok(records)
-				} else {
-					log::warn!("Received an empty response from the GlobalAPI.");
-					return Err(Error {
-						kind: ErrorKind::NoData,
-						origin: String::from("gokz_rs::global_api::get_times"),
-						tldr: String::from("This player has 0 records."),
-						raw: None,
-					});
-				}
-			},
-			Err(why) => {
-				return Err(Error {
-					origin: why.origin + " > gokz_rs::global_api::get_times",
-					..why
-				})
-			},
-		};
-
-	log::info!("[END] get_records() => Result {:?}", &result);
-
-	return result;
-}
-
-/// Will request all of a player's records and filter them to find the most recently set one.
-pub async fn get_recent(
-	player: &PlayerIdentifier,
-	client: &reqwest::Client,
-) -> Result<records::top::Record, Error> {
-	log::info!("[START] get_recent() => Function Input {{ player: {:?} }}", player);
-
-	let mut potential_err = None;
-
-	// get all records from a player
-	// this needs to be very specific or the GlobalAPI won't give accurate results
-	let modes = [Mode::KZTimer, Mode::SimpleKZ, Mode::Vanilla];
-	let mut records = (join_all([
-		get_records(player, &modes[0], true, 0, client),
-		get_records(player, &modes[0], false, 0, client),
-		get_records(player, &modes[1], true, 0, client),
-		get_records(player, &modes[1], false, 0, client),
-		get_records(player, &modes[2], true, 0, client),
-		get_records(player, &modes[2], false, 0, client),
-	])
-	.await)
-		.into_iter() // Vec<Result<Vec<Response>, Error>>
-		.filter_map(|result| {
-			// filter out errors
-			if let Err(why) = &result {
-				potential_err = Some(why.clone());
-			}
-			result.ok()
-		})
-		.flatten() // flatten into single Vec
-		.collect::<Vec<_>>(); // Vec<Response>
-
-	if records.len() < 1 {
-		log::warn!("Received an empty response from the GlobalAPI.");
-		if let Some(err) = potential_err {
-			return Err(err);
-		} else {
-			return Err(Error {
-				kind: ErrorKind::NoData,
-				origin: String::from("gokz_rs::global_api::get_recent"),
-				tldr: String::from("No recent PB found."),
-				raw: None,
-			});
-		};
-	}
-
-	// store the most recent pb as (unix_timestamp, index)
-	let mut recent = (0, 0);
-
-	for i in 0..records.len() {
-		let date = match chrono::NaiveDateTime::parse_from_str(
-			&records[i].created_on,
-			"%Y-%m-%dT%H:%M:%S",
-		) {
-			Ok(date) => date,
-			Err(why) => {
-				log::warn!("Failed converting date: {}", &records[i].created_on);
-				log::warn!("Error: {:?}", why);
-				return Err(Error {
-					kind: ErrorKind::Parsing,
-					origin: String::from("gokz_rs::global_api::get_recent"),
-					tldr: String::from("Failed to convert date."),
-					raw: Some(why.to_string()),
-				});
-			},
-		};
-
-		// replace current `recent` if newer record was found
-		if date.timestamp() > recent.0 {
-			recent = (date.timestamp(), i);
-		}
-	}
-
-	log::info!("[END] get_recent() => Result {:?}", &records[recent.1]);
-
-	// return most recent pb using index
-	Ok(records.remove(recent.1))
-}
-
-/// Will request the #placement of a given record.
-pub async fn get_place(
-	record_id: &u32,
-	client: &reqwest::Client,
-) -> Result<records::place::Place, Error> {
-	log::info!("[START] get_place() => Function Input {{ record_id: {} }}", record_id);
-
-	let result = match api_request::<records::place::Place, _>(
-		&records::place::get_url(record_id),
-		EmptyParams,
-		client,
-	)
-	.await
-	{
-		Ok(place) => Ok(place),
-		Err(why) => {
-			return Err(Error { origin: why.origin + " > gokz_rs::global_api::get_place", ..why })
-		},
-	};
-
-	log::info!("[END] get_place() => Result {:?}", &result);
-
-	return result;
-}
-
-// --------------------------------------------------------------------------------------------- //
-
-/// This function will check the most recent 10 health checks and return a
-/// [fancy](health::Fancy) response.
-pub async fn health_check(client: &reqwest::Client) -> Result<health::FancyHealthReport, Error> {
-	log::info!("[START] health_check()");
-
-	match client.get(health::get_url()).send().await {
-		Ok(response) => match response.status() {
-			StatusCode::OK => {
-				log::trace!("Successful GlobalAPI health check");
-				log::trace!("Response: {:?}", &response);
-				match response.json::<health::HealthResponse>().await {
-					Ok(parsed_response) => {
-						log::info!("Successfully parsed GlobalAPI response.");
-						log::info!("Parsed Response: {:?}", &parsed_response);
-
-						let mut result = health::FancyHealthReport {
-							successful_responses: 0,
-							fast_responses: 0,
-						};
-
-						for res in &parsed_response.results[0..10] {
-							if res.condition_results[0].success {
-								result.successful_responses += 1;
-							}
-
-							if res.condition_results[1].success {
-								result.fast_responses += 1;
-							}
-						}
-
-						log::info!("[END] health_check() => Result {:?}", &result);
-
-						return Ok(result);
-					},
-					Err(why) => {
-						log::warn!("Failed parsing GlobalAPI Health Check.");
-						return Err(Error {
-							kind: ErrorKind::Parsing,
-							origin: String::from("gokz_rs::global_api::health_check"),
-							tldr: String::from("Failed to parse JSON."),
-							raw: Some(why.to_string()),
-						});
-					},
-				}
-			},
-			code => {
-				log::warn!("Got a response from the GlobalAPI, but not an `OK` Code.");
-				log::warn!("Code: {}", &code);
-				return Err(Error {
-					kind: ErrorKind::GlobalAPI,
-					origin: String::from("gokz_rs::global_api::health_check"),
-					tldr: String::from("GlobalAPI request failed."),
-					raw: Some(code.to_string()),
-				});
-			},
-		},
-		Err(why) => {
-			log::warn!("Failed GlobalAPI request");
-			log::warn!("Error: {}", why);
-			return Err(Error {
-				kind: ErrorKind::GlobalAPI,
-				origin: String::from("gokz_rs::global_api::health_check"),
-				tldr: String::from("GlobalAPI request failed."),
-				raw: Some(why.to_string()),
-			});
-		},
-	}
-}
-
-/// Will iterate over a list of [maps](maps::Response) and check if any of them match a given
-/// [`MapIdentifier`].
-///
-/// Note: Technically you can pass in any list of [maps](maps::Response) but it is intended to be
-/// used with [`get_maps`].
-pub async fn is_global(
-	map_identifier: &MapIdentifier,
-	map_list: &Vec<maps::KZMap>,
-) -> Result<maps::KZMap, Error> {
-	log::info!(
-		"[START] is_global() => Function Input {{ map_identifier: {:?}, map_list_len: {} }}",
-		map_identifier,
-		map_list.len()
-	);
-
-	match map_identifier {
-		MapIdentifier::Name(map_name) => {
-			for map in map_list {
-				if map.name.contains(&map_name.to_lowercase()) {
-					log::info!("[END] is_global() => Result {:?}", map);
-					return Ok(map.to_owned());
-				}
-			}
-		},
-		MapIdentifier::ID(map_id) => {
-			for map in map_list {
-				if &map.id == map_id {
-					log::info!("[END] is_global() => Result {:?}", map);
-					return Ok(map.to_owned());
-				}
-			}
-		},
-	}
-
-	log::info!("[END] is_global() => Provided map (`{}`) is not global.", map_identifier);
-	return Err(Error {
-		kind: ErrorKind::Input,
-		origin: String::from("gokz_rs::global_api::is_global"),
-		tldr: format!("`{}` is not a global map.", map_identifier),
-		raw: Some(map_identifier.to_string()),
-	});
-}
-
-/// Returns download link to the replay of a given replay_id or an [`Error`]
-pub async fn get_replay(replay_id: u32) -> Result<String, Error> {
-	log::info!("[START] get_replay() => Function Input {{ replay_id: {} }}", replay_id);
-
-	let result = match replay_id {
-		0 => {
-			return Err(Error {
-				kind: ErrorKind::NoData,
-				origin: String::from("gokz_rs::global_api::get_replay"),
-				tldr: String::from("`replay_id` is 0."),
-				raw: Some(replay_id.to_string()),
-			})
-		},
-		replay_id => {
-			// https://kztimerglobal.com/api/v2/records/replay/{replay_id}
-			Ok(crate::global_api::get_url() + &records::replay::replay_id::get_url(replay_id))
-		},
-	};
-
-	log::info!("[END] get_replay() => Result {:?}", replay_id);
-
-	return result;
-}
-
-/// Will fetch a record by its ID.
-pub async fn get_record(
-	record_id: &u32,
-	client: &reqwest::Client,
-) -> Result<records::top::Record, Error> {
-	let params = records::top::RecordParams { tickrate: None, limit: None, ..Default::default() };
-
-	log::info!("[START] get_record() => Params {:?}", &params);
-
-	let result =
-		api_request::<records::top::Record, _>(&format!("records/{record_id}"), params, client)
-			.await;
-
-	log::info!("[END] get_record() => Result {:?}", &result);
-
-	return result;
-}
-/// Will return a Vec<String> of all global map names
-pub async fn get_mapcycle(
-	tier: Option<u8>,
-	client: &reqwest::Client,
-) -> Result<Vec<String>, Error> {
-	let url = format!(
-		"https://maps.cawkz.net/mapcycles/{}",
-		match tier {
-			Some(tier) => format!("tier{}.txt", tier),
-			None => String::from("gokz.txt"),
-		}
-	);
-
-	log::info!("[START] get_mapcycle() => Params {{ url: {} }}", &url);
-
-	let result = match client.get(url).send().await {
-		Ok(response) => match response.text().await {
-			Ok(text) => Ok(text.split_terminator("\r\n").map(|s| s.to_owned()).collect()),
-			Err(why) => {
-				log::warn!("Failed to parse plain text.");
-				log::warn!("Error: {:?}", why);
-				return Err(Error {
-					kind: ErrorKind::Parsing,
-					origin: String::from("gokz_rs::global_api::get_mapcycle"),
-					tldr: String::from("Failed to parse text."),
-					raw: Some(why.to_string()),
-				});
-			},
-		},
-		Err(why) => {
-			log::warn!("Failed to GET mapcycle.");
-			return Err(Error {
-				kind: ErrorKind::GlobalAPI,
-				origin: String::from("gokz_rs::global_api::get_mapcycle"),
-				tldr: String::from("GET Request failed."),
-				raw: Some(why.to_string()),
-			});
-		},
-	};
-
-	log::info!("[END] get_mapcycle() => Result {:?}", &result);
-
-	return result;
-}
-
-#[cfg(test)]
-mod tests {
-	use super::*;
-
-	#[tokio::test]
-	#[ignore = "expensive"]
-	async fn get_bans_test() {
-		let client = reqwest::Client::new();
-
-		let no_bans = SteamID::new("STEAM_1:0:165881949").unwrap();
-
-		match get_bans(no_bans, &client).await {
-			Err(why) => println!("Test successful: {:#?}", why),
-			Ok(bans) => panic!("Test failed: {:#?}", bans),
-		}
-
-		let bans = SteamID::new("STEAM_1:1:161178172").unwrap();
-
-		match get_bans(bans, &client).await {
-			Err(why) => panic!("Test failed: {:#?}", why),
-			Ok(bans) => println!("Test successful: {:#?}", bans),
-		}
-	}
-
-	#[tokio::test]
-	#[ignore = "expensive"]
-	async fn get_maps_test() {
-		let client = reqwest::Client::new();
-
-		match get_maps(&client).await {
-			Err(why) => panic!("Test failed: {:#?}", why),
-			Ok(maps) => println!("Test successful: {} maps", maps.len()),
-		}
-	}
-
-	#[tokio::test]
-	// #[ignore = "expensive"]
-	async fn get_all_maps_test() {
-		let client = reqwest::Client::new();
-
-		match get_all_maps(&client).await {
-			Err(why) => panic!("Test failed: {:#?}", why),
-			Ok(maps) => println!("Test successful: {} maps", maps.len()),
-		}
-	}
-
-	#[tokio::test]
-	#[ignore = "expensive"]
-	async fn get_map_test() {
-		let client = reqwest::Client::new();
-
-		match get_map(&MapIdentifier::Name(String::from("kz_lionharder")), &client).await {
-			Err(why) => panic!("Test failed: {:#?}", why),
-			Ok(map) => println!("Test successful: {:#?}", map),
-		}
-
-		match get_map(&MapIdentifier::ID(992), &client).await {
-			Err(why) => panic!("Test failed: {:#?}", why),
-			Ok(map) => println!("Test successful: {:#?}", map),
-		}
-	}
-
-	#[tokio::test]
-	#[ignore = "expensive"]
-	async fn get_modes_test() {
-		let client = reqwest::Client::new();
-
-		match get_modes(&client).await {
-			Err(why) => panic!("Test failed: {:#?}", why),
-			Ok(modes) => println!("Test successful: {:#?}\n({} modes)", modes, modes.len()),
-		}
-	}
-
-	#[tokio::test]
-	#[ignore = "expensive"]
-	async fn get_mode_test() {
-		let client = reqwest::Client::new();
-
-		match get_mode(&Mode::KZTimer, &client).await {
-			Err(why) => panic!("Test failed: {:#?}", why),
-			Ok(mode) => assert_eq!(200, mode.id),
-		}
-
-		match get_mode(&Mode::SimpleKZ, &client).await {
-			Err(why) => panic!("Test failed: {:#?}", why),
-			Ok(mode) => assert_eq!(201, mode.id),
-		}
-
-		match get_mode(&Mode::Vanilla, &client).await {
-			Err(why) => panic!("Test failed: {:#?}", why),
-			Ok(mode) => assert_eq!(202, mode.id),
-		}
-	}
-
-	#[tokio::test]
-	#[ignore = "expensive"]
-	async fn get_player_test() {
-		let client = reqwest::Client::new();
-
-		let alphakeks = PlayerIdentifier::SteamID(SteamID::new("STEAM_1:1:161178172").unwrap());
-		let charlie = PlayerIdentifier::Name(String::from("charlieeilrahc"));
-
-		match get_player(&alphakeks, &client).await {
-			Err(why) => panic!("Test failed: {:#?}", why),
-			Ok(player) => println!("Test successful: {:#?}", player),
-		}
-
-		match get_player(&charlie, &client).await {
-			Err(why) => panic!("Test failed: {:#?}", why),
-			Ok(player) => println!("Test successful: {:#?}", player),
-		}
-	}
-
-	#[tokio::test]
-	#[ignore = "expensive"]
-	async fn get_filters_test() {
-		let client = reqwest::Client::new();
-
-		match get_filters(992, &client).await {
-			Err(why) => panic!("Test failed: {:#?}", why),
-			Ok(filters) => println!("Test successfuly: {:#?}", filters),
-		}
-	}
-
-	#[tokio::test]
-	#[ignore = "expensive"]
-	async fn get_unfinished_test() {
-		let client = reqwest::Client::new();
-
-		match get_unfinished(
-			&PlayerIdentifier::Name(String::from("AlphaKeks")),
-			&Mode::SimpleKZ,
-			true,
-			Some(7),
-			&client,
-		)
-		.await
-		{
-			Err(why) => panic!("Test failed: {:#?}", why),
-			Ok(maps) => println!(
-				"Test successful: {} maps left (alphakeks, skz, tp, t7)\n{:?}",
-				maps.len(),
-				maps
-			),
-		}
-
-		match get_unfinished(
-			&PlayerIdentifier::SteamID(SteamID::new("STEAM_1:0:135486492").unwrap()),
-			&Mode::KZTimer,
-			false,
-			None,
-			&client,
-		)
-		.await
-		{
-			Err(why) => panic!("Test failed: {:#?}", why),
-			Ok(maps) => {
-				println!("Test successful: {} maps left (jucci, kzt, pro)\n{:?}", maps.len(), maps)
-			},
-		}
-
-		match get_unfinished(
-			&PlayerIdentifier::SteamID(SteamID::new("STEAM_1:0:46898346").unwrap()),
-			&Mode::SimpleKZ,
-			true,
-			Some(7),
-			&client,
-		)
-		.await
-		{
-			Err(why) => panic!("Test failed: {:#?}", why),
-			Ok(maps) => {
-				println!(
-					"Test successful: {} maps left (charlie, skz, tp, t7)\n{:?}",
-					maps.len(),
-					maps
-				)
-			},
-		}
-	}
-
-	#[tokio::test]
-	#[ignore = "expensive"]
-	async fn get_wr_test() {
-		let client = reqwest::Client::new();
-
-		match get_wr(
-			&MapIdentifier::Name(String::from("kz_lionharder")),
-			&Mode::SimpleKZ,
-			false,
-			0,
-			&client,
-		)
-		.await
-		{
-			Err(why) => panic!("Test failed: {:#?}", why),
-			Ok(wr) => println!("Test successful: {:#?}", wr),
-		}
-
-		match get_wr(&MapIdentifier::ID(992), &Mode::KZTimer, true, 0, &client).await {
-			Err(why) => panic!("Test failed: {:#?}", why),
-			Ok(wr) => println!("Test successful: {:#?}", wr),
-		}
-	}
-
-	#[tokio::test]
-	#[ignore = "expensive"]
-	async fn get_pb_test() {
-		let client = reqwest::Client::new();
-
-		match get_pb(
-			&PlayerIdentifier::SteamID(SteamID::new("STEAM_1:1:161178172").unwrap()),
-			&MapIdentifier::Name(String::from("kz_lionharder")),
-			&Mode::SimpleKZ,
-			false,
-			0,
-			&client,
-		)
-		.await
-		{
-			Err(why) => panic!("Test failed: {:#?}", why),
-			Ok(wr) => println!("Test successful: {:#?}", wr),
-		}
-
-		match get_pb(
-			&PlayerIdentifier::Name(String::from("racist75")),
-			&MapIdentifier::ID(992),
-			&Mode::SimpleKZ,
-			true,
-			0,
-			&client,
-		)
-		.await
-		{
-			Err(why) => panic!("Test failed: {:#?}", why),
-			Ok(wr) => println!("Test successful: {:#?}", wr),
-		}
-	}
-
-	#[tokio::test]
-	#[ignore = "expensive"]
-	async fn get_maptop_test() {
-		let client = reqwest::Client::new();
-
-		match get_maptop(
-			&MapIdentifier::Name(String::from("kz_lionharder")),
-			&Mode::SimpleKZ,
-			false,
-			0,
-			&client,
-		)
-		.await
-		{
-			Err(why) => panic!("Test failed: {:#?}", why),
-			Ok(maptop) => {
-				println!("Test successful: {} records (lionharder, skz, pro)", maptop.len())
-			},
-		}
-
-		match get_maptop(&MapIdentifier::ID(992), &Mode::KZTimer, true, 0, &client).await {
-			Err(why) => panic!("Test failed: {:#?}", why),
-			Ok(maptop) => {
-				println!("Test successful: {} records (lionharder, kzt, tp)", maptop.len())
-			},
-		}
-	}
-
-	#[tokio::test]
-	#[ignore = "expensive"]
-	async fn get_records_test() {
-		let client = reqwest::Client::new();
-
-		match get_records(
-			&PlayerIdentifier::Name(String::from("AlphaKeks")),
-			&Mode::SimpleKZ,
-			true,
-			0,
-			&client,
-		)
-		.await
-		{
-			Err(why) => panic!("Test failed: {:#?}", why),
-			Ok(records) => {
-				println!("Test successful: {} records (AlphaKeks, skz, tp)", records.len())
-			},
-		}
-	}
-
-	#[tokio::test]
-	#[ignore = "expensive"]
-	async fn get_recent_test() {
-		let client = reqwest::Client::new();
-
-		let players = [
-			PlayerIdentifier::Name(String::from("AlphaKeks")),
-			PlayerIdentifier::SteamID(SteamID::new("STEAM_1:1:161178172").unwrap()),
-			PlayerIdentifier::Name(String::from("racist75")),
-			PlayerIdentifier::SteamID(SteamID::new("STEAM_1:1:152337044").unwrap()),
-			PlayerIdentifier::Name(String::from("𝘨𝘰𝘴ℎℎℎℎℎℎℎ")),
-			PlayerIdentifier::SteamID(SteamID::new("STEAM_1:0:165881949").unwrap()),
-			PlayerIdentifier::Name(String::from("charlieeilrahc")),
-			PlayerIdentifier::SteamID(SteamID::new("STEAM_1:0:46898346").unwrap()),
-			PlayerIdentifier::Name(String::from("Fob")),
-			PlayerIdentifier::SteamID(SteamID::new("STEAM_1:1:96787045").unwrap()),
-		];
-
-		for player in players {
-			match get_recent(&player, &client).await {
-				Ok(recent) => {
-					println!(
-						"{:?}'s recent: {} ({} {}) - {}",
-						&player,
-						&recent.map_name,
-						&recent.mode,
-						if &recent.teleports > &0 { "TP" } else { "PRO" },
-						&recent.time
+				Ok(response) => {
+					trace!(
+						"[GlobalAPI::get] GlobalAPI responded successfully with code `{}`.",
+						response.status()
 					);
+					response
 				},
-				Err(why) => panic!("Fail: {:#?}", why),
-			}
-		}
-	}
-
-	#[tokio::test]
-	#[ignore = "expensive"]
-	async fn get_place_test() -> Result<(), Error> {
-		let client = reqwest::Client::new();
-
-		let lionharder_pb = get_pb(
-			&PlayerIdentifier::Name(String::from("AlphaKeks")),
-			&MapIdentifier::ID(992),
-			&Mode::SimpleKZ,
-			false,
-			0,
-			&client,
-		)
-		.await?;
-
-		match get_place(&lionharder_pb.id, &client).await {
-			Ok(place) => {
-				println!("Test successful: AlphaKeks is #{} on kz_lionharder (SKZ PRO).", place.0)
 			},
-			Err(why) => panic!("Test failed: {:#?}", why),
-		}
-
-		Ok(())
-	}
-
-	#[tokio::test]
-	#[ignore = "expensive"]
-	async fn health_test() {
-		let client = reqwest::Client::new();
-
-		match health_check(&client).await {
-			Err(why) => panic!("Test failed: {:#?}", why),
-			Ok(data) => println!("Test successful: {:#?}", data),
-		}
-	}
-
-	#[tokio::test]
-	#[ignore = "expensive"]
-	async fn is_global_test() -> Result<(), Error> {
-		let client = reqwest::Client::new();
-
-		let global_maps = get_maps(&client).await?;
-
-		match is_global(&MapIdentifier::ID(1337), &global_maps).await {
-			Ok(what) => panic!("KZ really did come far, huh?\n{:#?}", what),
-			Err(why) => println!("Test successfully failed: {:#?}", why),
-		}
-
-		match is_global(&MapIdentifier::ID(992), &global_maps).await {
-			Err(why) => panic!("Test failed: {:#?}", why),
-			Ok(map) => println!("Test successfull: {:#?}", map),
-		}
-
-		match is_global(&MapIdentifier::Name(String::from("kz_lionHARDer")), &global_maps).await {
-			Err(why) => panic!("Test failed: {:#?}", why),
-			Ok(map) => println!("Test successfull: {:#?}", map),
-		}
-
-		match is_global(&MapIdentifier::Name(String::from("penis")), &global_maps).await {
-			Err(why) => panic!("Test failed: {:#?}", why),
-			Ok(map) => println!("Test successfull: {:#?}", map),
-		}
-
-		Ok(())
-	}
-
-	#[tokio::test]
-	#[ignore = "expensive"]
-	async fn get_replay_test() -> Result<(), Error> {
-		let client = reqwest::Client::new();
-
-		let eventide_pb = get_pb(
-			&PlayerIdentifier::Name(String::from("AlphaKeks")),
-			&MapIdentifier::Name(String::from("kz_eventide")),
-			&Mode::SimpleKZ,
-			false,
-			0,
-			&client,
-		)
-		.await?;
-
-		match get_replay(eventide_pb.replay_id).await {
-			Err(why) => panic!("Test failed: {:#?}", why),
-			Ok(link) => println!("Test successful: {}", link),
 		};
 
-		Ok(())
+		// parse the response into the desired `Response` format
+		let parsed_response = match response.json::<Response>().await {
+			Err(why) => {
+				warn!("[GlobalAPI::get] Failed to parse response.");
+				warn!("[GlobalAPI::get] {:?}", why);
+
+				return Err(Error {
+					kind: ErrorKind::Parsing { expected: String::from("JSON"), got: None },
+					msg: String::from("Failed to parse GlobalAPI response."),
+				});
+			},
+			Ok(parsed_response) => {
+				trace!("[GlobalAPI::get] Successfully parsed response.");
+				parsed_response
+			},
+		};
+
+		info!("[GlobalAPI::get] completed successfully.");
+		debug!("[GlobalAPI::get] Response: {:?}", &parsed_response);
+
+		// return the `Response`
+		Ok(parsed_response)
 	}
 
-	#[tokio::test]
-	#[ignore = "expensive"]
-	async fn get_record_test() {
-		let client = reqwest::Client::new();
+	/// Route: `/bans`
+	/// - Lets you fetch ban entries of players
+	pub async fn get_bans(
+		steam_id: &SteamID,
+		limit: u32,
+		client: &crate::Client,
+	) -> Result<Vec<bans::Ban>, Error> {
+		info!("[GlobalAPI::get_bans] starting...");
 
-		match get_record(&328472, &client).await {
-			Err(why) => panic!("Test failed: {:#?}", why),
-			Ok(record) => println!("Test successful: {:#?}", record),
-		}
+		let params = bans::Params {
+			steam_id: Some(steam_id.to_string()),
+			limit: Some(limit),
+			..Default::default()
+		};
+
+		let response = bans::get(params, client).await?;
+		info!("[GlobalAPI::get_bans] completed successfully.");
+
+		Ok(response)
 	}
 
-	#[tokio::test]
-	#[ignore = "expensive"]
-	async fn get_mapcycle_test() {
-		let client = reqwest::Client::new();
+	/// Route: `/maps`
+	/// - Lets you fetch all maps stored in the GlobalAPI
+	pub async fn get_maps(
+		validated_only: bool,
+		limit: Option<u32>,
+		client: &crate::Client,
+	) -> Result<Vec<maps::Map>, Error> {
+		info!("[GlobalAPI::get_maps] starting...");
 
-		match get_mapcycle(Some(7), &client).await {
-			Err(why) => panic!("Test failed: {:#?}", why),
-			Ok(map_names) => println!("Test successful (T7): {:#?}", map_names),
+		let params = maps::Params {
+			is_validated: Some(validated_only),
+			limit: if let Some(limit) = limit { Some(limit) } else { Some(99999) },
+			..Default::default()
+		};
+
+		let response = maps::get(params, client).await?;
+		info!("[GlobalAPI::get_maps] completed successfully.");
+
+		Ok(response)
+	}
+
+	/// Route: `/maps/{map_id}` _OR_ `/maps/name/{map_name}`
+	/// - Lets you fetch a map stored in the GlobalAPI
+	pub async fn get_map(
+		map_identifier: &MapIdentifier,
+		client: &crate::Client,
+	) -> Result<maps::Map, Error> {
+		info!("[GlobalAPI::get_map] starting...");
+
+		let response = match map_identifier {
+			MapIdentifier::ID(id) => maps::id::get(*id, client).await?,
+			MapIdentifier::Name(name) => maps::name::get(name, client).await?,
+		};
+		info!("[GlobalAPI::get_map] completed successfully.");
+
+		Ok(response)
+	}
+
+	pub async fn get_mapcycle(
+		tier: Option<u8>,
+		client: &crate::Client,
+	) -> Result<Vec<String>, Error> {
+		info!("[GlobalAPI::is_global] completed successfully.");
+
+		let url = format!(
+			"https://maps.global-api.com/mapcycles/{}",
+			match tier {
+				Some(tier) => format!("tier{}.txt", tier),
+				None => String::from("gokz.txt"),
+			}
+		);
+
+		let response = match client.get(url).send().await {
+			Err(why) => {
+				warn!("[GlobalAPI::get_mapcycle] HTTPS Request failed.");
+				if let Some(code) = why.status() {
+					warn!("[GlobalAPI::get_mapcycle] Request failed with status code `{}`.", &code);
+					return Err(Error {
+						kind: ErrorKind::GlobalAPI {
+							status_code: Some(code.to_string()),
+							raw_message: Some(why.to_string()),
+						},
+						msg: format!("GlobalAPI request failed with code `{}`.", code),
+					});
+				}
+
+				warn!("[GlobalAPI::get_mapcycle] Request failed with no status code.");
+				return Err(Error {
+					kind: ErrorKind::GlobalAPI {
+						status_code: None,
+						raw_message: Some(why.to_string()),
+					},
+					msg: String::from(
+						"GlobalAPI request failed, but no status code has been returned.",
+					),
+				});
+			},
+			Ok(response) => match response.error_for_status() {
+				Err(why) => {
+					let Some(code) = why.status() else {
+						warn!("[GlobalAPI::get_mapcycle] Request failed with no status code.");
+						return Err(Error {
+							kind: ErrorKind::GlobalAPI {
+								status_code: None,
+								raw_message: Some(why.to_string()),
+							},
+							msg: String::from(
+								"GlobalAPI request failed, but no status code has been returned.",
+							),
+						});
+					};
+
+					warn!("[GlobalAPI::get_mapcycle] Request failed with status code `{}`.", &code);
+					return Err(Error {
+						kind: ErrorKind::GlobalAPI {
+							status_code: Some(code.to_string()),
+							raw_message: Some(why.to_string()),
+						},
+						msg: format!("GlobalAPI request failed with code `{}`.", code),
+					});
+				},
+				Ok(response) => {
+					trace!(
+						"[GlobalAPI::get_mapcycle] GlobalAPI responded successfully with code `{}`.",
+						response.status()
+					);
+					response
+				},
+			},
+		};
+
+		let parsed_response = match response.text().await {
+			Err(why) => {
+				warn!("[GlobalAPI::get_mapcycle] Failed to parse response.");
+				warn!("[GlobalAPI::get_mapcycle] {:?}", why);
+
+				return Err(Error {
+					kind: ErrorKind::Parsing { expected: String::from("Text"), got: None },
+					msg: String::from("Failed to parse GlobalAPI response."),
+				});
+			},
+			Ok(parsed_response) => {
+				trace!("[GlobalAPI::get_mapcycle] Successfully parsed response.");
+				parsed_response.lines().map(ToOwned::to_owned).collect::<Vec<String>>()
+			},
+		};
+
+		info!("[GlobalAPI::get_mapcycle] completed successfully.");
+		debug!("[GlobalAPI::get_mapcycle] Response: {:?}", &parsed_response);
+
+		// return the `Response`
+		Ok(parsed_response)
+	}
+
+	/// Will fetch all global map names and try to find one that matches the given `map_identifier`.
+	pub async fn is_global(map_name: &str, client: &crate::Client) -> Option<String> {
+		info!("[GlobalAPI::is_global] starting...");
+
+		let result = Self::get_mapcycle(None, client)
+			.await
+			.ok()?
+			.into_iter()
+			.find(|name| name.contains(&map_name.to_lowercase()))?;
+		info!("[GlobalAPI::is_global] completed successfully.");
+
+		Some(result)
+	}
+
+	/// Route: `/modes`
+	/// - Lets you fetch all modes stored in the GlobalAPI
+	pub async fn get_modes(client: &crate::Client) -> Result<Vec<modes::APIMode>, Error> {
+		info!("[GlobalAPI::get_modes] starting...");
+
+		let response = modes::get(client).await?;
+		info!("[GlobalAPI::get_modes] completed successfully.");
+
+		Ok(response)
+	}
+
+	/// - Lets you fetch a mode stored in the GlobalAPI
+	///
+	/// Routes:
+	///
+	/// - `/modes/id/{id}`:
+	///   - `200` ([KZTimer](crate::prelude::Mode::KZTimer))
+	///   - `201` ([SimpleKZ](crate::prelude::Mode::SimpleKZ))
+	///   - `202` ([Vanilla](crate::prelude::Mode::Vanilla))
+	///
+	///   -> All of these are accessible by casting a [Mode](crate::prelude::Mode) to an integer
+	///      using the [as](https://doc.rust-lang.org/std/keyword.as.html) keyword.
+	///
+	/// - `/modes/name/{mode_name}`
+	///   - `kz_timer` ([KZTimer](crate::prelude::Mode::KZTimer))
+	///   - `kz_simple` ([SimpleKZ](crate::prelude::Mode::SimpleKZ))
+	///   - `kz_vanilla` ([Vanilla](crate::prelude::Mode::Vanilla))
+	///
+	///   -> All of these are accessible via [this method](crate::prelude::Mode::api).
+	///
+	/// This function uses `/modes/id/{id}` because I wanted to.
+	pub async fn get_mode(mode: Mode, client: &crate::Client) -> Result<modes::APIMode, Error> {
+		info!("[GlobalAPI::get_mode] starting...");
+
+		let response = modes::id::get(mode as u8, client).await?;
+		info!("[GlobalAPI::get_mode] completed successfully.");
+
+		Ok(response)
+	}
+
+	/// Route: `/players`
+	/// - Lets you fetch player information
+	///
+	/// NOTE: if you want access to more parameters than just `limit`, consider directly using the
+	/// [players](crate::global_api::players) module.
+	pub async fn get_players(
+		limit: Option<u32>,
+		client: &crate::Client,
+	) -> Result<Vec<players::Player>, Error> {
+		info!("[GlobalAPI::get_players] starting...");
+
+		// not quite sure what to put here yet
+		let params = players::Params { limit, ..Default::default() };
+
+		let response = players::get(params, client).await?;
+		info!("[GlobalAPI::get_players] completed successfully.");
+
+		Ok(response)
+	}
+
+	/// Route: `/players/steam_id/{steam_id}` if `player_identifier` is a [`SteamID`], otherwise
+	/// it's `/players` with the according parameters
+	/// - Lets you fetch player information
+	pub async fn get_player(
+		player_identifier: &PlayerIdentifier,
+		client: &crate::Client,
+	) -> Result<players::Player, Error> {
+		info!("[GlobalAPI::get_player] starting...");
+
+		// This is usually faster, so we prioritize it.
+		if let PlayerIdentifier::SteamID(steam_id) = player_identifier {
+			let response = players::steam_id::get(steam_id, client).await?;
+			info!("[GlobalAPI::get_player] completed successfully.");
+
+			return Ok(response);
 		}
 
-		match get_mapcycle(None, &client).await {
-			Err(why) => panic!("Test failed: {:#?}", why),
-			Ok(map_names) => println!("Test successful (all): {:#?}", map_names),
+		let mut params = players::Params::default();
+
+		match player_identifier {
+			PlayerIdentifier::Name(name) => params.name = Some(name.to_owned()),
+			PlayerIdentifier::SteamID64(steam_id64) => params.steamid64_list = Some(*steam_id64),
+			PlayerIdentifier::SteamID(_) => unreachable!("This case is already covered earlier."),
 		}
 
-		match get_mapcycle(Some(3), &client).await {
-			Err(why) => panic!("Test failed: {:#?}", why),
-			Ok(map_names) => println!("Test successful (T3): {:#?}", map_names),
+		let mut response = players::get(params, client).await?;
+		info!("[GlobalAPI::get_player] completed successfully.");
+
+		// this is safe to do since `players::get` would've returned early already if the response
+		// was empty
+		Ok(response.remove(0))
+	}
+
+	/// Route: `/players/steamid/{steamid}/ip/{ip}`
+	/// - Lets you fetch player information
+	/// - `steam_id`: any valid [SteamID](crate::prelude::SteamID) (as a String)
+	/// - `ip`: since none of these routes are well documented, I can only guess that this is
+	/// supposed to be an IPv4 address.
+	pub async fn get_player_by_ip(
+		steam_id: &SteamID,
+		ip: String,
+		client: &crate::Client,
+	) -> Result<players::Player, Error> {
+		info!("[GlobalAPI::get_player_by_ip] starting...");
+
+		let response = players::ip::get(steam_id, &ip, client).await?;
+		info!("[GlobalAPI::get_player_by_ip] completed successfully.");
+
+		Ok(response)
+	}
+
+	/// Route: `/players/steamid/{steamid}/alts`
+	/// - Lets you fetch alternate accounts of a player
+	/// - `steam_id`: any valid [SteamID](crate::prelude::SteamID) (as a string)
+	pub async fn get_player_alts(
+		steam_id: &SteamID,
+		client: &crate::Client,
+	) -> Result<Vec<players::Player>, Error> {
+		info!("[GlobalAPI::get_player_alts] starting...");
+
+		let response = players::alts::get(steam_id, client).await?;
+		info!("[GlobalAPI::get_player_alts] completed successfully.");
+
+		Ok(response)
+	}
+
+	/// Route: `/record_filters`
+	/// - Lets you fetch record filters for individual courses
+	pub async fn get_filters(
+		map_id: u32,
+		client: &crate::Client,
+	) -> Result<Vec<record_filters::RecordFilter>, Error> {
+		info!("[GlobalAPI::get_filters] starting...");
+		let params = record_filters::Params { map_ids: Some(map_id), ..Default::default() };
+
+		let response = record_filters::get(params, client).await?;
+		info!("[GlobalAPI::get_filters] completed successfully.");
+
+		Ok(response)
+	}
+
+	/// Route: `/records/place/{id}`
+	/// - Lets you fetch the leaderboard spot of a given record
+	/// - `id`: `record_id` field on a [Map](maps::Response)
+	pub async fn get_place(record_id: u32, client: &crate::Client) -> Result<u32, Error> {
+		info!("[GlobalAPI::get_place] starting...");
+
+		let response = records::place::get(record_id, client).await?.into();
+		info!("[GlobalAPI::get_place] completed successfully.");
+
+		Ok(response)
+	}
+
+	/// Route: `/records/{id}`
+	/// - Lets you fetch a record stored in the GlobalAPI
+	/// - `id`: `record_id` field on a [Map](maps::Response)
+	pub async fn get_record(
+		record_id: u32,
+		client: &crate::Client,
+	) -> Result<records::Record, Error> {
+		info!("[GlobalAPI::get_record] starting...");
+
+		let response = records::get(record_id, client).await?;
+		info!("[GlobalAPI::get_record] completed successfully.");
+
+		Ok(response)
+	}
+
+	/// Route: `/records/top`
+	/// - Lets you fetch records stored in the GlobalAPI
+	///
+	/// NOTE: if you want access to more parameters than just `limit`, consider directly using the
+	/// [records::top](crate::global_api::records::top) module.
+	pub async fn get_records(
+		limit: Option<u32>,
+		client: &crate::Client,
+	) -> Result<Vec<records::Record>, Error> {
+		info!("[GlobalAPI::get_records] starting...");
+
+		// not quite sure what to put here yet
+		let params = records::top::Params { limit, ..Default::default() };
+
+		let response = records::top::get(params, client).await?;
+		info!("[GlobalAPI::get_records] completed successfully.");
+
+		Ok(response)
+	}
+
+	/// Route: `/records/top`
+	/// - Lets you fetch all records of a player
+	///
+	/// NOTE: if you want access to more parameters, consider directly using the
+	/// [records::top](crate::global_api::records::top) module.
+	pub async fn get_player_records(
+		player_identifier: &PlayerIdentifier,
+		mode: Mode,
+		has_teleports: bool,
+		course: u8,
+		limit: Option<u32>,
+		client: &crate::Client,
+	) -> Result<Vec<records::Record>, Error> {
+		info!("[GlobalAPI::get_player_records] starting...");
+
+		let mut params = records::top::Params {
+			modes_list_string: Some(mode.api()),
+			has_teleports: Some(has_teleports),
+			stage: Some(course),
+			limit,
+			..Default::default()
+		};
+
+		match player_identifier {
+			PlayerIdentifier::Name(name) => params.player_name = Some(name.to_owned()),
+			PlayerIdentifier::SteamID(steam_id) => params.steam_id = Some(steam_id.to_string()),
+			PlayerIdentifier::SteamID64(steam_id64) => params.steamid64 = Some(*steam_id64),
+		};
+
+		let response = records::top::get(params, client).await?;
+		info!("[GlobalAPI::get_player_records] completed successfully.");
+
+		Ok(response)
+	}
+
+	/// Route: `/records/top/recent`
+	/// - Lets you fetch the most recently created records
+	/// - Some notes:
+	///   - endpoint is pretty slow; it will take a while until a record appears here
+	///   - will only yield personal bests
+	///   - `mode` is required because if you don't specify one, the API will return an `internal
+	///      server error`.
+	///
+	/// Comparison to [get_recent](Self::get_recent):
+	/// - less reliable, because records take a while until they show up here
+	/// - not player-specific
+	///   - if you want more control over the parameters, consider directly using the
+	///     [records::recent](crate::global_api::records::recent) module.
+	pub async fn get_recent_lossy(
+		mode: Mode,
+		limit: Option<u32>,
+		client: &crate::Client,
+	) -> Result<Vec<records::recent::RecentRecord>, Error> {
+		info!("[GlobalAPI::get_recent_lossy] starting...");
+
+		let params = records::recent::Params {
+			modes_list_string: Some(mode.api()),
+			limit,
+			..Default::default()
+		};
+
+		let response = records::recent::get(params, client).await?;
+		info!("[GlobalAPI::get_lossy] completed successfully.");
+
+		Ok(response)
+	}
+
+	/// Route: `/records/top`
+	/// - Lets you fetch a player's most recently set PB
+	/// - Some notes:
+	///   - will only yield personal bests
+	///   - 6 requests are necessary here, as the API returns unreliable results if you're not
+	///     specific enough.
+	///
+	/// Comparison to [get_recent_lossy](Self::get_recent_lossy):
+	/// - more reliable, because _all_ of a player's records get fetched, no matter how old they
+	///   are
+	/// - more expensive, because 6 requests
+	/// - player-specific
+	pub async fn get_recent(
+		player_identifier: &PlayerIdentifier,
+		client: &crate::Client,
+	) -> Result<records::Record, Error> {
+		info!("[GlobalAPI::get_recent] starting...");
+
+		// this is necessary because if we're not specific enough, the API might not return all the
+		// data we want
+		// if the API returns an error that is not `NoData` in any of the requests, we want to
+		// return that error later. these errors include but are not limited to:
+		//   - no status code
+		//   - internal server error
+		let mut potential_err = None;
+
+		// make requests
+		let (kzt, skz, vnl) = (Mode::KZTimer, Mode::SimpleKZ, Mode::Vanilla);
+		let mut records = join_all([
+			Self::get_player_records(player_identifier, kzt, true, 0, Some(9999), client),
+			Self::get_player_records(player_identifier, kzt, false, 0, Some(9999), client),
+			Self::get_player_records(player_identifier, skz, true, 0, Some(9999), client),
+			Self::get_player_records(player_identifier, skz, false, 0, Some(9999), client),
+			Self::get_player_records(player_identifier, vnl, true, 0, Some(9999), client),
+			Self::get_player_records(player_identifier, vnl, false, 0, Some(9999), client),
+		])
+		.await
+		.into_iter()
+		.filter_map(|res| {
+			// We want to filter out `NoData` records
+			match res {
+				Err(why) => {
+					// `NoData` is fine; a player might just not have any times in a certain mode
+					if let ErrorKind::NoData { expected: _ } = why.kind {
+						return None;
+					}
+					potential_err = Some(why);
+					None
+				},
+				Ok(records) => Some(records),
+			}
+		})
+		.flatten()
+		.collect::<Vec<_>>();
+
+		// return if we had a "bad" error
+		if let Some(why) = potential_err {
+			return Err(why);
 		}
+
+		// check that there are records
+		if records.is_empty() {
+			warn!("[GlobalAPI::get_recent] empty response from the API");
+			return Err(Error {
+				kind: ErrorKind::NoData { expected: String::from("Vec<Record>") },
+				msg: String::from("No recent PB found."),
+			});
+		}
+
+		let (mut timestamp, mut idx) = (0, 0);
+
+		// find the newest record
+		for (current_idx, record) in records.iter().enumerate() {
+			let Ok(date) = chrono::NaiveDateTime::parse_from_str(
+				&record.created_on,
+				"%Y-%m-%dT%H:%M:%S"
+			) else {
+				return Err(Error {
+					kind: ErrorKind::Parsing { expected: String::from("Date"), got: Some(record.created_on.clone()) },
+					msg: String::from("Failed to parse date.")
+				})
+			};
+
+			// if we find a record with a larger timestamp, we know it's newer
+			if date.timestamp() > timestamp {
+				timestamp = date.timestamp();
+				idx = current_idx;
+			}
+		}
+
+		// return the record with the largest timestamp
+		info!("[GlobalAPI::get_recent] completed successfully.");
+		Ok(records.remove(idx))
+	}
+
+	/// Route: `/records/top`
+	/// - Lets you fetch the World Record on a map
+	pub async fn get_wr(
+		map_identifier: &MapIdentifier,
+		mode: Mode,
+		runtype: bool,
+		course: u8,
+		client: &crate::Client,
+	) -> Result<records::Record, Error> {
+		info!("[GlobalAPI::get_wr] starting...");
+
+		let mut params = records::top::Params {
+			tickrate: Some(128),
+			stage: Some(course),
+			modes_list_string: Some(mode.api()),
+			has_teleports: Some(runtype),
+			limit: Some(1),
+			..Default::default()
+		};
+
+		match map_identifier {
+			MapIdentifier::ID(map_id) => params.map_id = Some(*map_id),
+			MapIdentifier::Name(map_name) => params.map_name = Some(map_name.to_owned()),
+		};
+
+		let mut response = records::top::get(params, client).await?;
+		info!("[GlobalAPI::get_wr] completed successfully.");
+
+		Ok(response.remove(0))
+	}
+
+	/// Route: `/records/top`
+	/// - Lets you fetch a player's personal best on a map
+	pub async fn get_pb(
+		player_identifier: &PlayerIdentifier,
+		map_identifier: &MapIdentifier,
+		mode: Mode,
+		runtype: bool,
+		course: u8,
+		client: &crate::Client,
+	) -> Result<records::Record, Error> {
+		info!("[GlobalAPI::get_pb] starting...");
+
+		let mut params = records::top::Params {
+			tickrate: Some(128),
+			stage: Some(course),
+			modes_list_string: Some(mode.api()),
+			has_teleports: Some(runtype),
+			limit: Some(1),
+			..Default::default()
+		};
+
+		match player_identifier {
+			PlayerIdentifier::Name(player_name) => {
+				params.player_name = Some(player_name.to_owned())
+			},
+			PlayerIdentifier::SteamID(steam_id) => params.steam_id = Some(steam_id.to_string()),
+			PlayerIdentifier::SteamID64(steam_id64) => params.steamid64 = Some(*steam_id64),
+		};
+
+		match map_identifier {
+			MapIdentifier::ID(map_id) => params.map_id = Some(*map_id),
+			MapIdentifier::Name(map_name) => params.map_name = Some(map_name.to_owned()),
+		};
+
+		let mut response = records::top::get(params, client).await?;
+		info!("[GlobalAPI::get_pb] completed successfully.");
+
+		Ok(response.remove(0))
+	}
+
+	/// Route: `/records/top`
+	/// - Lets you fetch the top 100 records on a map
+	pub async fn get_maptop(
+		map_identifier: &MapIdentifier,
+		mode: Mode,
+		runtype: bool,
+		course: u8,
+		client: &crate::Client,
+	) -> Result<Vec<records::Record>, Error> {
+		info!("[GlobalAPI::get_maptop] starting...");
+
+		let mut params = records::top::Params {
+			tickrate: Some(128),
+			stage: Some(course),
+			modes_list_string: Some(mode.api()),
+			has_teleports: Some(runtype),
+			limit: Some(100),
+			..Default::default()
+		};
+
+		match map_identifier {
+			MapIdentifier::ID(map_id) => params.map_id = Some(*map_id),
+			MapIdentifier::Name(map_name) => params.map_name = Some(map_name.to_owned()),
+		};
+
+		let response = records::top::get(params, client).await?;
+		info!("[GlobalAPI::get_maptop] completed successfully.");
+
+		Ok(response)
+	}
+
+	/// - Returns a download link to a replay
+	/// Route: `/records/replay/{replay_id}`
+	/// - `replay_id`: `replay_id` field on a [Record](records::Response)
+	/// - Some notes:
+	///   - only works for records created on servers with GOKZ version 3.0.0 or higher
+	///   - not all of those records made it to the API; expect some missing ones
+	pub fn get_replay_by_id(replay_id: u32) -> String {
+		info!("[GlobalAPI::get_replay_by_id] completed successfully.");
+		format!("{}/records/replay/{}", Self::BASE_URL, replay_id)
+	}
+
+	/// Route: `/records/{record_id}/replay`
+	/// - Returns a download link to the replay file of a record.
+	/// - `record_id`: `id` field on a [Record](records::Response)
+	/// - Some notes:
+	///   - only works for records created on servers with GOKZ version 3.0.0 or higher
+	///   - not all of those records made it to the API; expect some missing ones
+	pub fn get_replay_by_record_id(record_id: u32) -> String {
+		info!("[GlobalAPI::get_replay_by_record_id] completed successfully.");
+		format!("{}/records/{}/replay", Self::BASE_URL, record_id)
+	}
+
+	/// Route: `/servers`
+	/// - Lets you fetch information about global servers
+	pub async fn get_servers(
+		limit: Option<u32>,
+		client: &crate::Client,
+	) -> Result<Vec<servers::Server>, Error> {
+		info!("[GlobalAPI::get_servers] starting...");
+
+		// not quite sure what to put here yet
+		let params = servers::Params { limit, ..Default::default() };
+
+		let response = servers::get(params, client).await?;
+		info!("[GlobalAPI::get_servers] completed successfully.");
+
+		Ok(response)
+	}
+
+	/// Route: `/servers/{id}`
+	/// - Lets you fetch information about global servers
+	/// - `id`: `id` field on a [Server](servers::Response)
+	pub async fn get_server_by_id(
+		server_id: u32,
+		client: &crate::Client,
+	) -> Result<servers::Server, Error> {
+		info!("[GlobalAPI::get_server_by_id] starting...");
+
+		let response = servers::id::get(server_id, client).await?;
+		info!("[GlobalAPI::get_server_by_id] completed successfully.");
+
+		Ok(response)
+	}
+
+	/// Route: `/servers/name/{server_name}`
+	/// - Lets you fetch information about global servers
+	/// - `server_name`: `server_name` field on a [Server](servers::Response)
+	pub async fn get_server_by_name(
+		server_name: &str,
+		client: &crate::Client,
+	) -> Result<servers::Server, Error> {
+		info!("[GlobalAPI::get_server_by_name] starting...");
+
+		let response = servers::name::get(server_name, client).await?;
+		info!("[GlobalAPI::get_server_by_name] completed successfully.");
+
+		Ok(response)
+	}
+
+	/// GlobalAPI Health Report
+	///
+	/// NOTE: [source](https://health.global-api.com/api/v1/endpoints/_globalapi/statuses?page=1)
+	pub async fn checkhealth(client: &crate::Client) -> Result<health::HealthReport, Error> {
+		info!("[GlobalAPI::checkhealth] starting...");
+
+		let response = health::get(client).await?;
+		info!("[GlobalAPI::checkhealth] completed successfully.");
+
+		Ok(response)
 	}
 }
+
+/* TODO: some routes are omitted, mainly the ones with non-obvious purposes
+
+/// Route: `/records/top/world_records`
+/// - Lets you fetch world records stored in the GlobalAPI
+RecordsTopWorldRecords,
+
+/// Route: `/records/replay/list`
+/// - Seems to return some information about replays, no idea.
+/// - You can not filter this by anything, so the endpoint is pretty useless.
+RecordsReplayList,
+
+*/

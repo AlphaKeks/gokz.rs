@@ -1,44 +1,30 @@
-/// Constructs the API route for this module so it can be used in combination with the
-/// [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2)'s base URL.
-pub fn get_url() -> String {
-	String::from("record_filters?")
-}
+use {
+	super::{api_params, api_response, GlobalAPI, GlobalAPIParams, GlobalAPIResponse},
+	crate::prelude::*,
+};
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-/// All possible parameters for this route
-pub struct RecordFilterParams {
-	pub ids: Option<u32>,
-	pub map_ids: Option<i16>,
-	pub stages: Option<u8>,
-	pub mode_ids: Option<u8>,
-	pub tickrates: Option<u8>,
-	pub has_teleports: Option<bool>,
-	pub offset: Option<i32>,
-	pub limit: Option<u32>,
-}
-
-impl Default for RecordFilterParams {
-	fn default() -> Self {
-		RecordFilterParams {
-			ids: None,
-			map_ids: None,
-			stages: None,
-			mode_ids: None,
-			tickrates: Some(128),
-			has_teleports: None,
-			offset: None,
-			limit: None,
-		}
+/// Route: `/record_filters`
+/// - Lets you fetch record filters for individual courses
+pub async fn get(params: Params, client: &crate::Client) -> Result<Vec<RecordFilter>, Error> {
+	match GlobalAPI::get::<Vec<_>, _>("/record_filters?", params, client).await {
+		Err(why) => Err(why),
+		Ok(response) => {
+			if response.is_empty() {
+				Err(Error {
+					kind: ErrorKind::NoData { expected: String::from("Vec<RecordFilter>") },
+					msg: String::from("No filters found."),
+				})
+			} else {
+				Ok(response)
+			}
+		},
 	}
 }
 
-impl super::IsParams for RecordFilterParams {}
-
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-/// The shape of the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2)'s response on this route
 pub struct RecordFilter {
 	pub id: u32,
-	pub map_id: i16,
+	pub map_id: u32,
 	pub stage: u8,
 	pub mode_id: u8,
 	pub tickrate: u8,
@@ -47,5 +33,18 @@ pub struct RecordFilter {
 	pub updated_by_id: String,
 }
 
-impl super::IsResponse for RecordFilter {}
-impl super::IsResponse for Vec<RecordFilter> {}
+api_response!(RecordFilter);
+
+#[derive(Default, Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct Params {
+	pub ids: Option<u32>,
+	pub map_ids: Option<u32>,
+	pub stages: Option<u8>,
+	pub mode_ids: Option<u8>,
+	pub tickrates: Option<u8>,
+	pub has_teleports: Option<bool>,
+	pub offset: Option<i32>,
+	pub limit: Option<u32>,
+}
+
+api_params!(Params);

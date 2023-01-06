@@ -1,12 +1,43 @@
-/// Constructs the API route for this module so it can be used in combination with the
-/// [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2)'s base URL.
-pub fn get_url() -> String {
-	String::from("players?")
+pub mod alts;
+pub mod ip;
+pub mod steam_id;
+
+use {
+	super::{api_params, api_response, GlobalAPI, GlobalAPIParams, GlobalAPIResponse},
+	crate::prelude::*,
+};
+
+/// Route: `/players`
+/// - Lets you fetch player information
+pub async fn get(params: Params, client: &crate::Client) -> Result<Vec<Player>, Error> {
+	match GlobalAPI::get::<Vec<_>, _>("/players?", params, client).await {
+		Err(why) => Err(why),
+		Ok(response) => {
+			if response.is_empty() {
+				Err(Error {
+					kind: ErrorKind::NoData { expected: String::from("Vec<Player>") },
+					msg: String::from("No players found."),
+				})
+			} else {
+				Ok(response)
+			}
+		},
+	}
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-/// All possible parameters for this route
-pub struct PlayerParams {
+pub struct Player {
+	pub steamid64: String,
+	pub steam_id: String,
+	pub is_banned: bool,
+	pub total_records: u32,
+	pub name: String,
+}
+
+api_response!(Player);
+
+#[derive(Default, Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct Params {
 	pub name: Option<String>,
 	pub steam_id: Option<String>,
 	pub is_banned: Option<bool>,
@@ -17,32 +48,4 @@ pub struct PlayerParams {
 	pub limit: Option<u32>,
 }
 
-impl Default for PlayerParams {
-	fn default() -> Self {
-		PlayerParams {
-			name: None,
-			steam_id: None,
-			is_banned: None,
-			total_records: None,
-			ip: None,
-			steamid64_list: None,
-			offset: None,
-			limit: Some(1),
-		}
-	}
-}
-
-impl super::IsParams for PlayerParams {}
-
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-/// The shape of the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2)'s response on this route
-pub struct APIPlayer {
-	pub steamid64: String,
-	pub steam_id: String,
-	pub is_banned: bool,
-	pub total_records: u32,
-	pub name: String,
-}
-
-impl super::IsResponse for APIPlayer {}
-impl super::IsResponse for Vec<APIPlayer> {}
+api_params!(Params);

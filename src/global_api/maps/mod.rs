@@ -1,47 +1,32 @@
-/// Constructs the API route for this module so it can be used in combination with the
-/// [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2)'s base URL.
-pub fn get_url() -> String {
-	String::from("maps?")
-}
+pub mod id;
+pub mod name;
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-/// All possible parameters for this route
-pub struct MapParams {
-	pub id: Option<i16>,
-	pub name: Option<String>,
-	pub larger_than_filesize: Option<u32>,
-	pub smaller_than_filesize: Option<u32>,
-	pub is_validated: Option<bool>,
-	pub difficulty: Option<u8>,
-	pub created_since: Option<String>,
-	pub updated_since: Option<String>,
-	pub offset: Option<i32>,
-	pub limit: Option<u32>,
-}
+use {
+	super::{api_params, api_response, GlobalAPI, GlobalAPIParams, GlobalAPIResponse},
+	crate::prelude::*,
+};
 
-impl Default for MapParams {
-	fn default() -> Self {
-		MapParams {
-			id: None,
-			name: None,
-			larger_than_filesize: None,
-			smaller_than_filesize: None,
-			is_validated: None,
-			difficulty: None,
-			created_since: None,
-			updated_since: None,
-			offset: None,
-			limit: Some(9999),
-		}
+/// Route: `/maps`
+/// - Lets you fetch all maps stored in the GlobalAPI
+pub async fn get(params: Params, client: &crate::Client) -> Result<Vec<Map>, Error> {
+	match GlobalAPI::get::<Vec<_>, _>("/maps?", params, client).await {
+		Err(why) => Err(why),
+		Ok(response) => {
+			if response.is_empty() {
+				Err(Error {
+					kind: ErrorKind::NoData { expected: String::from("Vec<Map>") },
+					msg: String::from("No maps found."),
+				})
+			} else {
+				Ok(response)
+			}
+		},
 	}
 }
 
-impl super::IsParams for MapParams {}
-
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
-/// The shape of the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2)'s response on this route
-pub struct KZMap {
-	pub id: i16,
+pub struct Map {
+	pub id: u32,
 	pub name: String,
 	pub filesize: u64,
 	pub validated: bool,
@@ -53,5 +38,20 @@ pub struct KZMap {
 	pub download_url: Option<String>,
 }
 
-impl super::IsResponse for KZMap {}
-impl super::IsResponse for Vec<KZMap> {}
+api_response!(Map);
+
+#[derive(Default, Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct Params {
+	pub id: Option<u32>,
+	pub name: Option<String>,
+	pub larger_than_filesize: Option<u32>,
+	pub smaller_than_filesize: Option<u32>,
+	pub is_validated: Option<bool>,
+	pub difficulty: Option<u8>,
+	pub created_since: Option<String>,
+	pub updated_since: Option<String>,
+	pub offset: Option<i32>,
+	pub limit: Option<u32>,
+}
+
+api_params!(Params);
