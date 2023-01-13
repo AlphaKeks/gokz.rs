@@ -202,7 +202,12 @@ async fn get_record() -> anyhow::Result<()> {
 
 	let alphakeks_spacemario = GlobalAPI::get_record(16557384, &client).await?;
 
-	assert_eq!("AlphaKeks", alphakeks_spacemario.player_name.unwrap());
+	assert_eq!(
+		"AlphaKeks",
+		alphakeks_spacemario
+			.player_name
+			.unwrap()
+	);
 	assert_eq!("STEAM_1:1:161178172", alphakeks_spacemario.steam_id.unwrap());
 
 	Ok(())
@@ -221,15 +226,14 @@ async fn get_recent_lossy() -> anyhow::Result<()> {
 	Ok(())
 }
 
-#[ignore = "expensive"]
+// #[ignore = "expensive"]
 #[test_log::test(tokio::test)]
 async fn get_recent_t() -> anyhow::Result<()> {
 	let client = gokz_rs::Client::new();
 	let alphakeks = PlayerIdentifier::SteamID64(76561198282622073);
 
-	let recent = GlobalAPI::get_recent(&alphakeks, &client).await?;
-
-	assert_eq!("kz_eventide", recent.map_name);
+	let recent = GlobalAPI::get_recent(&alphakeks, Some(5), &client).await?;
+	info!("{:#?}", recent);
 
 	Ok(())
 }

@@ -79,7 +79,12 @@ impl GlobalAPI {
 		};
 
 		// make a GET request to the GlobalAPI
-		let response = match client.get(url).query(&params).send().await {
+		let response = match client
+			.get(url)
+			.query(&params)
+			.send()
+			.await
+		{
 			Err(why) => {
 				warn!("[GlobalAPI::get] HTTPS Request failed.");
 				if let Some(code) = why.status() {
@@ -306,7 +311,10 @@ impl GlobalAPI {
 			},
 			Ok(parsed_response) => {
 				trace!("[GlobalAPI::get_mapcycle] Successfully parsed response.");
-				parsed_response.lines().map(ToOwned::to_owned).collect::<Vec<String>>()
+				parsed_response
+					.lines()
+					.map(String::from)
+					.collect::<Vec<String>>()
 			},
 		};
 
@@ -478,10 +486,10 @@ impl GlobalAPI {
 	pub async fn get_place(record_id: u32, client: &crate::Client) -> Result<u32, Error> {
 		info!("[GlobalAPI::get_place] starting...");
 
-		let response = records::place::get(record_id, client).await?.into();
+		let response = records::place::get(record_id, client).await?;
 		info!("[GlobalAPI::get_place] completed successfully.");
 
-		Ok(response)
+		Ok(response.0)
 	}
 
 	/// Route: `/records/{id}`
@@ -587,9 +595,11 @@ impl GlobalAPI {
 	}
 
 	/// Route: `/records/top`
-	/// - Lets you fetch a player's most recently set PB
+	/// - Lets you fetch a player's most recently set PB(s)
+	/// - Will yield as many records as specified, or less.
 	/// - Some notes:
 	///   - will only yield personal bests
+	///   - only cares about main course, not bonuses
 	///   - 6 requests are necessary here, as the API returns unreliable results if you're not
 	///     specific enough.
 	///
@@ -600,8 +610,9 @@ impl GlobalAPI {
 	/// - player-specific
 	pub async fn get_recent(
 		player_identifier: &PlayerIdentifier,
+		limit: Option<usize>,
 		client: &crate::Client,
-	) -> Result<records::Record, Error> {
+	) -> Result<Vec<records::Record>, Error> {
 		info!("[GlobalAPI::get_recent] starting...");
 
 		// this is necessary because if we're not specific enough, the API might not return all the
@@ -635,7 +646,17 @@ impl GlobalAPI {
 					potential_err = Some(why);
 					None
 				},
-				Ok(records) => Some(records),
+				Ok(records) => Some(records.into_iter().filter_map(|rec| {
+					let timestamp = match chrono::NaiveDateTime::parse_from_str(
+						&rec.created_on,
+						"%Y-%m-%dT%H:%M:%S",
+					) {
+						Ok(timestamp) => timestamp.timestamp(),
+						_ => return None,
+					};
+
+					Some((timestamp, rec))
+				})),
 			}
 		})
 		.flatten()
@@ -655,30 +676,25 @@ impl GlobalAPI {
 			});
 		}
 
-		let (mut timestamp, mut idx) = (0, 0);
+		// sort records by date
+		records.sort_by(|(a_timestamp, _), (b_timestamp, _)| b_timestamp.cmp(a_timestamp));
 
-		// find the newest record
-		for (current_idx, record) in records.iter().enumerate() {
-			let Ok(date) = chrono::NaiveDateTime::parse_from_str(
-				&record.created_on,
-				"%Y-%m-%dT%H:%M:%S"
-			) else {
-				return Err(Error {
-					kind: ErrorKind::Parsing { expected: String::from("Date"), got: Some(record.created_on.clone()) },
-					msg: String::from("Failed to parse date.")
-				})
-			};
+		let mut records = records
+			.into_iter()
+			.map(|(_, rec)| rec)
+			.collect::<Vec<_>>();
 
-			// if we find a record with a larger timestamp, we know it's newer
-			if date.timestamp() > timestamp {
-				timestamp = date.timestamp();
-				idx = current_idx;
+		info!("[GlobalAPI::get_recent] completed successfully.");
+
+		if let Some(limit) = limit {
+			// We only want to call `.drain()` if there are enough records. Otherwise we just return
+			// everything.
+			if records.len() >= limit {
+				return Ok(records.drain(..limit).collect());
 			}
 		}
 
-		// return the record with the largest timestamp
-		info!("[GlobalAPI::get_recent] completed successfully.");
-		Ok(records.remove(idx))
+		Ok(records)
 	}
 
 	/// Route: `/records/top`
