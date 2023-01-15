@@ -548,6 +548,21 @@ pub enum Tier {
 	Death = 7,
 }
 
+impl std::fmt::Display for Tier {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		let s = match self {
+			Tier::VeryEasy => "Very Easy",
+			Tier::Easy => "Easy",
+			Tier::Medium => "Medium",
+			Tier::Hard => "Hard",
+			Tier::VeryHard => "Very Hard",
+			Tier::Extreme => "Extreme",
+			Tier::Death => "Death",
+		};
+		write!(f, "{}", s)
+	}
+}
+
 impl std::str::FromStr for Tier {
 	type Err = Error;
 
