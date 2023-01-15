@@ -31,7 +31,7 @@ pub struct Params {
 	pub steam_id: Option<String>,
 	pub notes_contains: Option<String>,
 	pub stats_contains: Option<String>,
-	pub server_id: Option<u32>,
+	pub server_id: Option<i32>,
 	pub created_since: Option<String>,
 	pub updated_since: Option<String>,
 	pub offset: Option<i32>,
@@ -62,7 +62,7 @@ impl Default for Params {
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Ban {
-	pub id: u32,
+	pub id: i32,
 	pub ban_type: String,
 	pub expires_on: String,
 	pub steamid64: String,
@@ -70,7 +70,7 @@ pub struct Ban {
 	pub steam_id: String,
 	pub notes: String,
 	pub stats: String,
-	pub server_id: u32,
+	pub server_id: i32,
 	pub updated_by_id: String,
 	pub created_on: String,
 	pub updated_on: String,

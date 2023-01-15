@@ -6,7 +6,7 @@ use crate::{
 /// Route: `/servers/{id}`
 /// - Lets you fetch information about global servers
 /// - `id`: `id` property on a [Server](super::Response)
-pub async fn get(server_id: u32, client: &crate::Client) -> Result<super::Server, Error> {
+pub async fn get(server_id: i32, client: &crate::Client) -> Result<super::Server, Error> {
 	let route = format!("/servers/{}", server_id);
 	GlobalAPI::get(&route, Params::default(), client).await
 }

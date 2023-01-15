@@ -11,7 +11,7 @@ pub async fn get_unfinished(
 	player_identifier: &PlayerIdentifier,
 	mode: Mode,
 	runtype: bool,
-	tier: Option<u8>,
+	tier: Option<Tier>,
 	client: &crate::Client,
 ) -> Result<Vec<String>, Error> {
 	info!("[extra::get_unfinished] starting...");
@@ -22,14 +22,14 @@ pub async fn get_unfinished(
 			.await?
 			.into_iter()
 			.map(|rec| rec.map_id)
-			.collect::<Vec<u32>>();
+			.collect::<Vec<i32>>();
 
 	// fetch filters for current mode and runtype and filter against the maps the player has
 	// completed
 	let uncompleted_map_ids = global_api::record_filters::get(
 		global_api::record_filters::Params {
 			stages: Some(0),
-			mode_ids: Some(mode as u8),
+			mode_ids: Some(mode as i32),
 			tickrates: Some(128),
 			has_teleports: Some(runtype),
 			limit: Some(99999),
@@ -45,7 +45,7 @@ pub async fn get_unfinished(
 		}
 		None
 	})
-	.collect::<Vec<u32>>();
+	.collect::<Vec<i32>>();
 
 	// fetch all global maps and filter out the names of the ones we want
 	let uncompleted_map_names = GlobalAPI::get_maps(true, Some(9999), client)
@@ -53,7 +53,7 @@ pub async fn get_unfinished(
 		.into_iter()
 		.filter_map(|map| {
 			let tier_matches = match tier {
-				Some(tier) => map.difficulty == tier,
+				Some(tier) => map.difficulty == tier as i32,
 				None => true,
 			};
 

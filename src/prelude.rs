@@ -267,14 +267,6 @@ impl std::str::FromStr for Mode {
 	}
 }
 
-impl TryFrom<String> for Mode {
-	type Error = Error;
-
-	fn try_from(value: String) -> Result<Self, Self::Error> {
-		value.parse()
-	}
-}
-
 impl TryFrom<u8> for Mode {
 	type Error = Error;
 
@@ -309,7 +301,7 @@ impl From<Mode> for u8 {
 /// - Name => `"kz_lionharder"`
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum MapIdentifier {
-	ID(u32),
+	ID(i32),
 	Name(String),
 }
 
@@ -539,6 +531,79 @@ impl std::str::FromStr for Rank {
 				},
 				msg: format!("`{}` is not a valid Rank.", input),
 			}),
+		}
+	}
+}
+
+/// Every global map in [GOKZ](https://github.com/KZGlobalTeam/gokz) has a difficulty level which
+/// is referred to as its "tier". Currently there are the 7 following tiers.
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+pub enum Tier {
+	VeryEasy = 1,
+	Easy = 2,
+	Medium = 3,
+	Hard = 4,
+	VeryHard = 5,
+	Extreme = 6,
+	Death = 7,
+}
+
+impl std::str::FromStr for Tier {
+	type Err = Error;
+
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		match s.to_lowercase().as_str() {
+			"very easy" | "very_easy" => Ok(Self::VeryEasy),
+			"easy" => Ok(Self::Easy),
+			"medium" => Ok(Self::Medium),
+			"hard" => Ok(Self::Hard),
+			"very hard" | "very_hard" => Ok(Self::VeryHard),
+			"extreme" => Ok(Self::Extreme),
+			"death" => Ok(Self::Death),
+			input => Err(Error {
+				kind: ErrorKind::InvalidInput {
+					expected: String::from("Tier"),
+					got: input.to_owned(),
+				},
+				msg: format!("`{}` is not a valid Tier.", input),
+			}),
+		}
+	}
+}
+
+impl TryFrom<u8> for Tier {
+	type Error = Error;
+
+	fn try_from(value: u8) -> Result<Self, Self::Error> {
+		match value {
+			1 => Ok(Self::VeryEasy),
+			2 => Ok(Self::Easy),
+			3 => Ok(Self::Medium),
+			4 => Ok(Self::Hard),
+			5 => Ok(Self::VeryHard),
+			6 => Ok(Self::Extreme),
+			7 => Ok(Self::Death),
+			input => Err(Error {
+				kind: ErrorKind::InvalidInput {
+					expected: String::from("valid Tier (1-7)"),
+					got: input.to_string(),
+				},
+				msg: format!("`{}` is not a valid Tier.", input),
+			}),
+		}
+	}
+}
+
+impl From<Tier> for u8 {
+	fn from(val: Tier) -> Self {
+		match val {
+			Tier::VeryEasy => 1,
+			Tier::Easy => 2,
+			Tier::Medium => 3,
+			Tier::Hard => 4,
+			Tier::VeryHard => 5,
+			Tier::Extreme => 6,
+			Tier::Death => 7,
 		}
 	}
 }

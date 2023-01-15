@@ -63,7 +63,7 @@ async fn get_mapcycle() -> anyhow::Result<()> {
 	let client = gokz_rs::Client::new();
 
 	let mapcycle = GlobalAPI::get_mapcycle(None, &client).await?;
-	let mapcycle_tier3 = GlobalAPI::get_mapcycle(Some(3), &client).await?;
+	let mapcycle_tier3 = GlobalAPI::get_mapcycle(Some(Tier::Medium), &client).await?;
 
 	info!("{:#?}\n{} maps", mapcycle, mapcycle.len());
 	info!("{:#?}\n{} tier 3 maps", mapcycle_tier3, mapcycle_tier3.len());
@@ -231,8 +231,10 @@ async fn get_recent_lossy() -> anyhow::Result<()> {
 async fn get_recent_t() -> anyhow::Result<()> {
 	let client = gokz_rs::Client::new();
 	let alphakeks = PlayerIdentifier::SteamID64(76561198282622073);
+	let jak = PlayerIdentifier::SteamID(SteamID::new("STEAM_0:1:45421221").unwrap());
 
-	let recent = GlobalAPI::get_recent(&alphakeks, Some(5), &client).await?;
+	let _recent = GlobalAPI::get_recent(&alphakeks, Some(5), &client).await?;
+	let recent = GlobalAPI::get_recent(&jak, Some(5), &client).await?;
 	info!("{:#?}", recent);
 
 	Ok(())

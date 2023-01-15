@@ -26,15 +26,15 @@ pub async fn get(client: &crate::Client) -> Result<Vec<APIMode>, Error> {
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct APIMode {
-	pub id: u8,
+	pub id: i32,
 	pub name: String,
 	pub description: String,
-	pub latest_version: u8,
+	pub latest_version: i32,
 	pub latest_version_description: String,
 	pub website: String,
 	pub repo: String,
 	pub contact_steamid64: String,
-	pub supported_tickrates: Option<u8>,
+	pub supported_tickrates: Option<i8>,
 	pub created_on: String,
 	pub updated_on: String,
 	pub updated_by_id: String,

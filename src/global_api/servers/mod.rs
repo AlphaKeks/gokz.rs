@@ -26,8 +26,8 @@ pub async fn get(params: Params, client: &crate::Client) -> Result<Vec<Server>, 
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Server {
-	pub id: u32,
-	pub port: u32,
+	pub id: i32,
+	pub port: i32,
 	pub ip: String,
 	pub name: String,
 	pub owner_steamid64: String,
@@ -37,8 +37,8 @@ api_response!(Server);
 
 #[derive(Default, Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Params {
-	pub id: Option<u32>,
-	pub port: Option<u32>,
+	pub id: Option<i32>,
+	pub port: Option<i32>,
 	pub ip: Option<String>,
 	pub name: Option<String>,
 	pub owner_steamid64: Option<u64>,

@@ -30,7 +30,7 @@ pub struct Player {
 	pub steamid64: String,
 	pub steam_id: String,
 	pub is_banned: bool,
-	pub total_records: u32,
+	pub total_records: i32,
 	pub name: String,
 }
 
@@ -41,7 +41,7 @@ pub struct Params {
 	pub name: Option<String>,
 	pub steam_id: Option<String>,
 	pub is_banned: Option<bool>,
-	pub total_records: Option<u32>,
+	pub total_records: Option<i32>,
 	pub ip: Option<String>,
 	pub steamid64_list: Option<u64>,
 	pub offset: Option<i32>,

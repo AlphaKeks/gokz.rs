@@ -24,13 +24,13 @@ pub async fn get(params: Params, client: &crate::Client) -> Result<Vec<super::Re
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Params {
 	pub steam_id: Option<String>,
-	pub server_id: Option<u32>,
+	pub server_id: Option<i32>,
 	pub steamid64: Option<u64>,
-	pub map_id: Option<u32>,
+	pub map_id: Option<i32>,
 	pub map_name: Option<String>,
-	pub tickrate: Option<u8>,
+	pub tickrate: Option<i32>,
 	pub overall: Option<bool>,
-	pub stage: Option<u8>,
+	pub stage: Option<i32>,
 	pub modes_list_string: Option<String>,
 	pub modes_list: Option<String>,
 	pub has_teleports: Option<bool>,

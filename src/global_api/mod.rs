@@ -227,7 +227,7 @@ impl GlobalAPI {
 	}
 
 	pub async fn get_mapcycle(
-		tier: Option<u8>,
+		tier: Option<Tier>,
 		client: &crate::Client,
 	) -> Result<Vec<String>, Error> {
 		info!("[GlobalAPI::is_global] completed successfully.");
@@ -235,7 +235,7 @@ impl GlobalAPI {
 		let url = format!(
 			"https://maps.global-api.com/mapcycles/{}",
 			match tier {
-				Some(tier) => format!("tier{}.txt", tier),
+				Some(tier) => format!("tier{}.txt", tier as u8),
 				None => String::from("gokz.txt"),
 			}
 		);
@@ -468,7 +468,7 @@ impl GlobalAPI {
 	/// Route: `/record_filters`
 	/// - Lets you fetch record filters for individual courses
 	pub async fn get_filters(
-		map_id: u32,
+		map_id: i32,
 		client: &crate::Client,
 	) -> Result<Vec<record_filters::RecordFilter>, Error> {
 		info!("[GlobalAPI::get_filters] starting...");
@@ -483,7 +483,7 @@ impl GlobalAPI {
 	/// Route: `/records/place/{id}`
 	/// - Lets you fetch the leaderboard spot of a given record
 	/// - `id`: `record_id` field on a [Map](maps::Response)
-	pub async fn get_place(record_id: u32, client: &crate::Client) -> Result<u32, Error> {
+	pub async fn get_place(record_id: i32, client: &crate::Client) -> Result<i32, Error> {
 		info!("[GlobalAPI::get_place] starting...");
 
 		let response = records::place::get(record_id, client).await?;
@@ -496,7 +496,7 @@ impl GlobalAPI {
 	/// - Lets you fetch a record stored in the GlobalAPI
 	/// - `id`: `record_id` field on a [Map](maps::Response)
 	pub async fn get_record(
-		record_id: u32,
+		record_id: i32,
 		client: &crate::Client,
 	) -> Result<records::Record, Error> {
 		info!("[GlobalAPI::get_record] starting...");
@@ -545,7 +545,7 @@ impl GlobalAPI {
 		let mut params = records::top::Params {
 			modes_list_string: Some(mode.api()),
 			has_teleports: Some(has_teleports),
-			stage: Some(course),
+			stage: Some(course as i32),
 			limit,
 			..Default::default()
 		};
@@ -610,7 +610,7 @@ impl GlobalAPI {
 	/// - player-specific
 	pub async fn get_recent(
 		player_identifier: &PlayerIdentifier,
-		limit: Option<usize>,
+		limit: Option<u32>,
 		client: &crate::Client,
 	) -> Result<Vec<records::Record>, Error> {
 		info!("[GlobalAPI::get_recent] starting...");
@@ -689,8 +689,10 @@ impl GlobalAPI {
 		if let Some(limit) = limit {
 			// We only want to call `.drain()` if there are enough records. Otherwise we just return
 			// everything.
-			if records.len() >= limit {
-				return Ok(records.drain(..limit).collect());
+			if records.len() >= limit as usize {
+				return Ok(records
+					.drain(..limit as usize)
+					.collect());
 			}
 		}
 
@@ -710,7 +712,7 @@ impl GlobalAPI {
 
 		let mut params = records::top::Params {
 			tickrate: Some(128),
-			stage: Some(course),
+			stage: Some(course as i32),
 			modes_list_string: Some(mode.api()),
 			has_teleports: Some(runtype),
 			limit: Some(1),
@@ -742,7 +744,7 @@ impl GlobalAPI {
 
 		let mut params = records::top::Params {
 			tickrate: Some(128),
-			stage: Some(course),
+			stage: Some(course as i32),
 			modes_list_string: Some(mode.api()),
 			has_teleports: Some(runtype),
 			limit: Some(1),
@@ -781,7 +783,7 @@ impl GlobalAPI {
 
 		let mut params = records::top::Params {
 			tickrate: Some(128),
-			stage: Some(course),
+			stage: Some(course as i32),
 			modes_list_string: Some(mode.api()),
 			has_teleports: Some(runtype),
 			limit: Some(100),
@@ -805,7 +807,7 @@ impl GlobalAPI {
 	/// - Some notes:
 	///   - only works for records created on servers with GOKZ version 3.0.0 or higher
 	///   - not all of those records made it to the API; expect some missing ones
-	pub fn get_replay_by_id(replay_id: u32) -> String {
+	pub fn get_replay_by_id(replay_id: i32) -> String {
 		info!("[GlobalAPI::get_replay_by_id] completed successfully.");
 		format!("{}/records/replay/{}", Self::BASE_URL, replay_id)
 	}
@@ -816,7 +818,7 @@ impl GlobalAPI {
 	/// - Some notes:
 	///   - only works for records created on servers with GOKZ version 3.0.0 or higher
 	///   - not all of those records made it to the API; expect some missing ones
-	pub fn get_replay_by_record_id(record_id: u32) -> String {
+	pub fn get_replay_by_record_id(record_id: i32) -> String {
 		info!("[GlobalAPI::get_replay_by_record_id] completed successfully.");
 		format!("{}/records/{}/replay", Self::BASE_URL, record_id)
 	}
@@ -842,7 +844,7 @@ impl GlobalAPI {
 	/// - Lets you fetch information about global servers
 	/// - `id`: `id` field on a [Server](servers::Response)
 	pub async fn get_server_by_id(
-		server_id: u32,
+		server_id: i32,
 		client: &crate::Client,
 	) -> Result<servers::Server, Error> {
 		info!("[GlobalAPI::get_server_by_id] starting...");
