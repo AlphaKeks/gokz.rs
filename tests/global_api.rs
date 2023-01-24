@@ -136,7 +136,7 @@ async fn get_mode_() -> anyhow::Result<()> {
 async fn get_players() -> anyhow::Result<()> {
 	let client = gokz_rs::Client::new();
 
-	let players = GlobalAPI::get_players(Some(10), &client).await?;
+	let players = GlobalAPI::get_players(None, Some(10), &client).await?;
 	info!("{:#?}", players);
 
 	Ok(())

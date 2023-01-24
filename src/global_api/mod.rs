@@ -385,13 +385,14 @@ impl GlobalAPI {
 	/// NOTE: if you want access to more parameters than just `limit`, consider directly using the
 	/// [players](crate::global_api::players) module.
 	pub async fn get_players(
+		offset: Option<i32>,
 		limit: Option<u32>,
 		client: &crate::Client,
 	) -> Result<Vec<players::Player>, Error> {
 		info!("[GlobalAPI::get_players] starting...");
 
 		// not quite sure what to put here yet
-		let params = players::Params { limit, ..Default::default() };
+		let params = players::Params { offset, limit, ..Default::default() };
 
 		let response = players::get(params, client).await?;
 		info!("[GlobalAPI::get_players] completed successfully.");

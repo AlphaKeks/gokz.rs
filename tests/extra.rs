@@ -9,7 +9,8 @@ async fn get_uncompleted() -> anyhow::Result<()> {
 	let alphakeks = PlayerIdentifier::from(76561198282622073);
 
 	let uncompleted =
-		extra::get_unfinished(&alphakeks, Mode::SimpleKZ, false, Some(7), &client).await?;
+		extra::get_unfinished(&alphakeks, Mode::SimpleKZ, false, Some(Tier::Death), &client)
+			.await?;
 
 	info!("{:#?}", uncompleted);
 	info!("{} maps", uncompleted.len());
