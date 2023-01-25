@@ -121,7 +121,13 @@ impl KZGO {
 	/// - `map_name`: any of [these](https://maps.global-api.com/mapcycles/gokz.txt)
 	/// - Lets you fetch a map from the KZ:GO API
 	pub async fn get_map(map_name: &str, client: &crate::Client) -> Result<MapResponse, Error> {
-		maps::get(map_name, client).await
+		maps::get_map(map_name, client).await
+	}
+
+	/// Route: `/maps`
+	/// - Lets you fetch all maps from the KZ:GO API
+	pub async fn get_maps(client: &crate::Client) -> Result<Vec<MapResponse>, Error> {
+		maps::get_maps(client).await
 	}
 
 	/// Route: `/completions/{mode_name}`

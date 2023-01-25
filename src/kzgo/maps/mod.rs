@@ -3,9 +3,15 @@ use {super::KZGO, crate::prelude::*};
 /// Route: `/maps/{map_name}`
 /// - `map_name`: any of [these](https://maps.global-api.com/mapcycles/gokz.txt)
 /// - Lets you fetch a map from the KZ:GO API
-pub async fn get(map_name: &str, client: &crate::Client) -> Result<Response, Error> {
+pub async fn get_map(map_name: &str, client: &crate::Client) -> Result<Response, Error> {
 	let route = format!("/maps/{}", map_name);
 	KZGO::get(&route, client).await
+}
+
+/// Route: `/maps`
+/// - Lets you fetch all maps from the KZ:GO API
+pub async fn get_maps(client: &crate::Client) -> Result<Vec<Response>, Error> {
+	KZGO::get("/maps", client).await
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
