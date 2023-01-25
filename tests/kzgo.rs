@@ -16,6 +16,17 @@ async fn get_map() -> anyhow::Result<()> {
 	Ok(())
 }
 
+// #[ignore = "expensive"]
+#[test_log::test(tokio::test)]
+async fn get_maps() -> anyhow::Result<()> {
+	let client = gokz_rs::Client::new();
+
+	let response = KZGO::get_maps(&client).await?;
+	info!("{:#?}", response.len());
+
+	Ok(())
+}
+
 #[ignore = "expensive"]
 #[test_log::test(tokio::test)]
 async fn get_completion() -> anyhow::Result<()> {

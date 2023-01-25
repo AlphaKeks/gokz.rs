@@ -11,7 +11,7 @@ pub async fn get_map(map_name: &str, client: &crate::Client) -> Result<Response,
 /// Route: `/maps`
 /// - Lets you fetch all maps from the KZ:GO API
 pub async fn get_maps(client: &crate::Client) -> Result<Vec<Response>, Error> {
-	KZGO::get("/maps", client).await
+	KZGO::get::<Vec<Response>>("/maps", client).await
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -25,7 +25,7 @@ pub struct Response {
 	pub bonuses: Option<u8>,
 	pub sp: Option<bool>,
 	pub vp: Option<bool>,
-	pub mapperNames: Option<Vec<String>>,
-	pub mapperIds: Option<Vec<String>>,
+	pub mapperNames: Vec<Option<String>>,
+	pub mapperIds: Vec<Option<String>>,
 	pub date: Option<String>,
 }
