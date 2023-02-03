@@ -10,8 +10,7 @@ pub use global_api::{
 	GlobalAPIParams, GlobalAPIResponse,
 };
 
-mod kzgo;
-pub use kzgo::KZGO;
+pub mod kzgo;
 
 pub mod extra;
 
