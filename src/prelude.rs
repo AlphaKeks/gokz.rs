@@ -341,10 +341,12 @@ impl std::str::FromStr for PlayerIdentifier {
 
 	fn from_str(s: &str) -> Result<Self, Self::Err> {
 		if let Ok(steam_id) = SteamID::new(s) {
-			return Ok(Self::SteamID(steam_id));
+			Ok(Self::SteamID(steam_id))
+		} else if let Ok(steam_id64) = s.parse::<u64>() {
+			Ok(Self::SteamID64(steam_id64))
+		} else {
+			Ok(Self::Name(s.to_owned()))
 		}
-
-		Ok(Self::Name(s.to_owned()))
 	}
 }
 
