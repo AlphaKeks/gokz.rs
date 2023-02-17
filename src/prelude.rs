@@ -253,6 +253,10 @@ impl std::str::FromStr for Mode {
 	type Err = Error;
 
 	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		if let Ok(mode_id) = s.parse::<u8>() {
+			return Self::try_from(mode_id);
+		}
+
 		match s.to_lowercase().as_str() {
 			"kztimer" | "kz_timer" | "kzt" => Ok(Self::KZTimer),
 			"simplekz" | "simple_kz" | "kz_simple" | "skz" => Ok(Self::SimpleKZ),

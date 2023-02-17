@@ -1,6 +1,6 @@
 [package]
 name = "gokz_rs"
-version = "0.15.1"
+version = "0.15.2"
 description = "Rust wrapper for the CS:GO KZ GlobalAPI"
 authors = ["AlphaKeks <alphakeks@dawn.sh>"]
 edition = "2021"
