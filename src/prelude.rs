@@ -319,6 +319,18 @@ impl std::fmt::Display for MapIdentifier {
 	}
 }
 
+impl std::str::FromStr for MapIdentifier {
+	type Err = std::convert::Infallible;
+
+	fn from_str(s: &str) -> Result<Self, Self::Err> {
+		if let Ok(map_id) = s.parse::<u16>() {
+			Ok(Self::ID(map_id as i32))
+		} else {
+			Ok(Self::Name(s.to_owned()))
+		}
+	}
+}
+
 /// A Player can be represented in multiple ways when making requests to the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V).
 /// - Name => `"AlphaKeks"`
 /// - SteamID => `SteamID("STEAM_1:1:161178172")`
