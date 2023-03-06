@@ -1,16 +1,19 @@
 edition = "2021"
 
-max_width = 100
-array_width = 80
-chain_width = 40
-fn_call_width = 80
-single_line_if_else_max_width = 100
-struct_lit_width = 100
-struct_variant_width = 100
-
-hard_tabs = true
-tab_spaces = 4
-
-match_block_trailing_comma = true
+merge_derives = true
 newline_style = "Unix"
+remove_nested_parens = true
 use_field_init_shorthand = true
+use_try_shorthand = true
+
+# indentation
+hard_tabs = true
+
+# line width
+max_width = 100
+array_width = 40
+chain_width = 40
+
+# layout
+match_arm_leading_pipes = "Never"
+match_block_trailing_comma = false

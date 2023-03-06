@@ -1,17 +1,12 @@
-//! A Rust wrapper for the [CS:GO KZ GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2).
-//!
-//! This crate provides a bunch of utility functions to communicate with KZ's [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2), as well as a bunch of useful Types in the [`prelude`].
+//! Core library for [CS:GO KZ](https://forum.gokz.org/).
+#![warn(rust_2018_idioms, missing_docs, missing_debug_implementations)]
+#![warn(clippy::style, clippy::complexity, clippy::cognitive_complexity)]
+#![deny(clippy::correctness, clippy::perf)]
 
-pub mod prelude;
+pub use reqwest::{blocking::Client as BlockingClient, Client};
 
-mod global_api;
-pub use global_api::{
-	bans, jumpstats, maps, modes, players, record_filters, records, servers, GlobalAPI,
-	GlobalAPIParams, GlobalAPIResponse,
-};
+mod error;
+pub use error::{Error, Result};
 
-pub mod kzgo;
-
-pub mod extra;
-
-pub use reqwest::Client;
+mod steam_id;
+pub use steam_id::{AccountType, AccountUniverse, SteamID};
