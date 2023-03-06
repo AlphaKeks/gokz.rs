@@ -7,11 +7,11 @@ use {
 	std::fmt::Display,
 };
 
-///\ `STEAM_1:1:161178172`
-///\\       ^ ^ ^^^^^^^^^
-///\\       │ │ └──────── account number
-///\\       │ └────────── account type
-///\\       └──────────── account universe
+/// `STEAM_1:1:161178172`
+///   - `STEAM_`: prefix (always the same)
+///   - `1`: [`AccountUniverse`]
+///   - `1`: [`AccountType`]
+///   - `161178172`: [account number](Self::account_number)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct SteamID(u64);
 
