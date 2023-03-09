@@ -1,9 +1,10 @@
 use {
-	crate::SteamID,
+	crate::{chrono::ser_opt_date, SteamID},
+	chrono::NaiveDateTime,
 	serde::{Deserialize, Serialize},
 };
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize)]
 #[allow(missing_docs)]
 pub struct Params {
 	pub ban_types: Option<String>,
@@ -15,8 +16,10 @@ pub struct Params {
 	pub notes_contains: Option<String>,
 	pub stats_contains: Option<String>,
 	pub server_id: Option<u16>,
-	pub created_since: Option<String>,
-	pub updated_since: Option<String>,
+	#[serde(serialize_with = "ser_opt_date")]
+	pub created_since: Option<NaiveDateTime>,
+	#[serde(serialize_with = "ser_opt_date")]
+	pub updated_since: Option<NaiveDateTime>,
 	pub offset: Option<i32>,
 	pub limit: Option<u32>,
 }
