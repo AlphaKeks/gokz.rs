@@ -3,7 +3,11 @@
 #![warn(clippy::style, clippy::complexity, clippy::cognitive_complexity)]
 #![deny(clippy::correctness, clippy::perf)]
 
-pub use reqwest::{blocking::Client as BlockingClient, Client};
+#[cfg(feature = "client")]
+pub use reqwest::Client;
+
+#[cfg(feature = "blocking_client")]
+pub use reqwest::blocking::Client as BlockingClient;
 
 mod error;
 pub use error::{Error, Result};

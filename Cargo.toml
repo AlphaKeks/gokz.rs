@@ -28,3 +28,7 @@ env_logger = "0.10"
 test-log = { version = "0.2", features = ["log"] }
 
 tokio = { version = "1", features = ["full"] }
+
+[features]
+client = []
+blocking_client = ["client"]
