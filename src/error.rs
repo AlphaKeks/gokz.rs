@@ -1,4 +1,4 @@
-use {serde::Serialize, std::fmt::Display};
+use {serde::Serialize, std::fmt::Display, std::num::TryFromIntError};
 
 /// Crate-level `Result` type for convenience.
 pub type Result<T> = std::result::Result<T, Error>;
@@ -42,29 +42,37 @@ pub enum Error {
 	Http {
 		status_code: crate::http::StatusCode,
 	},
+
+	InvalidDate {
+		value: String,
+	},
+
+	EmptyResponse,
 }
 
 impl Display for Error {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
-			Error::Custom(message) => f.write_str(message),
-			Error::InvalidAccountUniverse { value } => f.write_fmt(format_args!(
+			Self::Custom(message) => f.write_str(message),
+			Self::InvalidAccountUniverse { value } => f.write_fmt(format_args!(
 				"Invalid Account Universe `{value}`. Please use a number from 0-5."
 			)),
-			Error::InvalidAccountType { value } => f.write_fmt(format_args!(
+			Self::InvalidAccountType { value } => f.write_fmt(format_args!(
 				"Invalid Account Type `{value}`. Please use a number from 0-10."
 			)),
-			Error::InvalidSteamID { value } => {
+			Self::InvalidSteamID { value } => {
 				f.write_fmt(format_args!("Invalid SteamID `{value}`."))
 			}
-			Error::InvalidMode { value } => f.write_fmt(format_args!("Invalid Mode `{value}`.")),
-			Error::InvalidRank { value } => f.write_fmt(format_args!("Invalid Rank `{value}`.")),
-			Error::InvalidTier { value } => f.write_fmt(format_args!("Invalid Tier `{value}`.")),
-			Error::InvalidUrl { value } => f.write_fmt(format_args!("Invalid URL `{value}`.")),
+			Self::InvalidMode { value } => f.write_fmt(format_args!("Invalid Mode `{value}`.")),
+			Self::InvalidRank { value } => f.write_fmt(format_args!("Invalid Rank `{value}`.")),
+			Self::InvalidTier { value } => f.write_fmt(format_args!("Invalid Tier `{value}`.")),
+			Self::InvalidUrl { value } => f.write_fmt(format_args!("Invalid URL `{value}`.")),
 			#[cfg(feature = "http")]
-			Error::Http { status_code } => f.write_fmt(format_args!(
+			Self::Http { status_code } => f.write_fmt(format_args!(
 				"Http request failed with code `{status_code}`."
 			)),
+			Self::InvalidDate { value } => f.write_fmt(format_args!("Invalid Date `{value}`.")),
+			Self::EmptyResponse => f.write_str("Got an empty API response."),
 		}
 	}
 }
@@ -80,5 +88,11 @@ impl From<reqwest::Error> for Error {
 		Self::Http {
 			status_code: crate::http::StatusCode(status_code),
 		}
+	}
+}
+
+impl From<TryFromIntError> for Error {
+	fn from(_: TryFromIntError) -> Self {
+		Self::Custom("Failed to cast integer.")
 	}
 }

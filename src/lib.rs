@@ -9,6 +9,8 @@ pub use reqwest::Client;
 #[cfg(feature = "blocking_client")]
 pub use reqwest::blocking::Client as BlockingClient;
 
+pub(crate) mod chrono;
+
 mod error;
 pub use error::{Error, Result};
 
@@ -34,3 +36,6 @@ pub use tier::Tier;
 mod http;
 #[cfg(feature = "http")]
 pub use http::{get, get_text, get_text_with_params, get_with_params, StatusCode};
+
+#[cfg(feature = "global_api")]
+pub mod global_api;

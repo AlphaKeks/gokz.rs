@@ -34,3 +34,4 @@ client = []
 blocking_client = ["client"]
 
 http = []
+global_api = ["http"]
