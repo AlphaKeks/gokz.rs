@@ -4,9 +4,8 @@ use {
 	std::fmt::Display,
 };
 
-/// Both the GlobalAPI and SchnoseAPI accept either player names or [`SteamID`]s. This is just an
-/// abstraction layer for functions that communicate with those APIs and need some way of accepting
-/// either variant while staying type-safe.
+/// Abstraction layer to accept either a players's name or SteamID as function input in order to stay
+/// type-safe without unnecessary conversions.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[allow(missing_docs)]
 pub enum PlayerIdentifier {
@@ -23,12 +22,6 @@ impl Display for PlayerIdentifier {
 	}
 }
 
-impl From<SteamID> for PlayerIdentifier {
-	fn from(value: SteamID) -> Self {
-		Self::SteamID(value)
-	}
-}
-
 impl From<String> for PlayerIdentifier {
 	fn from(value: String) -> Self {
 		Self::Name(value)
@@ -40,6 +33,12 @@ impl std::str::FromStr for PlayerIdentifier {
 
 	fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
 		Ok(s.to_owned().into())
+	}
+}
+
+impl From<SteamID> for PlayerIdentifier {
+	fn from(value: SteamID) -> Self {
+		Self::SteamID(value)
 	}
 }
 
