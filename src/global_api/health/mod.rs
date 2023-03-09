@@ -1,10 +1,12 @@
 use {
 	crate::{http, Result},
+	log::trace,
 	serde::{Deserialize, Serialize},
 };
 
 /// Check the health of the GlobalAPI.
 pub async fn checkhealth(client: &reqwest::Client) -> Result<HealthReport> {
+	trace!("> checkhealth");
 	http::get::<RawHealthReport>(
 		"https://health.global-api.com/api/v1/endpoints/_globalapi/statuses?page=1",
 		client,

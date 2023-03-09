@@ -15,16 +15,16 @@ mod error;
 pub use error::{Error, Result};
 
 mod steam_id;
-pub use steam_id::{AccountType, AccountUniverse, SteamID};
+pub use steam_id::{AccountType, AccountUniverse, SteamID, SteamID64};
 
 mod mode;
 pub use mode::Mode;
 
 mod player_identifier;
-pub use player_identifier::PlayerIdentifier;
+pub use player_identifier::{PlayerIdentifier, PlayerName};
 
 mod map_identifier;
-pub use map_identifier::MapIdentifier;
+pub use map_identifier::{MapID, MapIdentifier, MapName};
 
 mod rank;
 pub use rank::Rank;

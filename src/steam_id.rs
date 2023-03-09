@@ -5,13 +5,15 @@ use {
 	std::fmt::Display,
 };
 
+pub type SteamID64 = u64;
+
 /// `STEAM_1:1:161178172`
 ///   - `STEAM_`: prefix (always the same)
 ///   - `1`: [`AccountUniverse`]
 ///   - `1`: [`AccountType`]
 ///   - `161178172`: [account number](Self::account_number)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct SteamID(u64);
+pub struct SteamID(SteamID64);
 
 impl SteamID {
 	/// `MAGIC_OFFSET + 1` is the minimum value for any 64-bit [`SteamID`].
