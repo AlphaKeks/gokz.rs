@@ -2,7 +2,7 @@
 //! [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2).
 
 use {
-	crate::{MapIdentifier, Result, SteamID},
+	crate::{MapIdentifier, PlayerIdentifier, Result, SteamID},
 	chrono::NaiveDateTime,
 };
 
@@ -110,4 +110,38 @@ pub async fn get_map(
 	}
 }
 
+/// The `/players` route
 pub mod players;
+
+/// Fetches players.
+pub async fn get_players(
+	offset: i32,
+	limit: u32,
+	client: &reqwest::Client,
+) -> Result<Vec<players::Player>> {
+	players::get_players(
+		players::index::Params {
+			offset: Some(offset),
+			limit: Some(limit),
+			..Default::default()
+		},
+		client,
+	)
+	.await
+}
+
+/// Fetches a single player.
+pub async fn get_player(
+	player_identifier: PlayerIdentifier,
+	client: &reqwest::Client,
+) -> Result<players::Player> {
+	let mut params = players::index::Params::default();
+	match player_identifier {
+		PlayerIdentifier::Name(player_name) => params.name = Some(player_name),
+		PlayerIdentifier::SteamID(steam_id) => params.steam_id = Some(steam_id),
+	};
+
+	Ok(players::get_players(params, client)
+		.await?
+		.remove(0))
+}
