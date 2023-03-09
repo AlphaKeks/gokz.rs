@@ -26,3 +26,6 @@ pub use map_identifier::MapIdentifier;
 
 mod rank;
 pub use rank::Rank;
+
+mod tier;
+pub use tier::Tier;

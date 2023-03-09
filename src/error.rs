@@ -3,27 +3,36 @@ use {serde::Serialize, std::fmt::Display};
 /// Crate-level `Result` type for convenience.
 pub type Result<T> = std::result::Result<T, Error>;
 
-#[allow(missing_docs)]
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize)]
+#[allow(missing_docs)]
 #[non_exhaustive]
 pub enum Error {
 	/// Any error that only occurs once and therefore does not deserve its own variant.
 	Custom(&'static str),
 
-	/// Failed to parse an [Account Universe](crate::AccountUniverse).
-	InvalidAccountUniverse { value: String },
+	InvalidAccountUniverse {
+		value: String,
+	},
 
-	/// Failed to parse an [Account Type](crate::AccountType).
-	InvalidAccountType { value: String },
+	InvalidAccountType {
+		value: String,
+	},
 
-	/// Failed to parse a [SteamID](crate::SteamID).
-	InvalidSteamID { value: String },
+	InvalidSteamID {
+		value: String,
+	},
 
-	/// Failed to parse a [Mode](crate::Mode).
-	InvalidMode { value: String },
+	InvalidMode {
+		value: String,
+	},
 
-	/// Failed to parse a [Rank](crate::Rank).
-	InvalidRank { value: String },
+	InvalidRank {
+		value: String,
+	},
+
+	InvalidTier {
+		value: String,
+	},
 }
 
 impl Display for Error {
@@ -41,6 +50,7 @@ impl Display for Error {
 			}
 			Error::InvalidMode { value } => f.write_fmt(format_args!("Invalid Mode `{value}`.")),
 			Error::InvalidRank { value } => f.write_fmt(format_args!("Invalid Rank `{value}`.")),
+			Error::InvalidTier { value } => f.write_fmt(format_args!("Invalid Tier `{value}`.")),
 		}
 	}
 }
