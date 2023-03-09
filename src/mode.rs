@@ -9,7 +9,6 @@ use {
 /// NOTE: [Official Documentation](https://github.com/KZGlobalTeam/gokz/wiki/Modes)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[allow(missing_docs)]
-#[non_exhaustive]
 pub enum Mode {
 	KZTimer = 200,
 	SimpleKZ = 201,

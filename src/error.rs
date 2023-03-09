@@ -33,6 +33,15 @@ pub enum Error {
 	InvalidTier {
 		value: String,
 	},
+
+	InvalidUrl {
+		value: String,
+	},
+
+	#[cfg(feature = "http")]
+	Http {
+		status_code: crate::http::StatusCode,
+	},
 }
 
 impl Display for Error {
@@ -51,8 +60,25 @@ impl Display for Error {
 			Error::InvalidMode { value } => f.write_fmt(format_args!("Invalid Mode `{value}`.")),
 			Error::InvalidRank { value } => f.write_fmt(format_args!("Invalid Rank `{value}`.")),
 			Error::InvalidTier { value } => f.write_fmt(format_args!("Invalid Tier `{value}`.")),
+			Error::InvalidUrl { value } => f.write_fmt(format_args!("Invalid URL `{value}`.")),
+			#[cfg(feature = "http")]
+			Error::Http { status_code } => f.write_fmt(format_args!(
+				"Http request failed with code `{status_code}`."
+			)),
 		}
 	}
 }
 
 impl std::error::Error for Error {}
+
+#[cfg(feature = "http")]
+impl From<reqwest::Error> for Error {
+	fn from(value: reqwest::Error) -> Self {
+		let status_code = value
+			.status()
+			.unwrap_or(reqwest::StatusCode::IM_A_TEAPOT);
+		Self::Http {
+			status_code: crate::http::StatusCode(status_code),
+		}
+	}
+}

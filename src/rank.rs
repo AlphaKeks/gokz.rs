@@ -9,7 +9,6 @@ use {
 /// given [`Mode`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[allow(missing_docs)]
-#[non_exhaustive]
 pub enum Rank {
 	Legend,
 	Master,

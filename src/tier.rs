@@ -6,7 +6,6 @@ use {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[allow(missing_docs)]
-#[non_exhaustive]
 pub enum Tier {
 	VeryEasy = 1,
 	Easy = 2,

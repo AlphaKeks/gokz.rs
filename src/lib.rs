@@ -29,3 +29,8 @@ pub use rank::Rank;
 
 mod tier;
 pub use tier::Tier;
+
+#[cfg(feature = "http")]
+mod http;
+#[cfg(feature = "http")]
+pub use http::{get, get_text, get_text_with_params, get_with_params, StatusCode};
