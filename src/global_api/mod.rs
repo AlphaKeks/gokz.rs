@@ -57,3 +57,7 @@ pub async fn get_bans_since(
 	)
 	.await
 }
+
+/// API health checks
+pub mod health;
+pub use health::checkhealth;
