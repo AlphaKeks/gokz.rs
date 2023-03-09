@@ -23,3 +23,6 @@ pub use player_identifier::PlayerIdentifier;
 
 mod map_identifier;
 pub use map_identifier::MapIdentifier;
+
+mod rank;
+pub use rank::Rank;

@@ -21,6 +21,9 @@ pub enum Error {
 
 	/// Failed to parse a [Mode](crate::Mode).
 	InvalidMode { value: String },
+
+	/// Failed to parse a [Rank](crate::Rank).
+	InvalidRank { value: String },
 }
 
 impl Display for Error {
@@ -37,6 +40,7 @@ impl Display for Error {
 				f.write_fmt(format_args!("Invalid SteamID `{value}`."))
 			}
 			Error::InvalidMode { value } => f.write_fmt(format_args!("Invalid Mode `{value}`.")),
+			Error::InvalidRank { value } => f.write_fmt(format_args!("Invalid Rank `{value}`.")),
 		}
 	}
 }
