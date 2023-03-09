@@ -5,7 +5,9 @@ use {
 		http, Error, MapID, MapName, Mode, Result, SteamID,
 	},
 	chrono::NaiveDateTime,
+	log::trace,
 	serde::Serialize,
+	std::ops::Range,
 };
 
 pub type RecordID = u32;
@@ -97,6 +99,7 @@ pub mod top;
 
 /// Fetches a single record by its ID.
 pub async fn get_record(record_id: RecordID, client: &crate::Client) -> Result<Record> {
+	trace!("> get_record {{ record_id: {record_id} }}");
 	http::get::<id::Response>(
 		&format!("{}/records/{}", super::BASE_URL, record_id),
 		client,
@@ -107,6 +110,7 @@ pub async fn get_record(record_id: RecordID, client: &crate::Client) -> Result<R
 
 /// Fetches the place of a record on its leaderboard.
 pub async fn get_place(record_id: RecordID, client: &crate::Client) -> Result<Place> {
+	trace!("> get_place {{ record_id: {record_id} }}");
 	http::get::<Place>(
 		&format!("{}/records/place/{}", super::BASE_URL, record_id),
 		client,
@@ -118,6 +122,47 @@ pub async fn get_place(record_id: RecordID, client: &crate::Client) -> Result<Pl
 pub async fn get_top(params: top::Params, client: &crate::Client) -> Result<Vec<Record>> {
 	let response: Vec<id::Response> =
 		http::get_with_params(&format!("{}/top", super::BASE_URL), params, client).await?;
+
+	if response.is_empty() {
+		return Err(Error::EmptyResponse);
+	}
+
+	Ok(response
+		.into_iter()
+		.filter_map(|record| record.try_into().ok())
+		.collect())
+}
+
+/// The `/records/top/world_records` route.
+pub mod world_records;
+
+pub use world_records::WRStats;
+
+/// Fetches the leaderboard for most world records held per player.
+pub async fn get_wr_top(
+	mode: Mode,
+	has_teleports: bool,
+	courses: Range<u8>,
+	client: &crate::Client,
+) -> Result<Vec<WRStats>> {
+	let url = format!(
+		"{}/records/top/world_records{}",
+		super::BASE_URL,
+		courses
+			.map(|course| format!("&stages={course}"))
+			.collect::<String>()
+			.replacen('&', "?", 1)
+	);
+	let params = world_records::Params {
+		mode_ids: Some(mode as u8),
+		has_teleports: Some(has_teleports),
+		limit: Some(999),
+		..Default::default()
+	};
+	trace!("> get_wr_top {{ url: {url}, {params:#?} }}");
+
+	let response: Vec<world_records::Response> =
+		http::get_with_params(&url, params, client).await?;
 
 	if response.is_empty() {
 		return Err(Error::EmptyResponse);

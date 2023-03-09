@@ -2,7 +2,7 @@
 //! [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2).
 
 use {
-	crate::{Error, MapID, MapIdentifier, Mode, PlayerIdentifier, Result, SteamID},
+	crate::{http, Error, MapID, MapIdentifier, Mode, PlayerIdentifier, Result, SteamID, Tier},
 	chrono::NaiveDateTime,
 	futures::future::join_all,
 	log::trace,
@@ -17,41 +17,35 @@ pub use bans::{Ban, BanType};
 
 /// Fetches `limit` bans.
 pub async fn get_bans(limit: u32, client: &crate::Client) -> Result<Vec<Ban>> {
-	trace!("> get_bans {{ limit: {limit} }}");
-	bans::get_bans(
-		bans::index::Params {
-			limit: Some(limit),
-			..Default::default()
-		},
-		client,
-	)
-	.await
+	let params = bans::index::Params {
+		limit: Some(limit),
+		..Default::default()
+	};
+	trace!("> get_bans {params:#?} ");
+
+	bans::get_bans(params, client).await
 }
 
 /// Fetches all bans for a given [`SteamID`].
 pub async fn get_bans_for_player(steam_id: &SteamID, client: &crate::Client) -> Result<Vec<Ban>> {
-	trace!("> get_bans_for_player {{ steam_id: {steam_id} }}");
-	bans::get_bans(
-		bans::index::Params {
-			steamid64: Some(steam_id.as_id64()),
-			..Default::default()
-		},
-		client,
-	)
-	.await
+	let params = bans::index::Params {
+		steamid64: Some(steam_id.as_id64()),
+		..Default::default()
+	};
+	trace!("> get_bans_for_player {params:#?}");
+
+	bans::get_bans(params, client).await
 }
 
 /// Fetches all bans that happened since a specific date.
 pub async fn get_bans_since(since: NaiveDateTime, client: &crate::Client) -> Result<Vec<Ban>> {
-	trace!("> get_bans_since {{ since: {since} }}");
-	bans::get_bans(
-		bans::index::Params {
-			created_since: Some(since),
-			..Default::default()
-		},
-		client,
-	)
-	.await
+	let params = bans::index::Params {
+		created_since: Some(since),
+		..Default::default()
+	};
+	trace!("> get_bans_since {params:#?}");
+
+	bans::get_bans(params, client).await
 }
 
 /// API health checks
@@ -64,43 +58,55 @@ pub use maps::Map;
 
 /// Fetches all maps.
 pub async fn get_maps(client: &crate::Client) -> Result<Vec<Map>> {
-	trace!("> get_maps");
-	maps::get_maps(
-		maps::index::Params {
-			limit: Some(9999),
-			..Default::default()
-		},
-		client,
-	)
-	.await
+	let params = maps::index::Params {
+		limit: Some(9999),
+		..Default::default()
+	};
+	trace!("> get_maps {params:#?}");
+
+	maps::get_maps(params, client).await
 }
 
 /// Fetches all global/validated maps.
 pub async fn get_global_maps(client: &crate::Client) -> Result<Vec<Map>> {
-	trace!("> get_global_maps");
-	maps::get_maps(
-		maps::index::Params {
-			is_validated: Some(true),
-			limit: Some(9999),
-			..Default::default()
-		},
-		client,
-	)
-	.await
+	let params = maps::index::Params {
+		is_validated: Some(true),
+		limit: Some(9999),
+		..Default::default()
+	};
+	trace!("> get_global_maps {params:#?}");
+
+	maps::get_maps(params, client).await
 }
 
 /// Fetches all non-global/non-validated maps.
 pub async fn get_nonglobal_maps(client: &crate::Client) -> Result<Vec<Map>> {
-	trace!("> get_nonglobal_maps");
-	maps::get_maps(
-		maps::index::Params {
-			is_validated: Some(false),
-			limit: Some(9999),
-			..Default::default()
-		},
-		client,
-	)
-	.await
+	let params = maps::index::Params {
+		is_validated: Some(false),
+		limit: Some(9999),
+		..Default::default()
+	};
+	trace!("> get_nonglobal_maps {params:#?}");
+
+	maps::get_maps(params, client).await
+}
+
+/// Fetches a list of all global map names.
+pub async fn get_mapcycle(tier: Option<Tier>, client: &crate::Client) -> Result<Vec<String>> {
+	let url = format!(
+		"https://maps.global-api.com/mapcycles/{}",
+		match tier {
+			Some(tier) => format!("tier{}.txt", tier as u8),
+			None => String::from("gokz.txt"),
+		}
+	);
+	trace!("> get_mapcycle {{ tier: {tier:?}, url: {url} }}");
+
+	Ok(http::get_text(&url, client)
+		.await?
+		.lines()
+		.map(String::from)
+		.collect())
 }
 
 /// Fetches a single map.
@@ -112,22 +118,34 @@ pub async fn get_map(map_identifier: &MapIdentifier, client: &crate::Client) -> 
 	}
 }
 
+/// Fetches all global maps and checks if a map exists that matches the given [`MapIdentifier`].
+pub async fn is_global(map_ident: &MapIdentifier, client: &crate::Client) -> Result<Option<Map>> {
+	trace!("> is_global {{ map_ident: {map_ident} }}");
+	Ok(get_global_maps(client)
+		.await?
+		.into_iter()
+		.find(|map| match map_ident {
+			MapIdentifier::Name(map_name) => map
+				.name
+				.contains(&map_name.to_lowercase()),
+			MapIdentifier::ID(map_id) => map.id == *map_id,
+		}))
+}
+
 /// The `/players` route.
 pub mod players;
 pub use players::Player;
 
 /// Fetches players.
 pub async fn get_players(offset: i32, limit: u32, client: &crate::Client) -> Result<Vec<Player>> {
-	trace!("> get_players {{ offset: {offset}, limit: {limit} }}");
-	players::get_players(
-		players::index::Params {
-			offset: Some(offset),
-			limit: Some(limit),
-			..Default::default()
-		},
-		client,
-	)
-	.await
+	let params = players::index::Params {
+		offset: Some(offset),
+		limit: Some(limit),
+		..Default::default()
+	};
+	trace!("> get_players {params:#?}");
+
+	players::get_players(params, client).await
 }
 
 /// Fetches a single player.
@@ -135,12 +153,12 @@ pub async fn get_player(
 	player_identifier: PlayerIdentifier,
 	client: &crate::Client,
 ) -> Result<Player> {
-	trace!("> get_player {{ player_identifier: {player_identifier} }}");
 	let mut params = players::index::Params::default();
 	match player_identifier {
 		PlayerIdentifier::Name(player_name) => params.name = Some(player_name),
 		PlayerIdentifier::SteamID(steam_id) => params.steam_id = Some(steam_id),
 	};
+	trace!("> get_player {params:#?}");
 
 	Ok(players::get_players(params, client)
 		.await?
@@ -153,15 +171,13 @@ pub use record_filters::RecordFilter;
 
 /// Fetches all filters for a given map.
 pub async fn get_filters(map_id: MapID, client: &crate::Client) -> Result<Vec<RecordFilter>> {
-	trace!("> get_filters {{ map_id: {map_id} }}");
-	record_filters::get_filters(
-		record_filters::index::Params {
-			map_ids: Some(map_id),
-			..Default::default()
-		},
-		client,
-	)
-	.await
+	let params = record_filters::index::Params {
+		map_ids: Some(map_id),
+		..Default::default()
+	};
+	trace!("> get_filters {params:#?}");
+
+	record_filters::get_filters(params, client).await
 }
 
 /// The `/servers` route.
@@ -170,15 +186,13 @@ pub use servers::{Server, ServerID, ServerIdentifier, ServerName};
 
 /// Fetches all servers.
 pub async fn get_servers(client: &crate::Client) -> Result<Vec<Server>> {
-	trace!("> get_servers");
-	servers::get_servers(
-		servers::index::Params {
-			limit: Some(9999),
-			..Default::default()
-		},
-		client,
-	)
-	.await
+	let params = servers::index::Params {
+		limit: Some(9999),
+		..Default::default()
+	};
+	trace!("> get_servers {params:#?}");
+
+	servers::get_servers(params, client).await
 }
 
 /// Fetches a single server.
@@ -197,18 +211,17 @@ pub async fn get_server(
 
 /// The `/records` route (and subroutes).
 pub mod records;
-pub use records::{get_place, get_record, Record, RecordID};
+pub use records::{get_place, get_record, get_wr_top, Record, RecordID};
 
 /// Fetches `limit` records. Note that this only includes personal bests, not all records.
 pub async fn get_records(limit: u32, client: &crate::Client) -> Result<Vec<Record>> {
-	records::get_top(
-		records::top::Params {
-			limit: Some(limit),
-			..Default::default()
-		},
-		client,
-	)
-	.await
+	let params = records::top::Params {
+		limit: Some(limit),
+		..Default::default()
+	};
+	trace!("> get_records {params:#?}");
+
+	records::get_top(params, client).await
 }
 
 /// Fetches `limit` records for a player. Note that this only includes personal bests, not all records.
@@ -227,11 +240,11 @@ pub async fn get_player_records(
 		limit: Some(limit),
 		..Default::default()
 	};
-
 	match player_identifier {
 		PlayerIdentifier::Name(player_name) => params.player_name = Some(player_name),
 		PlayerIdentifier::SteamID(steam_id) => params.steam_id = Some(steam_id),
 	};
+	trace!("> get_player_records {params:#?}");
 
 	records::get_top(params, client).await
 }
@@ -252,18 +265,17 @@ async fn get_records_on_map(
 		limit: Some(limit),
 		..Default::default()
 	};
-
 	if let Some(player_identifier) = player_identifier {
 		match player_identifier {
 			PlayerIdentifier::Name(player_name) => params.player_name = Some(player_name),
 			PlayerIdentifier::SteamID(steam_id) => params.steam_id = Some(steam_id),
 		};
 	}
-
 	match map_identifier {
 		MapIdentifier::Name(map_name) => params.map_name = Some(map_name),
 		MapIdentifier::ID(map_id) => params.map_id = Some(map_id),
 	};
+	trace!("> get_records_on_map {params:#?}");
 
 	records::get_top(params, client).await
 }
@@ -276,6 +288,7 @@ pub async fn get_wr(
 	course: u8,
 	client: &crate::Client,
 ) -> Result<Record> {
+	trace!("> get_wr -> get_records_on_map");
 	Ok(
 		get_records_on_map(map_identifier, None, mode, has_teleports, course, 1, client)
 			.await?
@@ -291,6 +304,7 @@ pub async fn get_maptop(
 	course: u8,
 	client: &crate::Client,
 ) -> Result<Vec<Record>> {
+	trace!("> get_maptop -> get_records_on_map");
 	get_records_on_map(
 		map_identifier,
 		None,
@@ -312,6 +326,7 @@ pub async fn get_pb(
 	course: u8,
 	client: &crate::Client,
 ) -> Result<Record> {
+	trace!("> get_pb -> get_records_on_map");
 	Ok(get_records_on_map(
 		map_identifier,
 		Some(player_identifier),
@@ -331,6 +346,8 @@ pub async fn get_recent(
 	limit: u32,
 	client: &crate::Client,
 ) -> Result<Vec<Record>> {
+	trace!("> get_recent {{ player_identifier: {player_identifier}, limit: {limit} }}");
+
 	let mut records = Vec::new();
 
 	for chunk in join_all([
@@ -417,11 +434,13 @@ pub async fn get_recent(
 
 /// Returns a link to download a global replay by its ID.
 pub async fn get_replay_download_link(replay_id: u32) -> String {
+	trace!("> get_replay_download_link {{ replay_id: {replay_id} }}");
 	format!("{}/records/replay/{}", BASE_URL, replay_id)
 }
 
 /// Returns a link to watch a global replay using
 /// [GameChaos' GlobalReplays Project](https://github.com/GameChaos/GlobalReplays).
 pub async fn get_replay_view_link(replay_id: u32) -> String {
+	trace!("> get_replay_view_link {{ replay_id: {replay_id} }}");
 	format!("http://gokzmaptest.site.nfoservers.com/GlobalReplays/?replay={replay_id}")
 }
