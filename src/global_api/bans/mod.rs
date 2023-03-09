@@ -1,8 +1,8 @@
 use {
 	crate::{
 		chrono::{parse_date, ser_date},
-		http::get_with_params,
-		Error, Result, SteamID,
+		global_api::ServerID,
+		http, Error, Result, SteamID,
 	},
 	chrono::NaiveDateTime,
 	serde::Serialize,
@@ -36,14 +36,14 @@ impl Serialize for BanType {
 pub struct Ban {
 	pub id: u32,
 	pub ban_type: BanType,
-	#[serde(serialize_with = "ser_date")]
-	pub expires_on: NaiveDateTime,
 	pub player_name: String,
 	pub steam_id: SteamID,
-	pub notes: String,
+	pub server_id: ServerID,
 	pub stats: String,
-	pub server_id: u16,
+	pub notes: String,
 	pub updated_by_id: SteamID,
+	#[serde(serialize_with = "ser_date")]
+	pub expires_on: NaiveDateTime,
 	#[serde(serialize_with = "ser_date")]
 	pub created_on: NaiveDateTime,
 	#[serde(serialize_with = "ser_date")]
@@ -65,13 +65,13 @@ impl TryFrom<index::Response> for Ban {
 				"strafe_hack" => BanType::StrafeHack,
 				_ => BanType::Other,
 			},
-			expires_on: parse_date!(value.expires_on),
 			player_name: value.player_name,
 			steam_id: value.steam_id.parse()?,
-			notes: value.notes,
-			stats: value.stats,
 			server_id: value.server_id.try_into()?,
+			stats: value.stats,
+			notes: value.notes,
 			updated_by_id: value.updated_by_id.parse()?,
+			expires_on: parse_date!(value.expires_on),
 			created_on: parse_date!(value.created_on),
 			updated_on: parse_date!(value.updated_on),
 		})
@@ -79,9 +79,9 @@ impl TryFrom<index::Response> for Ban {
 }
 
 /// Fetches bans with the given `params`.
-pub async fn get_bans(params: index::Params, client: &reqwest::Client) -> Result<Vec<Ban>> {
+pub async fn get_bans(params: index::Params, client: &crate::Client) -> Result<Vec<Ban>> {
 	let response: Vec<index::Response> =
-		get_with_params(&format!("{}/bans", super::BASE_URL), params, client).await?;
+		http::get_with_params(&format!("{}/bans", super::BASE_URL), params, client).await?;
 
 	if response.is_empty() {
 		return Err(Error::EmptyResponse);

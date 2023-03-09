@@ -1,5 +1,5 @@
 use {
-	crate::{http::get_with_params, Error, PlayerName, Result, SteamID},
+	crate::{http, Error, PlayerName, Result, SteamID},
 	serde::Serialize,
 };
 
@@ -34,9 +34,9 @@ impl TryFrom<index::Response> for Player {
 }
 
 /// Fetches maps with the given `params`.
-pub async fn get_players(params: index::Params, client: &reqwest::Client) -> Result<Vec<Player>> {
+pub async fn get_players(params: index::Params, client: &crate::Client) -> Result<Vec<Player>> {
 	let response: Vec<index::Response> =
-		get_with_params(&format!("{}/players", super::BASE_URL), params, client).await?;
+		http::get_with_params(&format!("{}/players", super::BASE_URL), params, client).await?;
 
 	if response.is_empty() {
 		return Err(Error::EmptyResponse);
