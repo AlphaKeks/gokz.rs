@@ -2,7 +2,7 @@ use {
 	crate::{
 		chrono::{parse_date, ser_date},
 		http::{get, get_with_params},
-		Error, Result, SteamID, Tier,
+		Error, MapID, MapName, Result, SteamID, Tier,
 	},
 	chrono::NaiveDateTime,
 	serde::Serialize,
@@ -11,8 +11,8 @@ use {
 #[derive(Debug, Clone, Serialize)]
 #[allow(missing_docs)]
 pub struct Map {
-	pub id: u16,
-	pub name: String,
+	pub id: MapID,
+	pub name: MapName,
 	pub filesize: u64,
 	pub validated: bool,
 	pub difficulty: Tier,
@@ -74,7 +74,7 @@ pub async fn get_map_by_name(map_name: &str, client: &reqwest::Client) -> Result
 }
 
 /// Fetches a map by its ID.
-pub async fn get_map_by_id(map_id: u16, client: &reqwest::Client) -> Result<Map> {
+pub async fn get_map_by_id(map_id: MapID, client: &reqwest::Client) -> Result<Map> {
 	get::<index::Response>(&format!("{}/maps/id/{}", super::BASE_URL, map_id), client)
 		.await?
 		.try_into()

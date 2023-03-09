@@ -1,5 +1,5 @@
 use {
-	crate::{chrono::ser_opt_date, Tier},
+	crate::{chrono::ser_opt_date, MapID, Tier},
 	chrono::NaiveDateTime,
 	serde::{Deserialize, Serialize},
 };
@@ -7,7 +7,7 @@ use {
 #[derive(Debug, Clone, Serialize)]
 #[allow(missing_docs)]
 pub struct Params {
-	pub id: Option<u16>,
+	pub id: Option<MapID>,
 	pub name: Option<String>,
 	pub larger_than_filesize: Option<u64>,
 	pub smaller_than_filesize: Option<u64>,

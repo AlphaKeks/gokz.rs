@@ -18,7 +18,7 @@ mod steam_id;
 pub use steam_id::{AccountType, AccountUniverse, SteamID, SteamID64};
 
 mod mode;
-pub use mode::Mode;
+pub use mode::{Mode, ModeID};
 
 mod player_identifier;
 pub use player_identifier::{PlayerIdentifier, PlayerName};

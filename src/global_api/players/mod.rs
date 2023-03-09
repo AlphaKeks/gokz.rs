@@ -1,12 +1,12 @@
 use {
-	crate::{http::get_with_params, Error, Result, SteamID},
+	crate::{http::get_with_params, Error, PlayerName, Result, SteamID},
 	serde::Serialize,
 };
 
 #[derive(Debug, Clone, Serialize)]
 #[allow(missing_docs)]
 pub struct Player {
-	pub name: String,
+	pub name: PlayerName,
 	pub steam_id: SteamID,
 	pub is_banned: bool,
 }
