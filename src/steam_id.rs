@@ -1,9 +1,7 @@
-use regex::Regex;
-use serde::Deserialize;
-
 use {
 	crate::{Error, Result},
-	serde::Serialize,
+	regex::Regex,
+	serde::{Deserialize, Serialize},
 	std::fmt::Display,
 };
 
@@ -308,6 +306,22 @@ impl Display for SteamID {
 	}
 }
 
+impl std::str::FromStr for SteamID {
+	type Err = Error;
+
+	fn from_str(s: &str) -> Result<Self> {
+		Self::new(s)
+	}
+}
+
+impl TryFrom<u64> for SteamID {
+	type Error = Error;
+
+	fn try_from(value: u64) -> Result<Self> {
+		Self::new(&value.to_string())
+	}
+}
+
 impl Serialize for SteamID {
 	fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
 	where
@@ -334,23 +348,8 @@ impl<'de> Deserialize<'de> for SteamID {
 				&why.to_string().as_str(),
 			),
 			Error::InvalidSteamID { value } => serde::de::Error::custom(value.to_string()),
+			_ => unreachable!(),
 		})
-	}
-}
-
-impl std::str::FromStr for SteamID {
-	type Err = Error;
-
-	fn from_str(s: &str) -> Result<Self> {
-		Self::new(s)
-	}
-}
-
-impl TryFrom<u64> for SteamID {
-	type Error = Error;
-
-	fn try_from(value: u64) -> Result<Self> {
-		Self::new(&value.to_string())
 	}
 }
 

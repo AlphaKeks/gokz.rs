@@ -1,4 +1,4 @@
-//! Core library for [CS:GO KZ](https://forum.gokz.org/).
+//! Rust wrapper for [CS:GO KZ](https://forum.gokz.org/).
 #![warn(rust_2018_idioms, missing_docs, missing_debug_implementations)]
 #![warn(clippy::style, clippy::complexity, clippy::cognitive_complexity)]
 #![deny(clippy::correctness, clippy::perf)]
@@ -10,3 +10,6 @@ pub use error::{Error, Result};
 
 mod steam_id;
 pub use steam_id::{AccountType, AccountUniverse, SteamID};
+
+mod mode;
+pub use mode::Mode;
