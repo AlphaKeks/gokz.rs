@@ -7,7 +7,7 @@ use {
 /// The 3 gamemodes that (currently) exist in GOKZ.
 ///
 /// NOTE: [Official Documentation](https://github.com/KZGlobalTeam/gokz/wiki/Modes)
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[allow(missing_docs)]
 #[non_exhaustive]
 pub enum Mode {
