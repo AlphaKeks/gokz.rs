@@ -17,6 +17,7 @@ pub enum Mode {
 }
 
 impl Mode {
+	/// Formats a given [`Mode`] so that the GlobalAPI and KZ:GO can understand it.
 	pub fn api(&self) -> String {
 		String::from(match self {
 			Self::KZTimer => "kz_timer",
@@ -25,6 +26,7 @@ impl Mode {
 		})
 	}
 
+	/// Abbreviates a given [`Mode`]; this is how players will usually call them.
 	pub fn short(&self) -> String {
 		String::from(match self {
 			Self::KZTimer => "KZT",
