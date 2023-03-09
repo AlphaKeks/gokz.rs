@@ -109,3 +109,5 @@ pub async fn get_map(
 		MapIdentifier::ID(map_id) => maps::get_map_by_id(*map_id, client).await,
 	}
 }
+
+pub mod players;
