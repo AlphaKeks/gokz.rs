@@ -32,3 +32,4 @@ tokio = { version = "1", features = ["full"] }
 reqwest = ["dep:reqwest"]
 chrono = ["dep:chrono"]
 global_api = ["reqwest", "chrono", "dep:futures"]
+kzgo = ["reqwest", "chrono"]

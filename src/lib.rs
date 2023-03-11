@@ -35,5 +35,8 @@ pub use http::{get, get_text, get_text_with_params, get_with_params, StatusCode}
 #[cfg(feature = "global_api")]
 pub mod global_api;
 
-#[cfg(feature = "global_api")]
+#[cfg(feature = "chrono")]
 pub(crate) mod chrono;
+
+#[cfg(feature = "kzgo")]
+pub mod kzgo;

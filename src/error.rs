@@ -1,4 +1,8 @@
-use {serde::Serialize, std::fmt::Display, std::num::TryFromIntError};
+use {
+	serde::Serialize,
+	std::fmt::Display,
+	std::num::{ParseIntError, TryFromIntError},
+};
 
 /// Crate-level `Result` type for convenience.
 pub type Result<T> = std::result::Result<T, Error>;
@@ -100,5 +104,11 @@ impl From<reqwest::Error> for Error {
 impl From<TryFromIntError> for Error {
 	fn from(_: TryFromIntError) -> Self {
 		Self::Custom("Failed to cast integer.")
+	}
+}
+
+impl From<ParseIntError> for Error {
+	fn from(_: ParseIntError) -> Self {
+		Self::Custom("Failed to parse integer.")
 	}
 }
