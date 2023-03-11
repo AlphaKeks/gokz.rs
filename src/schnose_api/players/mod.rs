@@ -58,15 +58,15 @@ pub async fn get_players(
 
 /// The `/players/:ident` route.
 pub mod ident;
-pub use ident::{FancyPlayer, RecordCount, RecordSummary};
+pub use ident::{FancyPlayer, RawFancyPlayer, RecordCount, RecordSummary};
 
 /// Route: `/players/:ident`
 ///
 /// Fetch a single player from the API by an identifier.
-pub async fn get_player(
-	player: PlayerIdentifier,
-	client: &crate::Client,
-) -> Result<Response<FancyPlayer>> {
+pub async fn get_player(player: PlayerIdentifier, client: &crate::Client) -> Result<FancyPlayer> {
 	let url = format!("{}/players/{}", super::BASE_URL, player);
-	http::get(&url, client).await
+	http::get::<Response<RawFancyPlayer>>(&url, client)
+		.await?
+		.result
+		.try_into()
 }

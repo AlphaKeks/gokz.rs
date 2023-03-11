@@ -171,7 +171,7 @@ pub async fn get_maps_by_approver(
 
 /// The `/players` route.
 pub mod players;
-pub use players::{FancyPlayer, Player};
+pub use players::{FancyPlayer, Player, RawFancyPlayer};
 
 /// Fetches players.
 pub async fn get_players(
@@ -198,9 +198,7 @@ pub async fn get_player(
 ) -> Result<FancyPlayer> {
 	trace!("> get_player {{ player_identifier: {player_identifier:#?} }}");
 
-	players::get_player(player_identifier, client)
-		.await
-		.map(|response| response.result)
+	players::get_player(player_identifier, client).await
 }
 
 /// The `/servers` route.
