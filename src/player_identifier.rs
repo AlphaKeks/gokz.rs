@@ -4,8 +4,8 @@ use {
 	std::fmt::Display,
 };
 
-/// Abstraction layer to accept either a players's name or SteamID as function input in order to stay
-/// type-safe without unnecessary conversions.
+/// Abstraction layer to accept either a players's name or SteamID as function input in order to
+/// stay type-safe.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[allow(missing_docs)]
 pub enum PlayerIdentifier {

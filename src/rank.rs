@@ -4,9 +4,9 @@ use {
 	std::fmt::Display,
 };
 
-/// Every player who has joined a [GOKZ](https://github.com/KZGlobalTeam/gokz) server with version 3.0.0 or higher will get a [`Rank`]
-/// assigned to them. Which [`Rank`] they will have is based on the player's total points in a
-/// given [`Mode`].
+/// Every player who has joined a [GOKZ](https://github.com/KZGlobalTeam/gokz) server with version
+/// 3.0.0 or higher will get a [`Rank`] assigned to them. Which [`Rank`] they will have is based on
+/// the player's total points in a given [`Mode`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[allow(missing_docs)]
 pub enum Rank {

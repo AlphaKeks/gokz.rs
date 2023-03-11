@@ -224,7 +224,8 @@ pub async fn get_records(limit: u32, client: &crate::Client) -> Result<Vec<Recor
 	records::get_top(params, client).await
 }
 
-/// Fetches `limit` records for a player. Note that this only includes personal bests, not all records.
+/// Fetches `limit` records for a player. Note that this only includes personal bests, not all
+/// records.
 pub async fn get_player_records(
 	player_identifier: PlayerIdentifier,
 	mode: Mode,
@@ -408,8 +409,8 @@ pub async fn get_recent(
 			Err(why) => {
 				if let Error::Http { status_code } = &why {
 					// If this is ever `true` we probably made too many requests and want to abort.
-					// The GlobalAPI unfortunately sometimes returns `INTERNAL_SERVER_ERROR` even if
-					// it _should_ return `TOO_MANY_REQUESTS`.
+					// The GlobalAPI unfortunately sometimes returns `INTERNAL_SERVER_ERROR`
+					// even if it _should_ return `TOO_MANY_REQUESTS`.
 					if status_code.0 == reqwest::StatusCode::INTERNAL_SERVER_ERROR
 						|| status_code.0 == reqwest::StatusCode::TOO_MANY_REQUESTS
 					{

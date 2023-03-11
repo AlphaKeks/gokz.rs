@@ -1,5 +1,5 @@
-// I want this module to always be accessible within the crate, but because of
-// feature flags the compiler keeps complaining
+// I want this module to always be accessible within the crate, but because of feature flags the
+// compiler keeps complaining
 #![allow(unused)]
 
 use {

@@ -5,7 +5,7 @@ use {
 };
 
 /// Abstraction layer to accept either a map's name or id as function input in order to stay
-/// type-safe without unnecessary conversions.
+/// type-safe.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum MapIdentifier {
 	/// `"kz_lionharder"`

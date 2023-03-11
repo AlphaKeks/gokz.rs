@@ -4,6 +4,7 @@ use {
 	std::fmt::Display,
 };
 
+/// The current 7 difficulty categories that all maps fall into.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 #[allow(missing_docs)]
 pub enum Tier {
