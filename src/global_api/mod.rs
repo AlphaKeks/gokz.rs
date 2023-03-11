@@ -435,6 +435,69 @@ pub async fn get_recent(
 		.collect())
 }
 
+/// Fetches all the maps a player hasn't finished yet.
+pub async fn get_unfinished(
+	player_identifier: PlayerIdentifier,
+	mode: Mode,
+	has_teleports: bool,
+	tier: Option<Tier>,
+	client: &crate::Client,
+) -> Result<Option<Vec<Map>>> {
+	trace!("> get_unfinished {{ player_identifier: {player_identifier:?}, mode: {mode:?}, has_teleports: {has_teleports:?}, tier: {tier:?} }}");
+
+	let completed_map_ids =
+		get_player_records(player_identifier, mode, has_teleports, 0, 99999, client)
+			.await?
+			.into_iter()
+			.map(|record| record.map_id)
+			.collect::<Vec<_>>();
+
+	let uncompleted_map_ids = record_filters::get_filters(
+		record_filters::index::Params {
+			stages: Some(0),
+			mode_ids: Some(mode as u8),
+			tickrates: Some(128),
+			has_teleports: Some(has_teleports),
+			limit: Some(99999),
+			..Default::default()
+		},
+		client,
+	)
+	.await?
+	.into_iter()
+	.filter_map(|record_filter| {
+		if !completed_map_ids.contains(&record_filter.map_id) {
+			return Some(record_filter.map_id);
+		}
+		None
+	})
+	.collect::<Vec<_>>();
+
+	let uncompleted_map_names = get_global_maps(client)
+		.await?
+		.into_iter()
+		.filter_map(|map| {
+			let tier_matches = tier.map_or(true, |tier| tier == map.difficulty);
+			let runtype_matches = if has_teleports {
+				!map.name.starts_with("kzpro_")
+			} else {
+				true
+			};
+
+			if uncompleted_map_ids.contains(&map.id) && tier_matches && runtype_matches {
+				return Some(map);
+			}
+			None
+		})
+		.collect::<Vec<_>>();
+
+	if uncompleted_map_names.is_empty() {
+		Ok(None)
+	} else {
+		Ok(Some(uncompleted_map_names))
+	}
+}
+
 /// Returns a link to download a global replay by its ID.
 pub async fn get_replay_download_link(replay_id: u32) -> String {
 	trace!("> get_replay_download_link {{ replay_id: {replay_id} }}");
