@@ -4,15 +4,14 @@ use {
 	std::fmt::Display,
 };
 
-pub type ServerName = String;
-pub type ServerID = u16;
-
 /// Abstraction layer to accept either a server's name or id as function input in order to stay
 /// type-safe without unnecessary conversions.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum ServerIdentifier {
-	Name(ServerName),
-	ID(ServerID),
+	/// `"Hikari KZ"`
+	Name(String),
+	/// `999`
+	ID(u16),
 }
 
 impl Display for ServerIdentifier {
@@ -24,8 +23,8 @@ impl Display for ServerIdentifier {
 	}
 }
 
-impl From<ServerName> for ServerIdentifier {
-	fn from(value: ServerName) -> Self {
+impl From<String> for ServerIdentifier {
+	fn from(value: String) -> Self {
 		Self::Name(value)
 	}
 }
@@ -38,8 +37,8 @@ impl std::str::FromStr for ServerIdentifier {
 	}
 }
 
-impl From<ServerID> for ServerIdentifier {
-	fn from(value: ServerID) -> Self {
+impl From<u16> for ServerIdentifier {
+	fn from(value: u16) -> Self {
 		Self::ID(value)
 	}
 }
@@ -56,7 +55,7 @@ impl TryFrom<ServerIdentifier> for String {
 	}
 }
 
-impl TryFrom<ServerIdentifier> for ServerID {
+impl TryFrom<ServerIdentifier> for u16 {
 	type Error = Error;
 
 	fn try_from(value: ServerIdentifier) -> Result<Self> {
@@ -91,7 +90,7 @@ impl<'de> Deserialize<'de> for ServerIdentifier {
 #[derive(Debug, Clone, Serialize)]
 #[allow(missing_docs)]
 pub struct Server {
-	pub id: ServerID,
+	pub id: u16,
 	pub name: String,
 	pub owner_steamid: SteamID,
 	pub ip: String,
@@ -140,7 +139,7 @@ pub async fn get_server_by_name(server_name: &str, client: &crate::Client) -> Re
 }
 
 /// Fetches a server by its ID.
-pub async fn get_server_by_id(server_id: ServerID, client: &crate::Client) -> Result<Server> {
+pub async fn get_server_by_id(server_id: u16, client: &crate::Client) -> Result<Server> {
 	http::get::<index::Response>(
 		&format!("{}/servers/id/{}", super::BASE_URL, server_id),
 		client,

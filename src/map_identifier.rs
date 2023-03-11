@@ -4,17 +4,14 @@ use {
 	std::fmt::Display,
 };
 
-pub type MapName = String;
-pub type MapID = u16;
-
 /// Abstraction layer to accept either a map's name or id as function input in order to stay
 /// type-safe without unnecessary conversions.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum MapIdentifier {
 	/// `"kz_lionharder"`
-	Name(MapName),
+	Name(String),
 	/// `992`
-	ID(MapID),
+	ID(u16),
 }
 
 impl Display for MapIdentifier {
@@ -26,8 +23,8 @@ impl Display for MapIdentifier {
 	}
 }
 
-impl From<MapName> for MapIdentifier {
-	fn from(value: MapName) -> Self {
+impl From<String> for MapIdentifier {
+	fn from(value: String) -> Self {
 		Self::Name(value)
 	}
 }
@@ -40,8 +37,8 @@ impl std::str::FromStr for MapIdentifier {
 	}
 }
 
-impl From<MapID> for MapIdentifier {
-	fn from(value: MapID) -> Self {
+impl From<u16> for MapIdentifier {
+	fn from(value: u16) -> Self {
 		Self::ID(value)
 	}
 }
@@ -58,7 +55,7 @@ impl TryFrom<MapIdentifier> for String {
 	}
 }
 
-impl TryFrom<MapIdentifier> for MapID {
+impl TryFrom<MapIdentifier> for u16 {
 	type Error = Error;
 
 	fn try_from(value: MapIdentifier) -> Result<Self> {

@@ -1,8 +1,7 @@
 use {
 	crate::{
 		chrono::{parse_date, ser_date},
-		global_api::ServerID,
-		http, Error, MapID, MapName, Mode, Result, SteamID,
+		http, Error, Mode, Result, SteamID,
 	},
 	chrono::NaiveDateTime,
 	log::trace,
@@ -10,20 +9,17 @@ use {
 	std::ops::Range,
 };
 
-pub type RecordID = u32;
-pub type Place = u32;
-
 #[derive(Debug, Clone, Serialize)]
 #[allow(missing_docs)]
 pub struct Record {
-	pub id: RecordID,
+	pub id: u32,
 	pub player_name: String,
 	pub steam_id: SteamID,
-	pub map_id: MapID,
-	pub map_name: MapName,
+	pub map_id: u16,
+	pub map_name: String,
 	pub stage: u8,
 	pub mode: Mode,
-	pub server_id: ServerID,
+	pub server_id: u16,
 	pub server_name: String,
 	pub time: f64,
 	pub teleports: u32,
@@ -98,7 +94,7 @@ impl TryFrom<id::Response> for Record {
 pub mod top;
 
 /// Fetches a single record by its ID.
-pub async fn get_record(record_id: RecordID, client: &crate::Client) -> Result<Record> {
+pub async fn get_record(record_id: u32, client: &crate::Client) -> Result<Record> {
 	trace!("> get_record {{ record_id: {record_id} }}");
 	http::get::<id::Response>(
 		&format!("{}/records/{}", super::BASE_URL, record_id),
@@ -109,9 +105,9 @@ pub async fn get_record(record_id: RecordID, client: &crate::Client) -> Result<R
 }
 
 /// Fetches the place of a record on its leaderboard.
-pub async fn get_place(record_id: RecordID, client: &crate::Client) -> Result<Place> {
+pub async fn get_place(record_id: u32, client: &crate::Client) -> Result<u32> {
 	trace!("> get_place {{ record_id: {record_id} }}");
-	http::get::<Place>(
+	http::get::<u32>(
 		&format!("{}/records/place/{}", super::BASE_URL, record_id),
 		client,
 	)

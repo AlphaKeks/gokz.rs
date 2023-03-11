@@ -1,7 +1,6 @@
 use {
 	crate::{
 		chrono::{parse_date, ser_date},
-		global_api::ServerID,
 		http, Error, Result, SteamID,
 	},
 	chrono::NaiveDateTime,
@@ -38,7 +37,7 @@ pub struct Ban {
 	pub ban_type: BanType,
 	pub player_name: String,
 	pub steam_id: SteamID,
-	pub server_id: ServerID,
+	pub server_id: u16,
 	pub stats: String,
 	pub notes: String,
 	pub updated_by_id: SteamID,

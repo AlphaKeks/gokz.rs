@@ -34,19 +34,22 @@ pub enum Error {
 		value: String,
 	},
 
+	#[cfg(feature = "reqwest")]
 	InvalidUrl {
 		value: String,
 	},
 
-	#[cfg(feature = "http")]
+	#[cfg(feature = "reqwest")]
 	Http {
 		status_code: crate::http::StatusCode,
 	},
 
+	#[cfg(feature = "chrono")]
 	InvalidDate {
 		value: String,
 	},
 
+	#[cfg(feature = "global_api")]
 	EmptyResponse,
 }
 
@@ -66,12 +69,15 @@ impl Display for Error {
 			Self::InvalidMode { value } => f.write_fmt(format_args!("Invalid Mode `{value}`.")),
 			Self::InvalidRank { value } => f.write_fmt(format_args!("Invalid Rank `{value}`.")),
 			Self::InvalidTier { value } => f.write_fmt(format_args!("Invalid Tier `{value}`.")),
+			#[cfg(feature = "reqwest")]
 			Self::InvalidUrl { value } => f.write_fmt(format_args!("Invalid URL `{value}`.")),
-			#[cfg(feature = "http")]
+			#[cfg(feature = "reqwest")]
 			Self::Http { status_code } => f.write_fmt(format_args!(
 				"Http request failed with code `{status_code}`."
 			)),
+			#[cfg(feature = "chrono")]
 			Self::InvalidDate { value } => f.write_fmt(format_args!("Invalid Date `{value}`.")),
+			#[cfg(feature = "global_api")]
 			Self::EmptyResponse => f.write_str("Got an empty API response."),
 		}
 	}
@@ -79,7 +85,7 @@ impl Display for Error {
 
 impl std::error::Error for Error {}
 
-#[cfg(feature = "http")]
+#[cfg(feature = "reqwest")]
 impl From<reqwest::Error> for Error {
 	fn from(value: reqwest::Error) -> Self {
 		let status_code = value

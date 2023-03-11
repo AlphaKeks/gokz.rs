@@ -1,12 +1,12 @@
 use {
-	crate::{PlayerName, SteamID},
+	crate::SteamID,
 	serde::{Deserialize, Serialize},
 };
 
 #[derive(Debug, Clone, Serialize)]
 #[allow(missing_docs)]
 pub struct Params {
-	pub name: Option<PlayerName>,
+	pub name: Option<String>,
 	pub steam_id: Option<SteamID>,
 	pub is_banned: Option<bool>,
 	pub total_records: Option<u32>,

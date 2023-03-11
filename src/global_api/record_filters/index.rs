@@ -1,15 +1,12 @@
-use {
-	crate::{MapID, ModeID},
-	serde::{Deserialize, Serialize},
-};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize)]
 #[allow(missing_docs)]
 pub struct Params {
 	pub ids: Option<u32>,
-	pub map_ids: Option<MapID>,
+	pub map_ids: Option<u16>,
 	pub stages: Option<u8>,
-	pub mode_ids: Option<ModeID>,
+	pub mode_ids: Option<u8>,
 	pub tickrates: Option<u8>,
 	pub has_teleports: Option<bool>,
 	pub offset: Option<i32>,

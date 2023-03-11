@@ -1,12 +1,9 @@
-use {
-	super::ServerID,
-	serde::{Deserialize, Serialize},
-};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Serialize)]
 #[allow(missing_docs)]
 pub struct Params {
-	pub id: Option<ServerID>,
+	pub id: Option<u16>,
 	pub port: Option<u16>,
 	pub ip: Option<String>,
 	pub name: Option<String>,

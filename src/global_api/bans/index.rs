@@ -1,5 +1,5 @@
 use {
-	crate::{chrono::ser_opt_date, global_api::ServerID, SteamID},
+	crate::{chrono::ser_opt_date, SteamID},
 	chrono::NaiveDateTime,
 	serde::{Deserialize, Serialize},
 };
@@ -15,7 +15,7 @@ pub struct Params {
 	pub steam_id: Option<SteamID>,
 	pub notes_contains: Option<String>,
 	pub stats_contains: Option<String>,
-	pub server_id: Option<ServerID>,
+	pub server_id: Option<u16>,
 	#[serde(serialize_with = "ser_opt_date")]
 	pub created_since: Option<NaiveDateTime>,
 	#[serde(serialize_with = "ser_opt_date")]

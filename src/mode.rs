@@ -4,8 +4,6 @@ use {
 	std::fmt::Display,
 };
 
-pub type ModeID = u8;
-
 /// The 3 gamemodes that (currently) exist in GOKZ.
 ///
 /// NOTE: [Official Documentation](https://github.com/KZGlobalTeam/gokz/wiki/Modes)
@@ -47,10 +45,10 @@ impl Display for Mode {
 	}
 }
 
-impl TryFrom<ModeID> for Mode {
+impl TryFrom<u8> for Mode {
 	type Error = Error;
 
-	fn try_from(value: ModeID) -> Result<Self> {
+	fn try_from(value: u8) -> Result<Self> {
 		match value {
 			200 => Ok(Self::KZTimer),
 			201 => Ok(Self::SimpleKZ),
@@ -62,7 +60,7 @@ impl TryFrom<ModeID> for Mode {
 	}
 }
 
-impl From<Mode> for ModeID {
+impl From<Mode> for u8 {
 	fn from(value: Mode) -> Self {
 		match value {
 			Mode::KZTimer => 200,
@@ -76,7 +74,7 @@ impl std::str::FromStr for Mode {
 	type Err = Error;
 
 	fn from_str(s: &str) -> Result<Self> {
-		if let Ok(mode_id) = s.parse::<ModeID>() {
+		if let Ok(mode_id) = s.parse::<u8>() {
 			return mode_id.try_into();
 		}
 

@@ -1,23 +1,20 @@
-use {
-	crate::{global_api::ServerID, MapID, MapName, PlayerName, SteamID},
-	serde::Serialize,
-};
+use {crate::SteamID, serde::Serialize};
 
 #[derive(Debug, Clone, Serialize)]
 #[allow(missing_docs)]
 pub struct Params {
 	pub steam_id: Option<SteamID>,
-	pub server_id: Option<ServerID>,
+	pub server_id: Option<u16>,
 	pub steamid64: Option<u64>,
-	pub map_id: Option<MapID>,
-	pub map_name: Option<MapName>,
+	pub map_id: Option<u16>,
+	pub map_name: Option<String>,
 	pub tickrate: Option<u8>,
 	pub overall: Option<bool>,
 	pub stage: Option<u8>,
 	pub modes_list_string: Option<String>,
 	pub modes_list: Option<String>,
 	pub has_teleports: Option<bool>,
-	pub player_name: Option<PlayerName>,
+	pub player_name: Option<String>,
 	pub offset: Option<i32>,
 	pub limit: Option<u32>,
 }

@@ -1,5 +1,5 @@
 use {
-	crate::{Error, MapID, ModeID, SteamID},
+	crate::{Error, SteamID},
 	serde::{Deserialize, Serialize},
 };
 
@@ -7,9 +7,9 @@ use {
 #[allow(missing_docs, non_snake_case)]
 pub struct Params {
 	pub ids: Option<u32>,
-	pub map_ids: Option<MapID>,
+	pub map_ids: Option<u16>,
 	pub stages: Option<u8>,
-	pub mode_ids: Option<ModeID>,
+	pub mode_ids: Option<u8>,
 	pub tickrates: Option<u8>,
 	pub has_teleports: Option<bool>,
 	pub mapTag: Option<String>,

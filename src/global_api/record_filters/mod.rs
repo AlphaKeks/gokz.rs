@@ -1,7 +1,7 @@
 use {
 	crate::{
 		chrono::{parse_date, ser_date},
-		http, Error, MapID, Mode, Result, SteamID,
+		http, Error, Mode, Result, SteamID,
 	},
 	chrono::NaiveDateTime,
 	serde::Serialize,
@@ -11,7 +11,7 @@ use {
 #[allow(missing_docs)]
 pub struct RecordFilter {
 	pub id: u32,
-	pub map_id: MapID,
+	pub map_id: u16,
 	pub stage: u8,
 	pub mode: Mode,
 	pub has_teleports: bool,

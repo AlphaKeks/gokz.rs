@@ -2,7 +2,7 @@
 //! [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2).
 
 use {
-	crate::{http, Error, MapID, MapIdentifier, Mode, PlayerIdentifier, Result, SteamID, Tier},
+	crate::{http, Error, MapIdentifier, Mode, PlayerIdentifier, Result, SteamID, Tier},
 	chrono::NaiveDateTime,
 	futures::future::join_all,
 	log::trace,
@@ -170,7 +170,7 @@ pub mod record_filters;
 pub use record_filters::RecordFilter;
 
 /// Fetches all filters for a given map.
-pub async fn get_filters(map_id: MapID, client: &crate::Client) -> Result<Vec<RecordFilter>> {
+pub async fn get_filters(map_id: u16, client: &crate::Client) -> Result<Vec<RecordFilter>> {
 	let params = record_filters::index::Params {
 		map_ids: Some(map_id),
 		..Default::default()
@@ -182,7 +182,7 @@ pub async fn get_filters(map_id: MapID, client: &crate::Client) -> Result<Vec<Re
 
 /// The `/servers` route.
 pub mod servers;
-pub use servers::{Server, ServerID, ServerIdentifier, ServerName};
+pub use servers::{Server, ServerIdentifier};
 
 /// Fetches all servers.
 pub async fn get_servers(client: &crate::Client) -> Result<Vec<Server>> {
@@ -211,7 +211,7 @@ pub async fn get_server(
 
 /// The `/records` route (and subroutes).
 pub mod records;
-pub use records::{get_place, get_record, get_wr_top, Record, RecordID};
+pub use records::{get_place, get_record, get_wr_top, Record};
 
 /// Fetches `limit` records. Note that this only includes personal bests, not all records.
 pub async fn get_records(limit: u32, client: &crate::Client) -> Result<Vec<Record>> {
