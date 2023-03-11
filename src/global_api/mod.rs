@@ -2,7 +2,9 @@
 //! [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2).
 
 use {
-	crate::{http, Error, MapIdentifier, Mode, PlayerIdentifier, Result, SteamID, Tier},
+	crate::{
+		http, Error, MapIdentifier, Mode, PlayerIdentifier, Result, ServerIdentifier, SteamID, Tier,
+	},
 	chrono::NaiveDateTime,
 	futures::future::join_all,
 	log::trace,
@@ -182,7 +184,7 @@ pub async fn get_filters(map_id: u16, client: &crate::Client) -> Result<Vec<Reco
 
 /// The `/servers` route.
 pub mod servers;
-pub use servers::{Server, ServerIdentifier};
+pub use servers::Server;
 
 /// Fetches all servers.
 pub async fn get_servers(client: &crate::Client) -> Result<Vec<Server>> {

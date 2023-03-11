@@ -21,6 +21,9 @@ pub use player_identifier::PlayerIdentifier;
 mod map_identifier;
 pub use map_identifier::MapIdentifier;
 
+mod server_identifier;
+pub use server_identifier::ServerIdentifier;
+
 mod rank;
 pub use rank::Rank;
 
@@ -38,5 +41,8 @@ pub mod global_api;
 #[cfg(feature = "chrono")]
 pub(crate) mod chrono;
 
-#[cfg(feature = "kzgo")]
-pub mod kzgo;
+#[cfg(feature = "kzgo_api")]
+pub mod kzgo_api;
+
+#[cfg(feature = "schnose_api")]
+pub mod schnose_api;

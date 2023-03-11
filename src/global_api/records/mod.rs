@@ -36,6 +36,9 @@ pub struct Record {
 impl Record {
 	/// Returns a link to download a global replay by its ID.
 	pub fn replay_download_link(&self) -> String {
+		if self.replay_id != 0 {
+			return format!("{}/records/replay/{}", super::BASE_URL, self.replay_id);
+		}
 		format!("{}/records/{}/replay", super::BASE_URL, self.id)
 	}
 

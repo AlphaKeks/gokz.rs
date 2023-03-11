@@ -23,7 +23,9 @@ pub(crate) fn ser_date<S>(date: &NaiveDateTime, serializer: S) -> Result<S::Ok, 
 where
 	S: Serializer,
 {
-	date.to_string().serialize(serializer)
+	date.format("%Y-%m-%dT%H:%M:%S")
+		.to_string()
+		.serialize(serializer)
 }
 
 pub(crate) fn ser_opt_date<S>(
