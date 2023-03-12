@@ -8,6 +8,7 @@ use {
 	chrono::NaiveDateTime,
 	futures::future::join_all,
 	log::trace,
+	std::collections::HashSet,
 };
 
 /// Base URL for GlobalAPI requests.
@@ -450,9 +451,9 @@ pub async fn get_unfinished(
 			.await?
 			.into_iter()
 			.map(|record| record.map_id)
-			.collect::<Vec<_>>();
+			.collect::<HashSet<_>>();
 
-	let uncompleted_map_ids = record_filters::get_filters(
+	let all_map_ids = record_filters::get_filters(
 		record_filters::index::Params {
 			stages: Some(0),
 			mode_ids: Some(mode as u8),
@@ -465,15 +466,14 @@ pub async fn get_unfinished(
 	)
 	.await?
 	.into_iter()
-	.filter_map(|record_filter| {
-		if !completed_map_ids.contains(&record_filter.map_id) {
-			return Some(record_filter.map_id);
-		}
-		None
-	})
-	.collect::<Vec<_>>();
+	.map(|record_filter| record_filter.map_id)
+	.collect::<HashSet<_>>();
 
-	let uncompleted_map_names = get_global_maps(client)
+	let uncompleted_map_ids = all_map_ids
+		.difference(&completed_map_ids)
+		.collect::<HashSet<_>>();
+
+	let uncompleted_maps = get_global_maps(client)
 		.await?
 		.into_iter()
 		.filter_map(|map| {
@@ -487,14 +487,15 @@ pub async fn get_unfinished(
 			if uncompleted_map_ids.contains(&map.id) && tier_matches && runtype_matches {
 				return Some(map);
 			}
+
 			None
 		})
 		.collect::<Vec<_>>();
 
-	if uncompleted_map_names.is_empty() {
+	if uncompleted_maps.is_empty() {
 		Ok(None)
 	} else {
-		Ok(Some(uncompleted_map_names))
+		Ok(Some(uncompleted_maps))
 	}
 }
 
