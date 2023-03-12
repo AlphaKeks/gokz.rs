@@ -114,10 +114,10 @@ impl SteamID {
 				.parse::<u32>()
 				.expect("Regex failed.");
 
-			let steam_id64 = account_type as u64
-				| ((account_number as u64) << 1)
-				| 1 | account_type as u64
-				| ((account_universe as u64) << 56);
+			let steam_id64 = (account_universe as u64) << 56
+				| 1u64 << 52 | 1u64 << 32
+				| (account_number as u64) << 1
+				| account_type as u64;
 
 			return Ok(Self(steam_id64));
 		}
@@ -464,5 +464,36 @@ impl TryFrom<AccountType> for char {
 			)),
 			AccountType::AnonUser => Ok('a'),
 		}
+	}
+}
+
+#[cfg(test)]
+mod tests {
+	use super::*;
+	use color_eyre::Result;
+
+	#[test]
+	fn new() -> Result<()> {
+		let id3_1 = "U:1:322356345";
+		let id3_2 = "[U:1:322356345]";
+		let id32 = "STEAM_1:1:161178172";
+		let id64 = 76561198282622073u64;
+
+		let res_id3_1 = SteamID::new(id3_1)?;
+		let res_id3_2 = SteamID::new(id3_2)?;
+		let res_id32 = SteamID::new(id32)?;
+		let res_id64_1 = SteamID::try_from(id64)?;
+		let res_id64_2 = SteamID::new(&id64.to_string())?;
+
+		assert_eq!(res_id3_1, res_id3_2);
+		assert_eq!(res_id3_2, res_id32);
+		assert_eq!(res_id32, res_id64_1);
+		assert_eq!(res_id64_1, res_id64_2);
+
+		assert_eq!(res_id64_2.as_id3(), String::from("[U:1:322356345]"));
+		assert_eq!(res_id64_2.as_id32(), String::from("STEAM_1:1:161178172"));
+		assert_eq!(res_id64_2.as_id64(), 76561198282622073u64);
+
+		Ok(())
 	}
 }
