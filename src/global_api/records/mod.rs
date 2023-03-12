@@ -120,7 +120,7 @@ pub async fn get_place(record_id: u32, client: &crate::Client) -> Result<u32> {
 /// The `/records/top` route.
 pub async fn get_top(params: top::Params, client: &crate::Client) -> Result<Vec<Record>> {
 	let response: Vec<id::Response> =
-		http::get_with_params(&format!("{}/top", super::BASE_URL), params, client).await?;
+		http::get_with_params(&format!("{}/records/top", super::BASE_URL), params, client).await?;
 
 	if response.is_empty() {
 		return Err(Error::EmptyResponse);
