@@ -24,13 +24,6 @@ pub struct Record {
 	pub created_on: NaiveDateTime,
 }
 
-impl Record {
-	/// Returns a link to download a global replay by its ID.
-	pub fn replay_download_link(&self) -> String {
-		format!("{}/records/{}/replay", super::BASE_URL, self.id)
-	}
-}
-
 /// The `/records` route.
 pub mod index;
 
