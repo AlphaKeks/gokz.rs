@@ -7,7 +7,7 @@ use {
 };
 
 /// Base URL for SchnoseAPI requests.
-pub const BASE_URL: &str = "https://schnose.xzy/api";
+pub const BASE_URL: &str = "https://schnose.xyz/api";
 
 /// This gets returned from all API calls.
 #[derive(Debug, Clone, Deserialize)]
