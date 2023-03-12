@@ -18,7 +18,7 @@ pub struct RecordFilter {
 	pub tickrate: u8,
 	#[serde(serialize_with = "ser_date")]
 	pub created_on: NaiveDateTime,
-	pub updated_by: SteamID,
+	pub updated_by: Option<SteamID>,
 }
 
 /// `/record_filters` route
@@ -35,7 +35,7 @@ impl TryFrom<index::Response> for RecordFilter {
 			has_teleports: value.has_teleports,
 			tickrate: value.tickrate.try_into()?,
 			created_on: parse_date!(value.created_on),
-			updated_by: value.updated_by_id.parse()?,
+			updated_by: value.updated_by_id.parse().ok(),
 		})
 	}
 }
