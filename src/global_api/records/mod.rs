@@ -129,9 +129,10 @@ pub async fn get_top(params: top::Params, client: &crate::Client) -> Result<Vec<
 	Ok(response
 		.into_iter()
 		.filter_map(|record| {
-			debug!("Record: {record:#?}");
 			let converted = record.try_into();
-			debug!("Converted: {converted:#?}");
+			if converted.is_err() {
+				debug!("Converted: {converted:#?}");
+			}
 			converted.ok()
 		})
 		.collect())
