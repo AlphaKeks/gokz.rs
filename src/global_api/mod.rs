@@ -254,25 +254,6 @@ pub async fn get_player_records(
 	records::get_top(params, client).await
 }
 
-#[cfg(test)]
-mod tests {
-	use super::*;
-	use log::info;
-	use test_log::test;
-
-	#[test(tokio::test)]
-	async fn recs() -> Result<()> {
-		let jucci = SteamID::new("STEAM_1:0:135486492")?;
-		let client = crate::Client::new();
-
-		let result =
-			get_player_records(jucci.into(), Mode::KZTimer, true, 0, 9999, &client).await?;
-		info!("{} records", result.len());
-
-		Ok(())
-	}
-}
-
 async fn get_records_on_map(
 	map_identifier: MapIdentifier,
 	player_identifier: Option<PlayerIdentifier>,
