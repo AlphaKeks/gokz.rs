@@ -29,8 +29,8 @@ impl TryFrom<index::Response> for RecordFilter {
 	fn try_from(value: index::Response) -> Result<Self> {
 		Ok(Self {
 			id: value.id.try_into()?,
-			map_id: value.id.try_into()?,
-			stage: value.id.try_into()?,
+			map_id: value.map_id.try_into()?,
+			stage: value.stage.try_into()?,
 			mode: u8::try_from(value.mode_id)?.try_into()?,
 			has_teleports: value.has_teleports,
 			tickrate: value.tickrate.try_into()?,
