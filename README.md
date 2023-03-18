@@ -1,2 +1,3 @@
 # gokz.rs
-Rust wrapper for the [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2)
+
+Rust library for [GOKZ](https://forum.gokz.org/)
