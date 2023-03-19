@@ -90,6 +90,7 @@ impl std::str::FromStr for Mode {
 }
 
 impl Serialize for Mode {
+	/// Serializes [`Self`] as [`String`] using [`Self::api`].
 	fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
 	where
 		S: serde::Serializer,
@@ -99,18 +100,79 @@ impl Serialize for Mode {
 }
 
 impl<'de> Deserialize<'de> for Mode {
+	/// Deserializes the input either as [`String`] or [`u8`] and then turns that into [`Self`].
 	fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
 	where
 		D: serde::Deserializer<'de>,
 	{
-		String::deserialize(deserializer)?
-			.parse()
-			.map_err(|why| match &why {
-				Error::InvalidMode { value } => serde::de::Error::invalid_value(
-					serde::de::Unexpected::Other(value),
-					&why.to_string().as_str(),
-				),
-				_ => unreachable!(),
-			})
+		#[derive(Deserialize)]
+		#[serde(untagged)]
+		enum StringOrU8 {
+			Name(String),
+			U8(u8),
+		}
+
+		match StringOrU8::deserialize(deserializer)? {
+			StringOrU8::Name(mode_name) => mode_name.parse(),
+			StringOrU8::U8(mode_id) => mode_id.try_into(),
+		}
+		.map_err(|why| match &why {
+			Error::InvalidMode { value } => serde::de::Error::invalid_value(
+				serde::de::Unexpected::Other(value),
+				&why.to_string().as_str(),
+			),
+			other => unreachable!("Encountered `{other}` while deserializing into `Mode`."),
+		})
+	}
+}
+
+#[cfg(test)]
+mod serde_tests {
+	use super::*;
+	use color_eyre::Result;
+
+	#[derive(Debug, PartialEq, Serialize, Deserialize)]
+	struct M {
+		mode: Mode,
+	}
+
+	#[test]
+	fn ser_mode() -> Result<()> {
+		let kzt = Mode::KZTimer;
+		let skz = Mode::SimpleKZ;
+		let vnl = Mode::Vanilla;
+
+		let serialized_kzt = serde_json::to_string(&kzt)?;
+		let serialized_skz = serde_json::to_string(&skz)?;
+		let serialized_vnl = serde_json::to_string(&vnl)?;
+
+		assert_eq!(serialized_kzt, "\"kz_timer\"");
+		assert_eq!(serialized_skz, "\"kz_simple\"");
+		assert_eq!(serialized_vnl, "\"kz_vanilla\"");
+
+		Ok(())
+	}
+
+	#[test]
+	fn deser_mode() -> Result<()> {
+		let deserialized_kzt_id: Mode = serde_json::from_str("200")?;
+		let deserialized_kzt_name: Mode = serde_json::from_str("\"kz_timer\"")?;
+
+		assert_eq!(deserialized_kzt_id, Mode::KZTimer);
+		assert_eq!(deserialized_kzt_name, Mode::KZTimer);
+
+		let deserialized_skz_id: Mode = serde_json::from_str("201")?;
+		let deserialized_skz_name: Mode = serde_json::from_str("\"kz_simple\"")?;
+
+		assert_eq!(deserialized_skz_id, Mode::SimpleKZ);
+		assert_eq!(deserialized_skz_name, Mode::SimpleKZ);
+
+		let deserialized_vnl_id: Mode = serde_json::from_str("202")?;
+		let deserialized_vnl_name: Mode = serde_json::from_str("\"kz_vanilla\"")?;
+
+		assert_eq!(deserialized_vnl_id, Mode::Vanilla);
+		assert_eq!(deserialized_vnl_name, Mode::Vanilla);
+
+		Ok(())
 	}
 }

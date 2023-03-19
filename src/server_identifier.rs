@@ -6,7 +6,8 @@ use {
 
 /// Abstraction layer to accept either a server's name or id as function input in order to stay
 /// type-safe.
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Deserialize)]
+#[serde(untagged)]
 pub enum ServerIdentifier {
 	/// `"Hikari KZ"`
 	Name(String),
@@ -68,21 +69,75 @@ impl TryFrom<ServerIdentifier> for u16 {
 }
 
 impl Serialize for ServerIdentifier {
+	/// Serializes based on variant.
+	/// (`Name` gets turned into a string, `ID` gets turned into a number)
 	fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
 	where
 		S: serde::Serializer,
 	{
-		serializer.serialize_str(&self.to_string())
+		match self {
+			ServerIdentifier::Name(server_name) => serializer.serialize_str(server_name),
+			ServerIdentifier::ID(server_id) => serializer.serialize_u16(*server_id),
+		}
 	}
 }
 
-impl<'de> Deserialize<'de> for ServerIdentifier {
-	fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
-	where
-		D: serde::Deserializer<'de>,
-	{
-		Ok(String::deserialize(deserializer)?
-			.parse()
-			.expect("Infallible"))
+#[cfg(test)]
+mod serde_tests {
+	use super::*;
+	use color_eyre::Result;
+
+	#[derive(Debug, PartialEq, Serialize, Deserialize)]
+	struct Server {
+		ident: ServerIdentifier,
+	}
+
+	#[test]
+	fn ser_server_identifier() -> Result<()> {
+		let hikari_id: ServerIdentifier = 999.into();
+		let hikari_name: ServerIdentifier = String::from("Hikari KZ").into();
+		let hikari1 = Server {
+			ident: hikari_id.clone(),
+		};
+		let hikari2 = Server {
+			ident: hikari_name.clone(),
+		};
+
+		let serialized_id = serde_json::to_string(&hikari_id)?;
+		let serialized_name = serde_json::to_string(&hikari_name)?;
+		let serialized_map1 = serde_json::to_string(&hikari1)?;
+		let serialized_map2 = serde_json::to_string(&hikari2)?;
+
+		assert_eq!(serialized_id, "999");
+		assert_eq!(serialized_name, "\"Hikari KZ\"");
+		assert_eq!(serialized_map1, r#"{"ident":999}"#);
+		assert_eq!(serialized_map2, r#"{"ident":"Hikari KZ"}"#);
+
+		Ok(())
+	}
+
+	#[test]
+	fn deser_server_identifier() -> Result<()> {
+		let server_id = "999";
+		let server_name = "\"Hikari KZ\"";
+		let server1 = r#"{"ident":999}"#;
+		let server2 = r#"{"ident":"Hikari KZ"}"#;
+
+		let deserialized_id: ServerIdentifier = serde_json::from_str(server_id)?;
+		let deserialized_name: ServerIdentifier = serde_json::from_str(server_name)?;
+		let deserialized_map1: Server = serde_json::from_str(server1)?;
+		let deserialized_map2: Server = serde_json::from_str(server2)?;
+
+		assert_eq!(deserialized_id, 999.into());
+		assert_eq!(deserialized_name, String::from("Hikari KZ").into());
+		assert_eq!(deserialized_map1, Server { ident: 999.into() });
+		assert_eq!(
+			deserialized_map2,
+			Server {
+				ident: String::from("Hikari KZ").into()
+			}
+		);
+
+		Ok(())
 	}
 }

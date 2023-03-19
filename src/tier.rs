@@ -84,6 +84,7 @@ impl From<Tier> for u8 {
 }
 
 impl Serialize for Tier {
+	/// Serializes [`Self`] as [`u8`].
 	fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
 	where
 		S: serde::Serializer,
@@ -93,18 +94,67 @@ impl Serialize for Tier {
 }
 
 impl<'de> Deserialize<'de> for Tier {
+	/// Deserializes the input either as [`String`] or [`u8`] and then turns that into [`Self`].
 	fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
 	where
 		D: serde::Deserializer<'de>,
 	{
-		String::deserialize(deserializer)?
-			.parse()
-			.map_err(|why| match &why {
-				Error::InvalidTier { value } => serde::de::Error::invalid_value(
-					serde::de::Unexpected::Other(value),
-					&why.to_string().as_str(),
-				),
-				_ => unreachable!(),
-			})
+		#[derive(Deserialize)]
+		#[serde(untagged)]
+		enum StringOrU8 {
+			Name(String),
+			U8(u8),
+		}
+
+		match StringOrU8::deserialize(deserializer)? {
+			StringOrU8::Name(tier_name) => tier_name.parse(),
+			StringOrU8::U8(tier_number) => tier_number.try_into(),
+		}
+		.map_err(|why| match &why {
+			Error::InvalidTier { value } => serde::de::Error::invalid_value(
+				serde::de::Unexpected::Other(value),
+				&why.to_string().as_str(),
+			),
+			other => unreachable!("Encountered `{other}` while deserializing into `Tier`."),
+		})
+	}
+}
+
+#[cfg(test)]
+mod serde_tests {
+	use super::*;
+	use color_eyre::Result;
+
+	#[derive(Debug, PartialEq, Serialize, Deserialize)]
+	struct T {
+		mode: Tier,
+	}
+
+	#[test]
+	fn ser_tier() -> Result<()> {
+		let easy = Tier::Easy;
+		let extreme = Tier::Extreme;
+		let death = Tier::Death;
+
+		let serialized_easy = serde_json::to_string(&easy)?;
+		let serialized_extreme = serde_json::to_string(&extreme)?;
+		let serialized_death = serde_json::to_string(&death)?;
+
+		assert_eq!(serialized_easy, "2");
+		assert_eq!(serialized_extreme, "6");
+		assert_eq!(serialized_death, "7");
+
+		Ok(())
+	}
+
+	#[test]
+	fn deser_tier() -> Result<()> {
+		let deserialized_death_number: Tier = serde_json::from_str("7")?;
+		let deserialized_death_name: Tier = serde_json::from_str("\"Death\"")?;
+
+		assert_eq!(deserialized_death_number, Tier::Death);
+		assert_eq!(deserialized_death_name, Tier::Death);
+
+		Ok(())
 	}
 }

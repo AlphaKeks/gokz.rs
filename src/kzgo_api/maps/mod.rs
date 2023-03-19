@@ -30,7 +30,7 @@ impl TryFrom<index::Response> for Map {
 	fn try_from(value: index::Response) -> Result<Self> {
 		let mappers = std::iter::zip(value.mapperNames, value.mapperIds)
 			.filter_map(|(mapper_name, mapper_id)| {
-				Some((mapper_name, SteamID::new(&mapper_id).ok()?))
+				Some((mapper_name, SteamID::new(mapper_id).ok()?))
 			})
 			.collect();
 

@@ -72,19 +72,11 @@ impl SteamID {
 	/// assert!(SteamID::new(&fake4).is_err());
 	/// assert!(SteamID::new(&fake5).is_err());
 	/// ```
-	pub fn new(steam_id: &str) -> Result<Self> {
-		if let Ok(numeric_id) = steam_id.parse::<u64>() {
-			if numeric_id == 0 {
-				return Err(Error::Custom("`0` is not a valid SteamID."));
-			}
+	pub fn new(steam_id: impl AsRef<str>) -> Result<Self> {
+		let steam_id = steam_id.as_ref();
 
-			if numeric_id <= Self::MAGIC_OFFSET {
-				return Err(Error::Custom(
-					"SteamID64 must be at least `76561197960265728`.",
-				));
-			}
-
-			return Ok(Self(numeric_id));
+		if let Ok(steam_id64) = steam_id.parse::<u64>() {
+			return Self::from_u64(steam_id64);
 		}
 
 		// Input format is `STEAM_1:1:161178172`.
@@ -92,34 +84,7 @@ impl SteamID {
 			.unwrap()
 			.is_match(steam_id)
 		{
-			let (_, numbers) = steam_id
-				.split_once('_')
-				.expect("Regex failed.");
-			let numbers = numbers.split(':').collect::<Vec<_>>();
-			let account_universe: AccountUniverse = numbers
-				.first()
-				.expect("Regex failed.")
-				.parse::<u8>()
-				.expect("Regex failed.")
-				.try_into()?;
-			let account_type: AccountType = numbers
-				.get(1)
-				.expect("Regex failed.")
-				.parse::<u8>()
-				.expect("Regex failed.")
-				.try_into()?;
-			let account_number = numbers
-				.get(2)
-				.expect("Regex failed.")
-				.parse::<u32>()
-				.expect("Regex failed.");
-
-			let steam_id64 = (account_universe as u64) << 56
-				| 1u64 << 52 | 1u64 << 32
-				| (account_number as u64) << 1
-				| account_type as u64;
-
-			return Ok(Self(steam_id64));
+			return Self::from_id32(steam_id);
 		}
 
 		// Input format is `"U:1:322356345"` or `"[U:1:322356345]"`.
@@ -127,29 +92,77 @@ impl SteamID {
 			.unwrap()
 			.is_match(steam_id)
 		{
-			let steam_id = steam_id.replace(['[', ']'], "");
-
-			let parts = steam_id.split(':').collect::<Vec<_>>();
-			let account_id = parts
-				.last()
-				.expect("Regex failed.")
-				.parse::<u64>()
-				.expect("Regex failed.");
-
-			if account_id >= Self::MAGIC_OFFSET {
-				return Err(Error::Custom(
-					"Account ID must be lower than `76561197960265728`.",
-				));
-			}
-
-			let steam_id64 = account_id + Self::MAGIC_OFFSET;
-
-			return Ok(Self(steam_id64));
+			return Self::from_id3(steam_id);
 		}
 
 		Err(Error::InvalidSteamID {
 			value: steam_id.to_owned(),
 		})
+	}
+
+	/// Turns any 64-bit integer larger than [`Self::MAGIC_OFFSET`] into [`Self`].
+	fn from_u64(steam_id64: u64) -> Result<Self> {
+		if steam_id64 <= Self::MAGIC_OFFSET {
+			Err(Error::Custom(
+				"SteamID64 must be at least `76561197960265728`.",
+			))
+		} else {
+			Ok(Self(steam_id64))
+		}
+	}
+
+	/// Turns a standard `SteamID` (e.g. `STEAM_1:1:161178172`) into [`Self`].
+	fn from_id32(steam_id: &str) -> Result<Self> {
+		let (_, numbers) = steam_id
+			.split_once('_')
+			.expect("Regex failed.");
+		let numbers = numbers.split(':').collect::<Vec<_>>();
+		let account_universe: AccountUniverse = numbers
+			.first()
+			.expect("Regex failed.")
+			.parse::<u8>()
+			.expect("Regex failed.")
+			.try_into()?;
+		let account_type: AccountType = numbers
+			.get(1)
+			.expect("Regex failed.")
+			.parse::<u8>()
+			.expect("Regex failed.")
+			.try_into()?;
+		let account_number = numbers
+			.get(2)
+			.expect("Regex failed.")
+			.parse::<u32>()
+			.expect("Regex failed.");
+
+		let steam_id64 = (account_universe as u64) << 56
+			| 1u64 << 52 | 1u64 << 32
+			| (account_number as u64) << 1
+			| account_type as u64;
+
+		Ok(Self(steam_id64))
+	}
+
+	/// Turns a community `SteamID` (e.g. `"U:1:322356345"` or `"[U:1:322356345]"`) into [`Self`].
+	fn from_id3(steam_id3: &str) -> Result<Self> {
+		let steam_id = steam_id3.replace(['[', ']'], "");
+
+		let parts = steam_id.split(':').collect::<Vec<_>>();
+		let account_id = parts
+			.last()
+			.expect("Regex failed.")
+			.parse::<u64>()
+			.expect("Regex failed.");
+
+		if account_id >= Self::MAGIC_OFFSET {
+			return Err(Error::Custom(
+				"Account ID must be lower than `76561197960265728`.",
+			));
+		}
+
+		let steam_id64 = account_id + Self::MAGIC_OFFSET;
+
+		Ok(Self(steam_id64))
 	}
 
 	/// Extract the [`AccountUniverse`] out of the [`SteamID`].
@@ -318,11 +331,12 @@ impl TryFrom<u64> for SteamID {
 	type Error = Error;
 
 	fn try_from(value: u64) -> Result<Self> {
-		Self::new(&value.to_string())
+		Self::from_u64(value)
 	}
 }
 
 impl Serialize for SteamID {
+	/// The [`SteamID`] will get turned into a [`String`] and then serialized as that.
 	fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
 	where
 		S: serde::Serializer,
@@ -332,24 +346,74 @@ impl Serialize for SteamID {
 }
 
 impl<'de> Deserialize<'de> for SteamID {
+	/// The input will first get deserialized to either a [`String`] or a [`u64`] and then passed to
+	/// [`SteamID::new`].
 	fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
 	where
 		D: serde::Deserializer<'de>,
 	{
-		let steam_id = String::deserialize(deserializer)?;
-		SteamID::new(&steam_id).map_err(|why| match &why {
-			Error::Custom(msg) => serde::de::Error::custom(msg),
-			Error::InvalidAccountUniverse { value } => serde::de::Error::invalid_value(
-				serde::de::Unexpected::Other(value),
-				&why.to_string().as_str(),
-			),
-			Error::InvalidAccountType { value } => serde::de::Error::invalid_value(
-				serde::de::Unexpected::Other(value),
-				&why.to_string().as_str(),
-			),
-			Error::InvalidSteamID { value } => serde::de::Error::custom(value.to_string()),
-			_ => unreachable!(),
+		use serde::de;
+
+		#[derive(Deserialize)]
+		#[serde(untagged)]
+		enum StringOrU64 {
+			String(String),
+			U64(u64),
+		}
+
+		match StringOrU64::deserialize(deserializer)? {
+			StringOrU64::String(steam_id) => SteamID::new(steam_id),
+			StringOrU64::U64(steam_id64) => SteamID::from_u64(steam_id64),
+		}
+		.map_err(|why| match &why {
+			Error::Custom(msg) => de::Error::custom(msg),
+			Error::InvalidSteamID { value: msg } => de::Error::custom(msg),
+			Error::InvalidAccountUniverse { value } | Error::InvalidAccountType { value } => {
+				de::Error::invalid_value(de::Unexpected::Other(value), &why.to_string().as_str())
+			}
+			other => unreachable!("Encountered `{other}` while deserializing to `SteamID`."),
 		})
+	}
+}
+
+#[cfg(test)]
+mod serde_tests {
+	use super::*;
+	use color_eyre::Result;
+
+	#[derive(Serialize, Deserialize)]
+	struct Player {
+		steam_id: SteamID,
+	}
+
+	#[test]
+	fn ser_steam_id() -> Result<()> {
+		let alphakeks = SteamID::new("STEAM_1:1:161178172")?;
+		let p = Player {
+			steam_id: alphakeks,
+		};
+
+		let serialized = serde_json::to_string(&p.steam_id)?;
+		let serialized_player = serde_json::to_string(&p)?;
+
+		assert_eq!(serialized, "\"STEAM_1:1:161178172\"");
+		assert_eq!(serialized_player, r#"{"steam_id":"STEAM_1:1:161178172"}"#);
+
+		Ok(())
+	}
+
+	#[test]
+	fn deser_steam_id() -> Result<()> {
+		let alphakeks = "\"STEAM_1:1:161178172\"";
+		let p = r#"{"steam_id":"STEAM_1:1:161178172"}"#;
+
+		let deserialized: SteamID = serde_json::from_str(alphakeks)?;
+		let deserialized_player: Player = serde_json::from_str(p)?;
+
+		assert_eq!(deserialized, SteamID(76561198282622073u64));
+		assert_eq!(deserialized_player.steam_id, SteamID(76561198282622073u64));
+
+		Ok(())
 	}
 }
 
@@ -483,7 +547,7 @@ mod tests {
 		let res_id3_2 = SteamID::new(id3_2)?;
 		let res_id32 = SteamID::new(id32)?;
 		let res_id64_1 = SteamID::try_from(id64)?;
-		let res_id64_2 = SteamID::new(&id64.to_string())?;
+		let res_id64_2 = SteamID::new(id64.to_string())?;
 
 		assert_eq!(res_id3_1, res_id3_2);
 		assert_eq!(res_id3_2, res_id32);

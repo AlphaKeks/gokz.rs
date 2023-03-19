@@ -32,7 +32,7 @@ impl TryFrom<RawPlayer> for Player {
 			steam_id
 		} else {
 			let steam_id3 = format!("U:1:{}", value.id);
-			SteamID::new(&steam_id3)?
+			SteamID::new(steam_id3)?
 		};
 
 		Ok(Self {
