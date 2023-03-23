@@ -1,5 +1,6 @@
 use {
 	crate::{Error, Result},
+	lazy_static::lazy_static,
 	regex::Regex,
 	serde::{Deserialize, Serialize},
 	std::{fmt::Display, str::FromStr},
@@ -12,6 +13,20 @@ use {
 ///   - `161178172`: [account number](Self::account_number)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct SteamID(u64);
+
+lazy_static! {
+	/// Input format is `STEAM_1:1:161178172`.
+	pub static ref ID32_REGEX: Regex = Regex::new(
+		r#"^STEAM_[0-5]:[0-1]:\d+$"#
+	)
+	.unwrap();
+
+	/// Input format is `"U:1:322356345"` or `"[U:1:322356345]"`.
+	pub static ref ID3_REGEX: Regex = Regex::new(
+		r#"^(?:\[)?[IiUMGAPCgTLca]:1:(\d+)(?:\])?$"#
+	)
+	.unwrap();
+}
 
 impl SteamID {
 	/// `MAGIC_OFFSET + 1` is the minimum value for any 64-bit [`SteamID`].
@@ -79,19 +94,11 @@ impl SteamID {
 			return Self::from_u64(steam_id64);
 		}
 
-		// Input format is `STEAM_1:1:161178172`.
-		if Regex::new(r#"^STEAM_[0-5]:[0-1]:\d+$"#)
-			.unwrap()
-			.is_match(steam_id)
-		{
+		if ID32_REGEX.is_match(steam_id) {
 			return Self::from_id32(steam_id);
 		}
 
-		// Input format is `"U:1:322356345"` or `"[U:1:322356345]"`.
-		if Regex::new(r#"^(?:\[)?[IiUMGAPCgTLca]:1:(\d+)(?:\])?$"#)
-			.unwrap()
-			.is_match(steam_id)
-		{
+		if ID3_REGEX.is_match(steam_id) {
 			return Self::from_id3(steam_id);
 		}
 
