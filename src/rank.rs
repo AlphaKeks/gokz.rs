@@ -1,7 +1,7 @@
 use {
 	crate::{Error, Mode, Result},
 	serde::{Deserialize, Serialize},
-	std::fmt::Display,
+	std::{fmt::Display, str::FromStr},
 };
 
 /// Every player who has joined a [GOKZ](https://github.com/KZGlobalTeam/gokz) server with version
@@ -116,7 +116,7 @@ impl Display for Rank {
 	}
 }
 
-impl std::str::FromStr for Rank {
+impl FromStr for Rank {
 	type Err = Error;
 
 	fn from_str(s: &str) -> Result<Self> {

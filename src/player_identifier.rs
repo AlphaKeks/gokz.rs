@@ -1,7 +1,7 @@
 use {
 	crate::{Error, Result, SteamID},
 	serde::{Deserialize, Serialize},
-	std::fmt::Display,
+	std::{fmt::Display, str::FromStr},
 };
 
 /// Abstraction layer to accept either a players's name or SteamID as function input in order to
@@ -29,7 +29,7 @@ impl From<String> for PlayerIdentifier {
 	}
 }
 
-impl std::str::FromStr for PlayerIdentifier {
+impl FromStr for PlayerIdentifier {
 	type Err = std::convert::Infallible;
 
 	fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {

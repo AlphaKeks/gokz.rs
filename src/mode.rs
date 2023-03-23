@@ -1,7 +1,7 @@
 use {
 	crate::{Error, Result},
 	serde::{Deserialize, Serialize},
-	std::fmt::Display,
+	std::{fmt::Display, str::FromStr},
 };
 
 /// The 3 gamemodes that (currently) exist in GOKZ.
@@ -70,7 +70,7 @@ impl From<Mode> for u8 {
 	}
 }
 
-impl std::str::FromStr for Mode {
+impl FromStr for Mode {
 	type Err = Error;
 
 	fn from_str(s: &str) -> Result<Self> {

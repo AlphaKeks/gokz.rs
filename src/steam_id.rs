@@ -2,7 +2,7 @@ use {
 	crate::{Error, Result},
 	regex::Regex,
 	serde::{Deserialize, Serialize},
-	std::fmt::Display,
+	std::{fmt::Display, str::FromStr},
 };
 
 /// `STEAM_1:1:161178172`
@@ -319,7 +319,7 @@ impl Display for SteamID {
 	}
 }
 
-impl std::str::FromStr for SteamID {
+impl FromStr for SteamID {
 	type Err = Error;
 
 	fn from_str(s: &str) -> Result<Self> {

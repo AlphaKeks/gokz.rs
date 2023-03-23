@@ -1,7 +1,7 @@
 use {
 	crate::{Error, Result},
 	serde::{Deserialize, Serialize},
-	std::fmt::Display,
+	std::{fmt::Display, str::FromStr},
 };
 
 /// Abstraction layer to accept either a server's name or id as function input in order to stay
@@ -30,7 +30,7 @@ impl From<String> for ServerIdentifier {
 	}
 }
 
-impl std::str::FromStr for ServerIdentifier {
+impl FromStr for ServerIdentifier {
 	type Err = std::convert::Infallible;
 
 	fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {

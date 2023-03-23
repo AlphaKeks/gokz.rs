@@ -1,7 +1,7 @@
 use {
 	crate::{Error, Result},
 	serde::{Deserialize, Serialize},
-	std::fmt::Display,
+	std::{fmt::Display, str::FromStr},
 };
 
 /// Abstraction layer to accept either a map's name or id as function input in order to stay
@@ -30,7 +30,7 @@ impl From<String> for MapIdentifier {
 	}
 }
 
-impl std::str::FromStr for MapIdentifier {
+impl FromStr for MapIdentifier {
 	type Err = std::convert::Infallible;
 
 	fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {

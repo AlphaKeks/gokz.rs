@@ -1,7 +1,7 @@
 use {
 	crate::{Error, Result},
 	serde::{Deserialize, Serialize},
-	std::fmt::Display,
+	std::{fmt::Display, str::FromStr},
 };
 
 /// The current 7 difficulty categories that all maps fall into.
@@ -31,7 +31,7 @@ impl Display for Tier {
 	}
 }
 
-impl std::str::FromStr for Tier {
+impl FromStr for Tier {
 	type Err = Error;
 
 	fn from_str(s: &str) -> Result<Self> {
