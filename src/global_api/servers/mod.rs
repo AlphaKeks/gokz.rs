@@ -56,10 +56,15 @@ pub async fn get_server_by_name(server_name: &str, client: &crate::Client) -> Re
 
 /// Fetches a server by its ID.
 pub async fn get_server_by_id(server_id: u16, client: &crate::Client) -> Result<Server> {
-	http::get::<index::Response>(
-		&format!("{}/servers/id/{}", super::BASE_URL, server_id),
+	let mut servers = http::get::<Vec<index::Response>>(
+		&format!("{}/servers?id={}", super::BASE_URL, server_id),
 		client,
 	)
-	.await?
-	.try_into()
+	.await?;
+
+	if servers.is_empty() {
+		return Err(Error::EmptyResponse);
+	}
+
+	servers.remove(0).try_into()
 }
