@@ -196,9 +196,10 @@ impl SteamID {
 		format!("[{letter}:1:{id32}]")
 	}
 
-	/// Takes in a 64-bit `SteamID` and turns it into [`Self`]. This function is private because
-	/// it assumes that the input is correct.
-	const fn from_id64(steam_id64: u64) -> Result<Self> {
+	/// Takes in a 64-bit `SteamID` and turns it into [`Self`].
+	/// NOTE: This is only exposed for the case that you need this specific parsing implementation.
+	/// Use [`Self::new`] for normal purposes instead.
+	pub const fn from_id64(steam_id64: u64) -> Result<Self> {
 		// TODO: Come up with a better check for this.
 		if steam_id64 <= Self::MAGIC_OFFSET {
 			Err(Error::Custom(
@@ -209,14 +210,17 @@ impl SteamID {
 		}
 	}
 
-	/// Takes a 32-bit `SteamID` and turns it into [`Self`]. This function is private because it
-	/// assumes that the input is correct.
-	const fn from_id32(steam_id32: u32) -> Self {
+	/// Takes a 32-bit `SteamID` and turns it into [`Self`]. This function assumes that the input is
+	/// correct.
+	/// NOTE: This is only exposed for the case that you need this specific parsing implementation.
+	pub const fn from_id32(steam_id32: u32) -> Self {
 		Self(steam_id32 as u64 + Self::MAGIC_OFFSET)
 	}
 
 	/// Parses a standard `SteamID` (e.g. `"STEAM_1:1:161178172"`) into [`Self`].
-	fn from_standard(steam_id: impl AsRef<str>) -> Result<Self> {
+	/// NOTE: This is only exposed for the case that you need this specific parsing implementation.
+	/// Use [`Self::new`] for normal purposes instead.
+	pub fn from_standard(steam_id: impl AsRef<str>) -> Result<Self> {
 		let (_, numbers) = steam_id
 			.as_ref()
 			.split_once('_')
@@ -254,7 +258,9 @@ impl SteamID {
 
 	/// Parses a Community `SteamID` (e.g. `"U:1:322356345"` or `"[U:1:322356345]"`) into
 	/// [`Self`].
-	fn from_community(steam_id: impl AsRef<str>) -> Result<Self> {
+	/// NOTE: This is only exposed for the case that you need this specific parsing implementation.
+	/// Use [`Self::new`] for normal purposes instead.
+	pub fn from_community(steam_id: impl AsRef<str>) -> Result<Self> {
 		let steam_id = steam_id
 			.as_ref()
 			.replace(['[', ']'], "");
