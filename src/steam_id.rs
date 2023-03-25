@@ -228,12 +228,19 @@ impl SteamID {
 
 		let mut numbers = numbers.split(':');
 
-		let account_universe: AccountUniverse = numbers
-			.next()
-			.ok_or(Error::Custom("Failed to get AccountUniverse from SteamID."))?
-			.parse::<u8>()
-			.map_err(|_| Error::Custom("Failed to parse AccountUniverse from SteamID."))?
-			.try_into()?;
+		// NOTE: CS:GO always has `1` as account universe.
+		// (https://developer.valvesoftware.com/wiki/SteamID#SteamID_Uses)
+		let account_universe = {
+			numbers.next();
+			AccountUniverse::Public
+		};
+
+		// let account_universe: AccountUniverse = numbers
+		// 	.next()
+		// 	.ok_or(Error::Custom("Failed to get AccountUniverse from SteamID."))?
+		// 	.parse::<u8>()
+		// 	.map_err(|_| Error::Custom("Failed to parse AccountUniverse from SteamID."))?
+		// 	.try_into()?;
 
 		let account_type: AccountType = numbers
 			.next()
