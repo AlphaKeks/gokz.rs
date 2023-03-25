@@ -30,6 +30,10 @@ pub enum Error {
 		value: String,
 	},
 
+	InvalidMapIdentifier {
+		value: String,
+	},
+
 	InvalidRank {
 		value: String,
 	},
@@ -43,14 +47,14 @@ pub enum Error {
 		value: String,
 	},
 
-	#[cfg(feature = "reqwest")]
-	Http {
-		status_code: crate::http::StatusCode,
-	},
-
 	#[cfg(feature = "chrono")]
 	InvalidDate {
 		value: String,
+	},
+
+	#[cfg(feature = "reqwest")]
+	Http {
+		status_code: crate::http::StatusCode,
 	},
 
 	#[cfg(feature = "global_api")]
@@ -71,16 +75,19 @@ impl Display for Error {
 				f.write_fmt(format_args!("Invalid SteamID `{value}`."))
 			}
 			Self::InvalidMode { value } => f.write_fmt(format_args!("Invalid Mode `{value}`.")),
+			Self::InvalidMapIdentifier { value } => {
+				f.write_fmt(format_args!("Invalid Map `{value}`."))
+			}
 			Self::InvalidRank { value } => f.write_fmt(format_args!("Invalid Rank `{value}`.")),
 			Self::InvalidTier { value } => f.write_fmt(format_args!("Invalid Tier `{value}`.")),
 			#[cfg(feature = "reqwest")]
 			Self::InvalidUrl { value } => f.write_fmt(format_args!("Invalid URL `{value}`.")),
+			#[cfg(feature = "chrono")]
+			Self::InvalidDate { value } => f.write_fmt(format_args!("Invalid Date `{value}`.")),
 			#[cfg(feature = "reqwest")]
 			Self::Http { status_code } => f.write_fmt(format_args!(
 				"Http request failed with code `{status_code}`."
 			)),
-			#[cfg(feature = "chrono")]
-			Self::InvalidDate { value } => f.write_fmt(format_args!("Invalid Date `{value}`.")),
 			#[cfg(feature = "global_api")]
 			Self::EmptyResponse => f.write_str("Got an empty API response."),
 		}

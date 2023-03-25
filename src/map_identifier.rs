@@ -6,8 +6,7 @@ use {
 
 /// Abstraction layer to accept either a map's name or id as function input in order to stay
 /// type-safe.
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Deserialize)]
-#[serde(untagged)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum MapIdentifier {
 	/// `992`
 	ID(u16),
@@ -85,6 +84,28 @@ impl Serialize for MapIdentifier {
 	}
 }
 
+impl<'de> Deserialize<'de> for MapIdentifier {
+	/// Deserializes the input either as [`String`] or [`u16`] and then turns that into [`Self`].
+	fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+	where
+		D: serde::Deserializer<'de>,
+	{
+		#[derive(Deserialize)]
+		#[serde(untagged)]
+		enum StringOrU16 {
+			Name(String),
+			U16(u16),
+		}
+
+		Ok(match StringOrU16::deserialize(deserializer)? {
+			StringOrU16::Name(map_name) => map_name
+				.parse::<Self>()
+				.expect("Infallible"),
+			StringOrU16::U16(map_id) => map_id.into(),
+		})
+	}
+}
+
 #[cfg(test)]
 mod serde_tests {
 	use super::*;
@@ -134,6 +155,10 @@ mod serde_tests {
 		assert_eq!(
 			MapIdentifier::ID(992),
 			serde_json::from_value(serde_json::json!(992))?
+		);
+		assert_eq!(
+			MapIdentifier::ID(992),
+			serde_json::from_value(serde_json::json!("992"))?
 		);
 		assert_eq!(deserialized_id, 992.into());
 		assert_eq!(deserialized_name, String::from("kz_lionharder").into());

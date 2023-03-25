@@ -6,8 +6,7 @@ use {
 
 /// Abstraction layer to accept either a server's name or id as function input in order to stay
 /// type-safe.
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Deserialize)]
-#[serde(untagged)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum ServerIdentifier {
 	/// `"Hikari KZ"`
 	Name(String),
@@ -79,6 +78,28 @@ impl Serialize for ServerIdentifier {
 			ServerIdentifier::Name(server_name) => serializer.serialize_str(server_name),
 			ServerIdentifier::ID(server_id) => serializer.serialize_u16(*server_id),
 		}
+	}
+}
+
+impl<'de> Deserialize<'de> for ServerIdentifier {
+	/// Deserializes the input either as [`String`] or [`u16`] and then turns that into [`Self`].
+	fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+	where
+		D: serde::Deserializer<'de>,
+	{
+		#[derive(Deserialize)]
+		#[serde(untagged)]
+		enum StringOrU16 {
+			Name(String),
+			U16(u16),
+		}
+
+		Ok(match StringOrU16::deserialize(deserializer)? {
+			StringOrU16::Name(server_name) => server_name
+				.parse::<Self>()
+				.expect("Infallible"),
+			StringOrU16::U16(server_id) => server_id.into(),
+		})
 	}
 }
 
