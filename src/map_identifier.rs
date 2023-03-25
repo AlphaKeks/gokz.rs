@@ -9,10 +9,10 @@ use {
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Deserialize)]
 #[serde(untagged)]
 pub enum MapIdentifier {
-	/// `"kz_lionharder"`
-	Name(String),
 	/// `992`
 	ID(u16),
+	/// `"kz_lionharder"`
+	Name(String),
 }
 
 impl Display for MapIdentifier {
@@ -34,6 +34,9 @@ impl FromStr for MapIdentifier {
 	type Err = std::convert::Infallible;
 
 	fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+		if let Ok(map_id) = s.parse::<u16>() {
+			return Ok(map_id.into());
+		}
 		Ok(s.to_owned().into())
 	}
 }
@@ -128,6 +131,10 @@ mod serde_tests {
 		let deserialized_map1: Map = serde_json::from_str(map1)?;
 		let deserialized_map2: Map = serde_json::from_str(map2)?;
 
+		assert_eq!(
+			MapIdentifier::ID(992),
+			serde_json::from_value(serde_json::json!(992))?
+		);
 		assert_eq!(deserialized_id, 992.into());
 		assert_eq!(deserialized_name, String::from("kz_lionharder").into());
 		assert_eq!(deserialized_map1, Map { ident: 992.into() });
