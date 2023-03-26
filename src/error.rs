@@ -42,13 +42,13 @@ pub enum Error {
 		value: String,
 	},
 
-	#[cfg(feature = "reqwest")]
-	InvalidUrl {
+	#[cfg(feature = "chrono")]
+	InvalidDate {
 		value: String,
 	},
 
-	#[cfg(feature = "chrono")]
-	InvalidDate {
+	#[cfg(feature = "reqwest")]
+	InvalidUrl {
 		value: String,
 	},
 
@@ -57,7 +57,7 @@ pub enum Error {
 		status_code: crate::http::StatusCode,
 	},
 
-	#[cfg(feature = "global_api")]
+	#[cfg(feature = "reqwest")]
 	EmptyResponse,
 }
 
@@ -80,15 +80,15 @@ impl Display for Error {
 			}
 			Self::InvalidRank { value } => f.write_fmt(format_args!("Invalid Rank `{value}`.")),
 			Self::InvalidTier { value } => f.write_fmt(format_args!("Invalid Tier `{value}`.")),
-			#[cfg(feature = "reqwest")]
-			Self::InvalidUrl { value } => f.write_fmt(format_args!("Invalid URL `{value}`.")),
 			#[cfg(feature = "chrono")]
 			Self::InvalidDate { value } => f.write_fmt(format_args!("Invalid Date `{value}`.")),
+			#[cfg(feature = "reqwest")]
+			Self::InvalidUrl { value } => f.write_fmt(format_args!("Invalid URL `{value}`.")),
 			#[cfg(feature = "reqwest")]
 			Self::Http { status_code } => f.write_fmt(format_args!(
 				"Http request failed with code `{status_code}`."
 			)),
-			#[cfg(feature = "global_api")]
+			#[cfg(feature = "reqwest")]
 			Self::EmptyResponse => f.write_str("Got an empty API response."),
 		}
 	}
