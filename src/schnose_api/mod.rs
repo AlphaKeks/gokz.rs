@@ -12,9 +12,9 @@ pub const BASE_URL: &str = "https://schnose.xyz/api";
 /// This gets returned from all API calls.
 #[derive(Debug, Clone, Deserialize)]
 pub struct Response<T> {
-	result: T,
+	pub result: T,
 	#[allow(unused)]
-	took: u128,
+	pub took: u128,
 }
 
 /// The `/maps` route.
