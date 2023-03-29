@@ -42,6 +42,8 @@ pub enum Error {
 		value: String,
 	},
 
+	EmptyInput,
+
 	#[cfg(feature = "chrono")]
 	InvalidDate {
 		value: String,
@@ -80,6 +82,7 @@ impl Display for Error {
 			}
 			Self::InvalidRank { value } => f.write_fmt(format_args!("Invalid Rank `{value}`.")),
 			Self::InvalidTier { value } => f.write_fmt(format_args!("Invalid Tier `{value}`.")),
+			Self::EmptyInput => f.write_str("Empty strings are not allowed."),
 			#[cfg(feature = "chrono")]
 			Self::InvalidDate { value } => f.write_fmt(format_args!("Invalid Date `{value}`.")),
 			#[cfg(feature = "reqwest")]

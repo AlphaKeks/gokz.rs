@@ -12,8 +12,10 @@ pub const BASE_URL: &str = "https://schnose.xyz/api";
 /// This gets returned from all API calls.
 #[derive(Debug, Clone, Deserialize)]
 pub struct Response<T> {
+	/// The actual return value from SchnoseAPI.
 	pub result: T,
-	#[allow(unused)]
+
+	/// The time the request took in nanoseconds.
 	pub took: u128,
 }
 

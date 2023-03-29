@@ -30,9 +30,13 @@ impl From<String> for ServerIdentifier {
 }
 
 impl FromStr for ServerIdentifier {
-	type Err = std::convert::Infallible;
+	type Err = Error;
 
 	fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+		if s.is_empty() {
+			return Err(Error::EmptyInput);
+		}
+
 		Ok(s.to_owned().into())
 	}
 }

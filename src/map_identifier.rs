@@ -30,12 +30,17 @@ impl From<String> for MapIdentifier {
 }
 
 impl FromStr for MapIdentifier {
-	type Err = std::convert::Infallible;
+	type Err = Error;
 
 	fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
+		if s.is_empty() {
+			return Err(Error::EmptyInput);
+		}
+
 		if let Ok(map_id) = s.parse::<u16>() {
 			return Ok(map_id.into());
 		}
+
 		Ok(s.to_owned().into())
 	}
 }
