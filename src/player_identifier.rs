@@ -37,6 +37,10 @@ impl FromStr for PlayerIdentifier {
 			return Err(Error::EmptyInput);
 		}
 
+		if let Ok(steam_id) = SteamID::new(s) {
+			return Ok(steam_id.into());
+		}
+
 		Ok(s.to_owned().into())
 	}
 }
