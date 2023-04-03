@@ -1,9 +1,9 @@
 use {
 	crate::{http, Error, Result, ServerIdentifier, SteamID},
-	serde::Serialize,
+	serde::{Deserialize, Serialize},
 };
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[allow(missing_docs)]
 pub struct Server {
 	pub id: u16,

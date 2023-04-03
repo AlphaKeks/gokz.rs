@@ -1,9 +1,9 @@
 use {
 	crate::{Error, Result, Tier},
-	serde::Serialize,
+	serde::{Deserialize, Serialize},
 };
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[allow(missing_docs)]
 pub struct Server {
 	pub label: String,

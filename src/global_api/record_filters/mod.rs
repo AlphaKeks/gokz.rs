@@ -1,13 +1,13 @@
 use {
 	crate::{
-		chrono::{parse_date, ser_date},
+		chrono::{deser_date, parse_date, ser_date},
 		http, Error, Mode, Result, SteamID,
 	},
 	chrono::NaiveDateTime,
-	serde::Serialize,
+	serde::{Deserialize, Serialize},
 };
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[allow(missing_docs)]
 pub struct RecordFilter {
 	pub id: u32,
@@ -17,6 +17,7 @@ pub struct RecordFilter {
 	pub has_teleports: bool,
 	pub tickrate: u8,
 	#[serde(serialize_with = "ser_date")]
+	#[serde(deserialize_with = "deser_date")]
 	pub created_on: NaiveDateTime,
 	pub updated_by: Option<SteamID>,
 }

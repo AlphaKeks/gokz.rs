@@ -1,15 +1,15 @@
 use {
 	crate::{
-		chrono::{parse_date, ser_date},
+		chrono::{deser_date, parse_date, ser_date},
 		http, Error, Mode, Result, SteamID,
 	},
 	chrono::NaiveDateTime,
 	log::{debug, trace},
-	serde::Serialize,
+	serde::{Deserialize, Serialize},
 	std::ops::Range,
 };
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[allow(missing_docs)]
 pub struct Record {
 	pub id: u32,
@@ -28,8 +28,10 @@ pub struct Record {
 	pub tickrate: u8,
 	pub record_filter_id: u32,
 	#[serde(serialize_with = "ser_date")]
+	#[serde(deserialize_with = "deser_date")]
 	pub created_on: NaiveDateTime,
 	#[serde(serialize_with = "ser_date")]
+	#[serde(deserialize_with = "deser_date")]
 	pub updated_on: NaiveDateTime,
 }
 

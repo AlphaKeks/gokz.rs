@@ -1,13 +1,13 @@
 use {
 	crate::{
-		chrono::{parse_date, ser_date},
+		chrono::{deser_date, parse_date, ser_date},
 		Error, Result, SteamID,
 	},
 	chrono::NaiveDateTime,
-	serde::Serialize,
+	serde::{Deserialize, Serialize},
 };
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[allow(missing_docs)]
 pub struct WorldRecord {
 	pub map_id: u16,
@@ -20,6 +20,7 @@ pub struct WorldRecord {
 	pub server_id: u16,
 	pub server_name: String,
 	#[serde(serialize_with = "ser_date")]
+	#[serde(deserialize_with = "deser_date")]
 	pub created_on: NaiveDateTime,
 }
 
@@ -53,7 +54,7 @@ impl TryFrom<mode::Response> for WorldRecord {
 /// `/wrs/leaderboards/:mode/:runtype`
 pub mod leaderboard;
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[allow(missing_docs)]
 pub struct LeaderboardEntry {
 	pub name: String,

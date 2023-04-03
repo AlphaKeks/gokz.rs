@@ -1,15 +1,15 @@
 use {
 	super::{maps::Course, players::Player},
 	crate::{
-		chrono::{parse_date, ser_date},
+		chrono::{deser_date, parse_date, ser_date},
 		http, Error, MapIdentifier, Mode, PlayerIdentifier, Result,
 	},
 	chrono::NaiveDateTime,
 	log::trace,
-	serde::Serialize,
+	serde::{Deserialize, Serialize},
 };
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[allow(missing_docs)]
 pub struct Record {
 	pub id: u32,
@@ -21,6 +21,7 @@ pub struct Record {
 	pub time: f64,
 	pub teleports: u32,
 	#[serde(serialize_with = "ser_date")]
+	#[serde(deserialize_with = "deser_date")]
 	pub created_on: NaiveDateTime,
 }
 

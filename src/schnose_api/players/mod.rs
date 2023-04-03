@@ -14,7 +14,7 @@ pub struct RawPlayer {
 	pub is_banned: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[allow(missing_docs)]
 pub struct Player {
 	pub name: String,

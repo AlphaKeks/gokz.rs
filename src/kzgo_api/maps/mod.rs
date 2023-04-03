@@ -1,13 +1,13 @@
 use {
 	crate::{
-		chrono::{parse_date, ser_date},
+		chrono::{deser_date, parse_date, ser_date},
 		Error, Result, SteamID, Tier,
 	},
 	chrono::NaiveDateTime,
-	serde::Serialize,
+	serde::{Deserialize, Serialize},
 };
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[allow(missing_docs)]
 pub struct Map {
 	pub id: u16,
@@ -19,6 +19,7 @@ pub struct Map {
 	pub vnl: bool,
 	pub workshop_id: u32,
 	#[serde(serialize_with = "ser_date")]
+	#[serde(deserialize_with = "deser_date")]
 	pub date: NaiveDateTime,
 }
 

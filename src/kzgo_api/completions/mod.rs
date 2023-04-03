@@ -1,9 +1,9 @@
 use {
 	crate::{Error, Mode, Result},
-	serde::Serialize,
+	serde::{Deserialize, Serialize},
 };
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[allow(missing_docs)]
 pub struct CompletionStats {
 	pub mode: Mode,

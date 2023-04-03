@@ -1,9 +1,9 @@
 use {
 	crate::{http, Error, Result, SteamID},
-	serde::Serialize,
+	serde::{Deserialize, Serialize},
 };
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[allow(missing_docs)]
 pub struct Player {
 	pub name: String,

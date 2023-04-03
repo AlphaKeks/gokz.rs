@@ -1,13 +1,13 @@
 use {
 	crate::{
-		chrono::{parse_date, ser_date},
+		chrono::{deser_date, parse_date, ser_date},
 		http, Error, Result, SteamID,
 	},
 	chrono::NaiveDateTime,
-	serde::Serialize,
+	serde::{Deserialize, Serialize},
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
 #[allow(missing_docs)]
 pub enum BanType {
 	Other,
@@ -30,7 +30,7 @@ impl Serialize for BanType {
 	}
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[allow(missing_docs)]
 pub struct Ban {
 	pub id: u32,
@@ -42,10 +42,13 @@ pub struct Ban {
 	pub notes: String,
 	pub updated_by_id: SteamID,
 	#[serde(serialize_with = "ser_date")]
+	#[serde(deserialize_with = "deser_date")]
 	pub expires_on: NaiveDateTime,
 	#[serde(serialize_with = "ser_date")]
+	#[serde(deserialize_with = "deser_date")]
 	pub created_on: NaiveDateTime,
 	#[serde(serialize_with = "ser_date")]
+	#[serde(deserialize_with = "deser_date")]
 	pub updated_on: NaiveDateTime,
 }
 

@@ -3,14 +3,14 @@
 use {
 	crate::{http, MapIdentifier, Mode, PlayerIdentifier, Result, ServerIdentifier, Tier},
 	log::trace,
-	serde::Deserialize,
+	serde::{Deserialize, Serialize},
 };
 
 /// Base URL for SchnoseAPI requests.
 pub const BASE_URL: &str = "https://schnose.xyz/api";
 
 /// This gets returned from all API calls.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Response<T> {
 	/// The actual return value from SchnoseAPI.
 	pub result: T,

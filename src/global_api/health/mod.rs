@@ -24,14 +24,14 @@ pub async fn checkhealth(client: &crate::Client) -> Result<HealthReport> {
 	})
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[allow(missing_docs)]
 pub struct ConditionResult {
 	pub condition: String,
 	pub success: bool,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[allow(missing_docs)]
 #[serde(rename_all = "camelCase")]
 pub struct StatusResult {
@@ -43,14 +43,14 @@ pub struct StatusResult {
 	pub timestamp: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[allow(missing_docs)]
 pub struct StatusEvent {
 	pub r#type: String,
 	pub timestamp: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[allow(missing_docs)]
 pub struct RawHealthReport {
 	pub name: String,
@@ -59,7 +59,7 @@ pub struct RawHealthReport {
 	pub events: Vec<StatusEvent>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[allow(missing_docs)]
 pub struct HealthReport {
 	pub successful_responses: u8,

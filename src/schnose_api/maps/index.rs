@@ -1,6 +1,6 @@
 use {
 	crate::{
-		chrono::{parse_date, ser_date},
+		chrono::{deser_date, parse_date, ser_date},
 		Error, Result, SteamID, Tier,
 	},
 	chrono::NaiveDateTime,
@@ -33,7 +33,7 @@ impl Default for Params {
 	}
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 #[allow(missing_docs)]
 pub struct Course {
 	pub id: u32,
@@ -63,7 +63,7 @@ pub struct Response {
 	pub updated_on: String,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[allow(missing_docs)]
 pub struct Map {
 	pub id: u16,
@@ -77,8 +77,10 @@ pub struct Map {
 	pub approver_steam_id: Option<SteamID>,
 	pub filesize: u64,
 	#[serde(serialize_with = "ser_date")]
+	#[serde(deserialize_with = "deser_date")]
 	pub created_on: NaiveDateTime,
 	#[serde(serialize_with = "ser_date")]
+	#[serde(deserialize_with = "deser_date")]
 	pub updated_on: NaiveDateTime,
 }
 

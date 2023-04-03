@@ -3,7 +3,7 @@ use {
 	serde::{Deserialize, Serialize},
 };
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[allow(missing_docs)]
 pub struct RawFancyPlayer {
 	pub id: u32,
@@ -14,7 +14,7 @@ pub struct RawFancyPlayer {
 	pub records: RecordSummary,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[allow(missing_docs)]
 pub struct FancyPlayer {
 	pub name: String,
@@ -42,7 +42,7 @@ impl TryFrom<RawFancyPlayer> for FancyPlayer {
 	}
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[allow(missing_docs)]
 pub struct RecordSummary {
 	pub total: u32,
@@ -51,7 +51,7 @@ pub struct RecordSummary {
 	pub vnl: RecordCount,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[allow(missing_docs)]
 pub struct RecordCount {
 	pub tp: u32,
