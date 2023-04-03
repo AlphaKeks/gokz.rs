@@ -103,9 +103,12 @@ impl<'de> Deserialize<'de> for MapIdentifier {
 		}
 
 		Ok(match StringOrU16::deserialize(deserializer)? {
-			StringOrU16::Name(map_name) => map_name
-				.parse::<Self>()
-				.expect("Infallible"),
+			StringOrU16::Name(map_name) => map_name.parse::<Self>().map_err(|_| {
+				serde::de::Error::invalid_value(
+					serde::de::Unexpected::Str("empty string"),
+					&"map identifier",
+				)
+			})?,
 			StringOrU16::U16(map_id) => map_id.into(),
 		})
 	}

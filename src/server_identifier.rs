@@ -101,7 +101,12 @@ impl<'de> Deserialize<'de> for ServerIdentifier {
 		Ok(match StringOrU16::deserialize(deserializer)? {
 			StringOrU16::Name(server_name) => server_name
 				.parse::<Self>()
-				.expect("Infallible"),
+				.map_err(|_| {
+					serde::de::Error::invalid_value(
+						serde::de::Unexpected::Str("empty string"),
+						&"server identifier",
+					)
+				})?,
 			StringOrU16::U16(server_id) => server_id.into(),
 		})
 	}
