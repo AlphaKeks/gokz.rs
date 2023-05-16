@@ -23,7 +23,7 @@ lazy_static! {
 /// A [SteamID](https://developer.valvesoftware.com/wiki/SteamID) according to Valve's official
 /// definition. It is stored as a single [`u64`] and has associated methods and trait
 /// implementations to format it in any way you like, as well as custom [`Serialize`] and
-/// [`Deserilalize`] implementations.
+/// [`Deserialize`] implementations.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct SteamID(u64);
 

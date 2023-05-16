@@ -7,9 +7,11 @@ use {
 #[allow(missing_docs)]
 pub struct CompletionStats {
 	pub mode: Mode,
-	/// Index 0 is the total amount of completions. The other indices match their [`Tier`].
+	/// Index 0 is the total amount of completions. The other indices match their
+	/// [Tier](crate::Tier).
 	pub tp: [u16; 8],
-	/// Index 0 is the total amount of completions. The other indices match their [`Tier`].
+	/// Index 0 is the total amount of completions. The other indices match their
+	/// [Tier](crate::Tier).
 	pub pro: [u16; 8],
 }
 
