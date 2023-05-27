@@ -1,5 +1,5 @@
 use {
-	crate::{schnose_api::players::RawPlayer, PlayerIdentifier},
+	crate::{schnose_api::maps::index::Mapper, PlayerIdentifier, SteamID},
 	serde::{Deserialize, Serialize},
 };
 
@@ -8,8 +8,7 @@ use {
 pub struct Params {
 	pub name: Option<String>,
 	pub owned_by: Option<PlayerIdentifier>,
-	pub approved_by: Option<PlayerIdentifier>,
-	pub limit: Option<u32>,
+	pub limit: Option<u16>,
 }
 
 impl Default for Params {
@@ -17,17 +16,19 @@ impl Default for Params {
 		Self {
 			name: None,
 			owned_by: None,
-			approved_by: None,
 			limit: Some(1),
 		}
 	}
 }
 
-#[derive(Debug, Clone, Deserialize)]
 #[allow(missing_docs)]
-pub struct Response {
+pub type ServerOwner = Mapper;
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[allow(missing_docs)]
+pub struct Server {
 	pub id: u16,
 	pub name: String,
-	pub owned_by: RawPlayer,
-	pub approved_by: RawPlayer,
+	pub owned_by: Option<ServerOwner>,
+	pub approved_by: Option<SteamID>,
 }
