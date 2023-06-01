@@ -57,7 +57,7 @@ pub async fn get_map(map_identifier: &MapIdentifier, client: &crate::Client) -> 
 
 /// The `/players` route.
 pub mod players;
-pub use players::{FancyPlayer, Player, RawFancyPlayer};
+pub use players::Player;
 
 /// Fetches players.
 pub async fn get_players(
@@ -79,7 +79,7 @@ pub async fn get_players(
 pub async fn get_player(
 	player_identifier: PlayerIdentifier,
 	client: &crate::Client,
-) -> Result<FancyPlayer> {
+) -> Result<Player> {
 	trace!("> get_player {{ player_identifier: {player_identifier:#?} }}");
 
 	players::get_player(player_identifier, client).await
