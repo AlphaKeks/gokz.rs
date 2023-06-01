@@ -6,7 +6,7 @@ use {
 };
 
 /// Base URL for SchnoseAPI requests.
-pub const BASE_URL: &str = "https://schnose.xyz/api";
+pub const BASE_URL: &str = "https://schnose-api.shuttleapp.rs/api";
 
 /// The `/maps` route.
 pub mod maps;
