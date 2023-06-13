@@ -4,7 +4,7 @@
 #![deny(clippy::correctness, clippy::perf)]
 
 #[cfg(feature = "reqwest")]
-pub use reqwest::{blocking::Client as BlockingClient, Client};
+pub use reqwest::Client;
 
 mod error;
 pub use error::{Error, Result};
