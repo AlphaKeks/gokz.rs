@@ -10,7 +10,6 @@ license = "MIT"
 publish = true
 
 [features]
-tracing = ["dep:tracing"]
 reqwest = ["dep:reqwest"]
 serde = ["dep:serde", "dep:serde_json"]
 chrono = ["dep:chrono"]
@@ -30,7 +29,7 @@ version = "1.4.0"
 [dependencies.regex]
 version = "1.8.4"
 default-features = false
-features = ["std"]
+features = ["std", "unicode-perl"]
 
 [dependencies.reqwest]
 version = "0.11.18"
@@ -56,5 +55,7 @@ version = "1.0.40"
 [dependencies.tracing]
 version = "0.1.37"
 default-features = false
-features = []
-optional = true
+features = ["std"]
+
+[dev-dependencies]
+pretty_assertions = "1.3.0"

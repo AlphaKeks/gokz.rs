@@ -1,5 +1,5 @@
 # Show all available recipes
-default:
+help:
 	@just --list
 
 # Format the project
@@ -16,4 +16,4 @@ test:
 
 # Clippy linting
 lint:
-	cargo clippy -- -D warnings
+	cargo clippy --all-features --all-targets -- -D warnings
