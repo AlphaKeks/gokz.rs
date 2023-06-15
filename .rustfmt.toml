@@ -1,8 +1,11 @@
 edition = "2021"
 
+force_explicit_abi = true
 merge_derives = true
 newline_style = "Unix"
 remove_nested_parens = true
+reorder_imports = true
+reorder_modules = true
 use_field_init_shorthand = true
 use_try_shorthand = true
 
@@ -12,8 +15,17 @@ hard_tabs = true
 # line width
 max_width = 100
 array_width = 40
+attr_fn_like_width = 100
 chain_width = 40
+fn_call_width = 100
+short_array_element_width_threshold = 40
+single_line_if_else_max_width = 100
+struct_lit_width = 40
+struct_variant_width = 40
 
 # layout
+fn_params_layout = "Tall"
 match_arm_leading_pipes = "Never"
 match_block_trailing_comma = false
+imports_granularity = "One"
+group_imports = "One"
