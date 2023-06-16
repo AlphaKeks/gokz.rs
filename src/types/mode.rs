@@ -108,6 +108,7 @@ impl std::str::FromStr for Mode {
 
 #[cfg(feature = "serde")]
 impl serde::Serialize for Mode {
+	#[tracing::instrument(level = "debug", skip(serializer), err(Debug))]
 	fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
 	where
 		S: serde::Serializer,
@@ -118,6 +119,7 @@ impl serde::Serialize for Mode {
 
 #[cfg(feature = "serde")]
 impl<'de> serde::Deserialize<'de> for Mode {
+	#[tracing::instrument(level = "debug", skip(deserializer))]
 	fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
 	where
 		D: serde::Deserializer<'de>,
@@ -132,6 +134,7 @@ impl<'de> serde::Deserialize<'de> for Mode {
 			Error::Custom(err) => {
 				de::Error::invalid_value(de::Unexpected::Other(&err), &err.to_string().as_str())
 			}
+			_ => unreachable!(),
 		})
 	}
 }

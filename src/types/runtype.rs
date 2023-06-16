@@ -8,7 +8,7 @@ pub enum Runtype {
 	TP = 1,
 
 	/// The run was done without teleports.
-	PRO = 0,
+	Pro = 0,
 }
 
 impl std::fmt::Display for Runtype {
@@ -18,12 +18,38 @@ impl std::fmt::Display for Runtype {
 	}
 }
 
+impl From<bool> for Runtype {
+	fn from(b: bool) -> Self {
+		match b {
+			true => Self::TP,
+			false => Self::Pro,
+		}
+	}
+}
+
+impl From<Runtype> for bool {
+	fn from(runtype: Runtype) -> Self {
+		runtype == Runtype::TP
+	}
+}
+
+impl std::ops::Deref for Runtype {
+	type Target = bool;
+
+	fn deref(&self) -> &Self::Target {
+		match Self::TP.eq(self) {
+			true => &true,
+			false => &false,
+		}
+	}
+}
+
 macro_rules! from_int {
 	($($int:ty), *) => {
 		$(impl From<$int> for $crate::types::Runtype {
 			fn from(int: $int) -> $crate::types::Runtype {
 				if int == 0 {
-					$crate::types::Runtype::PRO
+					$crate::types::Runtype::Pro
 				} else {
 					$crate::types::Runtype::TP
 				}
@@ -40,7 +66,7 @@ impl std::str::FromStr for Runtype {
 	fn from_str(s: &str) -> Result<Self> {
 		Ok(match s.to_lowercase().as_str() {
 			"tp" => Runtype::TP,
-			"pro" => Runtype::PRO,
+			"pro" => Runtype::Pro,
 			input => return Err(err!("`{input}` is not a valid Runtype.")),
 		})
 	}
@@ -48,23 +74,25 @@ impl std::str::FromStr for Runtype {
 
 #[cfg(feature = "serde")]
 impl serde::Serialize for Runtype {
+	#[tracing::instrument(level = "debug", skip(serializer), err(Debug))]
 	fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
 	where
 		S: serde::Serializer,
 	{
 		match self {
 			Runtype::TP => true.serialize(serializer),
-			Runtype::PRO => false.serialize(serializer),
+			Runtype::Pro => false.serialize(serializer),
 		}
 	}
 }
 
 #[cfg(feature = "serde")]
 impl<'de> serde::Deserialize<'de> for Runtype {
+	#[tracing::instrument(level = "debug", skip(deserializer), err(Debug))]
 	fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
 	where
 		D: serde::Deserializer<'de>,
 	{
-		Ok(if bool::deserialize(deserializer)? { Runtype::TP } else { Runtype::PRO })
+		Ok(if bool::deserialize(deserializer)? { Runtype::TP } else { Runtype::Pro })
 	}
 }

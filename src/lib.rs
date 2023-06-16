@@ -7,6 +7,9 @@
 #[cfg(feature = "serde")]
 pub(crate) mod utils;
 
+#[cfg(feature = "reqwest")]
+pub(crate) mod http;
+
 /// Some basics you will probably need when working with this crate.
 pub mod prelude;
 

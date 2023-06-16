@@ -3,11 +3,6 @@ use crate::error::{err, Error, Result};
 /// The 7 levels of difficulty a global KZ map can have.
 #[allow(missing_docs)] // These should be self-explanatory
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[cfg_attr(
-	feature = "serde",
-	derive(serde::Serialize, serde::Deserialize),
-	serde(rename_all = "snake_case")
-)]
 pub enum Tier {
 	VeryEasy = 1,
 	Easy = 2,
@@ -83,5 +78,36 @@ impl std::str::FromStr for Tier {
 			"death" => Self::Death,
 			input => return Err(err!("`{input}` is not a valid tier.")),
 		})
+	}
+}
+
+#[cfg(feature = "serde")]
+impl serde::Serialize for Tier {
+	#[tracing::instrument(level = "debug", skip(serializer), err(Debug))]
+	fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+	where
+		S: serde::Serializer,
+	{
+		(*self as u8).serialize(serializer)
+	}
+}
+
+#[cfg(feature = "serde")]
+impl<'de> serde::Deserialize<'de> for Tier {
+	#[tracing::instrument(level = "debug", skip(deserializer), err(Debug))]
+	fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+	where
+		D: serde::Deserializer<'de>,
+	{
+		use {crate::utils::Either, serde::de};
+
+		match Either::<u8, String>::deserialize(deserializer)? {
+			Either::A(tier) => Tier::try_from(tier).map_err(|_| {
+				de::Error::invalid_value(de::Unexpected::Unsigned(tier as u64), &"tier from 1-7")
+			}),
+			Either::B(tier_name) => tier_name.parse().map_err(|_| {
+				de::Error::invalid_value(de::Unexpected::Str(&tier_name), &"valid KZ map tier")
+			}),
+		}
 	}
 }
