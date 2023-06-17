@@ -52,20 +52,16 @@ pub enum Error {
 }
 
 impl From<String> for Error {
-	fn from(custom_err: String) -> Self {
-		err!("{custom_err}")
-	}
+	fn from(custom_err: String) -> Self { err!("{custom_err}") }
 }
 
 impl From<&str> for Error {
-	fn from(custom_err: &str) -> Self {
-		err!("{custom_err}")
-	}
+	fn from(custom_err: &str) -> Self { err!("{custom_err}") }
 }
 
 #[cfg(feature = "reqwest")]
 impl From<reqwest::Error> for Error {
-	#[tracing::instrument(level = "error", fields(code = ?err.status(), error = ?err))]
+	#[tracing::instrument(level = "ERROR", fields(code = ?err.status(), error = ?err))]
 	fn from(err: reqwest::Error) -> Self {
 		err.status()
 			.map(|code| Self::Http {

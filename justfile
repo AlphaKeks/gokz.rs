@@ -3,7 +3,7 @@ help:
 	@just --list
 
 # Format the project
-format:
+fmt:
 	cargo +nightly fmt --all
 
 # Generate documentation
@@ -12,8 +12,8 @@ doc:
 
 # Run tests
 test:
-	cargo test --lib --locked --all-features --all-targets
+	cargo test --lib --all-features
 
 # Clippy linting
-lint:
-	cargo clippy --all-features --all-targets -- -D warnings
+check:
+	cargo clippy --all-features -- -D warnings

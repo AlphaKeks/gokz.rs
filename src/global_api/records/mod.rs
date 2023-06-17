@@ -78,9 +78,9 @@ impl Record {
 /// Fetches a single record by id
 #[tracing::instrument(
 	name = "GlobalAPI request to `/records/:record_id`",
-	level = "trace"
+	level = "trace",
 	skip(client),
-	err(Debug),
+	err(Debug)
 )]
 pub async fn root(record_id: u32, client: &crate::Client) -> Result<Record> {
 	get_json(&format!("{BASE_URL}/records/{record_id}"), &[()], client).await
@@ -94,9 +94,9 @@ struct Place(u32);
 /// Fetches the leaderboard placement for a single record
 #[tracing::instrument(
 	name = "GlobalAPI request to `/records/place/:record_id`",
-	level = "trace"
+	level = "trace",
 	skip(client),
-	err(Debug),
+	err(Debug)
 )]
 pub async fn place(record_id: u32, client: &crate::Client) -> Result<u32> {
 	let Place(place) =
@@ -155,9 +155,9 @@ pub mod top {
 	/// Fetches records (personal bests)
 	#[tracing::instrument(
 		name = "GlobalAPI request to `/records/top`",
-		level = "trace"
+		level = "trace",
 		skip(client),
-		err(Debug),
+		err(Debug)
 	)]
 	pub async fn root(params: &Params, client: &crate::Client) -> Result<Vec<Record>> {
 		let records: Vec<_> = get_json(&format!("{BASE_URL}/records/top"), params, client).await?;
@@ -218,9 +218,9 @@ pub mod top {
 		/// Fetches a leaderboard of the players with the most world records
 		#[tracing::instrument(
 			name = "GlobalAPI request to `/records/world_records`",
-			level = "trace"
+			level = "trace",
 			skip(client),
-		err(Debug),
+			err(Debug)
 		)]
 		pub async fn root(
 			params: &Params,
@@ -297,9 +297,9 @@ pub mod top {
 		/// Fetches recent personal bests
 		#[tracing::instrument(
 			name = "GlobalAPI request to `/records/recent`",
-			level = "trace"
+			level = "trace",
 			skip(client),
-		err(Debug),
+			err(Debug)
 		)]
 		pub async fn root(params: &Params, client: &crate::Client) -> Result<Vec<Record>> {
 			let records: Vec<_> =

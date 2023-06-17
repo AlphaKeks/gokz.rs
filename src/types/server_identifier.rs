@@ -46,15 +46,11 @@ impl std::fmt::Display for ServerIdentifier {
 }
 
 impl From<String> for ServerIdentifier {
-	fn from(server_name: String) -> Self {
-		Self::Name(server_name)
-	}
+	fn from(server_name: String) -> Self { Self::Name(server_name) }
 }
 
 impl From<&str> for ServerIdentifier {
-	fn from(server_name: &str) -> Self {
-		Self::Name(server_name.to_owned())
-	}
+	fn from(server_name: &str) -> Self { Self::Name(server_name.to_owned()) }
 }
 
 macro_rules! try_into_int {
@@ -152,7 +148,7 @@ impl std::str::FromStr for ServerIdentifier {
 
 #[cfg(feature = "serde")]
 impl serde::Serialize for ServerIdentifier {
-	#[tracing::instrument(level = "debug", skip(serializer), err(Debug))]
+	#[tracing::instrument(level = "DEBUG", skip(serializer), err(Debug))]
 	fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
 	where
 		S: serde::Serializer,
@@ -166,7 +162,7 @@ impl serde::Serialize for ServerIdentifier {
 
 #[cfg(feature = "serde")]
 impl<'de> serde::Deserialize<'de> for ServerIdentifier {
-	#[tracing::instrument(level = "debug", skip(deserializer), err(Debug))]
+	#[tracing::instrument(level = "DEBUG", skip(deserializer), err(Debug))]
 	fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
 	where
 		D: serde::Deserializer<'de>,

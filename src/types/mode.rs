@@ -108,7 +108,7 @@ impl std::str::FromStr for Mode {
 
 #[cfg(feature = "serde")]
 impl serde::Serialize for Mode {
-	#[tracing::instrument(level = "debug", skip(serializer), err(Debug))]
+	#[tracing::instrument(level = "DEBUG", skip(serializer), err(Debug))]
 	fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
 	where
 		S: serde::Serializer,
@@ -119,7 +119,7 @@ impl serde::Serialize for Mode {
 
 #[cfg(feature = "serde")]
 impl<'de> serde::Deserialize<'de> for Mode {
-	#[tracing::instrument(level = "debug", skip(deserializer))]
+	#[tracing::instrument(level = "DEBUG", skip(deserializer))]
 	fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
 	where
 		D: serde::Deserializer<'de>,
@@ -257,16 +257,12 @@ mod tests {
 				assert_eq!(result, Mode::KZTimer);
 			}
 
-			for variant in [
-				"201", "simplekz", "simple_kz", "kz_simple", "skz",
-			] {
+			for variant in ["201", "simplekz", "simple_kz", "kz_simple", "skz"] {
 				let result = variant.parse::<Mode>().unwrap();
 				assert_eq!(result, Mode::SimpleKZ);
 			}
 
-			for variant in [
-				"202", "vanilla", "vanillakz", "vanilla_kz", "kz_vanilla", "vnl",
-			] {
+			for variant in ["202", "vanilla", "vanillakz", "vanilla_kz", "kz_vanilla", "vnl"] {
 				let result = variant.parse::<Mode>().unwrap();
 				assert_eq!(result, Mode::Vanilla);
 			}

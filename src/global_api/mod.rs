@@ -35,15 +35,18 @@ use std::collections::HashSet;
 pub const BASE_URL: &str = "https://kztimerglobal.com/api/v2";
 
 /// Get the last `limit` bans
-#[tracing::instrument(level = "info", skip(client), err(Debug))]
+#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
 pub async fn get_bans(limit: u32, client: &crate::Client) -> Result<Vec<bans::Ban>> {
-	let params = bans::Params { limit: Some(limit), ..Default::default() };
+	let params = bans::Params {
+		limit: Some(limit),
+		..Default::default()
+	};
 
 	bans::root(&params, client).await
 }
 
 /// Get all bans for a given player
-#[tracing::instrument(level = "info", skip(client), err(Debug))]
+#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
 pub async fn get_player_bans<S>(steam_id: S, client: &crate::Client) -> Result<Vec<bans::Ban>>
 where
 	S: Into<prelude::SteamID> + std::fmt::Debug,
@@ -59,7 +62,7 @@ where
 
 /// Get all bans since a given date
 #[cfg(feature = "chrono")]
-#[tracing::instrument(level = "info", skip(client), err(Debug))]
+#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
 pub async fn get_bans_since<D>(since: D, client: &crate::Client) -> Result<Vec<bans::Ban>>
 where
 	D: Into<DateTime<Utc>> + std::fmt::Debug,
@@ -75,7 +78,7 @@ where
 
 /// Get all bans since a given date
 #[cfg(not(feature = "chrono"))]
-#[tracing::instrument(level = "info", skip(client), err(Debug))]
+#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
 pub async fn get_bans_since(since: String, client: &crate::Client) -> Result<Vec<bans::Ban>> {
 	let params = bans::Params {
 		created_since: Some(since),
@@ -87,15 +90,18 @@ pub async fn get_bans_since(since: String, client: &crate::Client) -> Result<Vec
 }
 
 /// Get `limit` or less maps
-#[tracing::instrument(level = "info", skip(client), err(Debug))]
+#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
 pub async fn get_maps(limit: u32, client: &crate::Client) -> Result<Vec<maps::Map>> {
-	let params = maps::Params { limit: Some(limit), ..Default::default() };
+	let params = maps::Params {
+		limit: Some(limit),
+		..Default::default()
+	};
 
 	maps::root(&params, client).await
 }
 
 /// Get global (`validated`) maps
-#[tracing::instrument(level = "info", skip(client), err(Debug))]
+#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
 pub async fn get_global_maps(limit: u32, client: &crate::Client) -> Result<Vec<maps::Map>> {
 	let params = maps::Params {
 		is_validated: Some(true),
@@ -107,7 +113,7 @@ pub async fn get_global_maps(limit: u32, client: &crate::Client) -> Result<Vec<m
 }
 
 /// Get non-global (`validated`) maps
-#[tracing::instrument(level = "info", skip(client), err(Debug))]
+#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
 pub async fn get_non_global_maps(limit: u32, client: &crate::Client) -> Result<Vec<maps::Map>> {
 	let params = maps::Params {
 		is_validated: Some(false),
@@ -119,7 +125,7 @@ pub async fn get_non_global_maps(limit: u32, client: &crate::Client) -> Result<V
 }
 
 /// Get a single map
-#[tracing::instrument(level = "info", skip(client), err(Debug))]
+#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
 pub async fn get_map<M>(map_identifier: M, client: &crate::Client) -> Result<maps::Map>
 where
 	M: Into<prelude::MapIdentifier> + std::fmt::Debug,
@@ -127,13 +133,13 @@ where
 	match map_identifier.into() {
 		// For some reason the `/maps/:map_id` endpoint seems to be broken.
 		prelude::MapIdentifier::Id(map_id) => {
-			let params = maps::Params { id: Some(map_id), ..Default::default() };
+			let params = maps::Params {
+				id: Some(map_id),
+				..Default::default()
+			};
 
 			let response = maps::root(&params, client).await?;
-			let map = response
-				.into_iter()
-				.next()
-				.expect("The response should not be empty.");
+			let map = response.into_iter().next().expect("The response should not be empty.");
 
 			Ok(map)
 		}
@@ -142,7 +148,7 @@ where
 }
 
 /// Get a list of all global maps
-#[tracing::instrument(level = "info", skip(client), err(Debug))]
+#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
 pub async fn get_mapcycle<T>(tier_filter: T, client: &crate::Client) -> Result<String>
 where
 	T: Into<Option<prelude::Tier>> + std::fmt::Debug,
@@ -159,7 +165,7 @@ where
 }
 
 /// Check if a map is global by fetching all global maps and checking if it's in the list
-#[tracing::instrument(level = "info", skip(client), err(Debug))]
+#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
 pub async fn is_global<M>(
 	map_identifier: M,
 	client: &crate::Client,
@@ -185,13 +191,13 @@ where
 }
 
 /// Get information about all global modes
-#[tracing::instrument(level = "info", skip(client), err(Debug))]
+#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
 pub async fn get_modes(client: &crate::Client) -> Result<Vec<modes::Mode>> {
 	modes::root(client).await
 }
 
 /// Get information about a specific mode
-#[tracing::instrument(level = "info", skip(client), err(Debug))]
+#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
 pub async fn get_mode<M>(mode: M, client: &crate::Client) -> Result<modes::Mode>
 where
 	M: Into<prelude::Mode> + std::fmt::Debug,
@@ -200,15 +206,18 @@ where
 }
 
 /// Get `limit` or less players
-#[tracing::instrument(level = "info", skip(client), err(Debug))]
+#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
 pub async fn get_players(limit: u32, client: &crate::Client) -> Result<Vec<players::Player>> {
-	let params = players::Params { limit: Some(limit), ..Default::default() };
+	let params = players::Params {
+		limit: Some(limit),
+		..Default::default()
+	};
 
 	players::root(&params, client).await
 }
 
 /// Get a single player
-#[tracing::instrument(level = "info", skip(client), err(Debug))]
+#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
 pub async fn get_player<P>(player_identifier: P, client: &crate::Client) -> Result<players::Player>
 where
 	P: Into<prelude::PlayerIdentifier> + std::fmt::Debug,
@@ -217,13 +226,13 @@ where
 		prelude::PlayerIdentifier::SteamID(steam_id) => players::steam_id(steam_id, client).await,
 
 		prelude::PlayerIdentifier::Name(name) => {
-			let params = players::Params { name: Some(name), ..Default::default() };
+			let params = players::Params {
+				name: Some(name),
+				..Default::default()
+			};
 
 			let response = players::root(&params, client).await?;
-			let player = response
-				.into_iter()
-				.next()
-				.expect("The response should not be empty.");
+			let player = response.into_iter().next().expect("The response should not be empty.");
 
 			Ok(player)
 		}
@@ -231,7 +240,7 @@ where
 }
 
 /// Get the filters for a given map
-#[tracing::instrument(level = "info", skip(client), err(Debug))]
+#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
 pub async fn get_filters(
 	map_id: u16,
 	client: &crate::Client,
@@ -246,19 +255,19 @@ pub async fn get_filters(
 }
 
 /// Get a record by id
-#[tracing::instrument(level = "info", skip(client), err(Debug))]
+#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
 pub async fn get_record(record_id: u32, client: &crate::Client) -> Result<records::Record> {
 	records::root(record_id, client).await
 }
 
 /// Get the leaderboard spot of a single record
-#[tracing::instrument(level = "info", skip(client), err(Debug))]
+#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
 pub async fn get_place(record_id: u32, client: &crate::Client) -> Result<u32> {
 	records::place(record_id, client).await
 }
 
 /// Get `limit` personal bests of a player
-#[tracing::instrument(level = "info", skip(client), err(Debug))]
+#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
 pub async fn get_player_records<P, MI, M, R>(
 	player_identifier: P,
 	map_identifier: MI,
@@ -298,7 +307,7 @@ where
 }
 
 /// Get the world record on a map
-#[tracing::instrument(level = "info", skip(client), err(Debug))]
+#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
 pub async fn get_wr<MI, M, R>(
 	map_identifier: MI,
 	mode: M,
@@ -325,16 +334,11 @@ where
 
 	records::top::root(&params, client)
 		.await
-		.map(|records| {
-			records
-				.into_iter()
-				.next()
-				.expect("The response should not be empty.")
-		})
+		.map(|records| records.into_iter().next().expect("The response should not be empty."))
 }
 
 /// Get a player's personal best on a map
-#[tracing::instrument(level = "info", skip(client), err(Debug))]
+#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
 pub async fn get_pb<P, MI, M, R>(
 	player_identifier: P,
 	map_identifier: MI,
@@ -368,16 +372,11 @@ where
 
 	records::top::root(&params, client)
 		.await
-		.map(|records| {
-			records
-				.into_iter()
-				.next()
-				.expect("The response should not be empty.")
-		})
+		.map(|records| records.into_iter().next().expect("The response should not be empty."))
 }
 
 /// Get the top 100 records on a map
-#[tracing::instrument(level = "info", skip(client), err(Debug))]
+#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
 pub async fn get_maptop<MI, M, R>(
 	map_identifier: MI,
 	mode: M,
@@ -407,7 +406,7 @@ where
 }
 
 /// Get a player's most recent `limit` personal best(s)
-#[tracing::instrument(level = "info", skip(client), err(Debug))]
+#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
 pub async fn get_recent<P>(
 	player_identifier: P,
 	limit: u32,
@@ -437,8 +436,14 @@ where
 		match batch {
 			Ok(batch) => records.extend(batch),
 			Err(Error::EmptyResponse) => {}
-			Err(Error::Http { code, message }) if code == 429 => {
-				return Err(Error::Http { code, message });
+			Err(Error::Http {
+				code,
+				message,
+			}) if code == 429 => {
+				return Err(Error::Http {
+					code,
+					message,
+				});
 			}
 			Err(err) => return Err(err),
 		};
@@ -451,7 +456,7 @@ where
 }
 
 /// Get a list of maps a player hasn't finished yet
-#[tracing::instrument(level = "info", skip(client), err(Debug))]
+#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
 pub async fn get_unfinished<P, M, R, T>(
 	player_identifier: P,
 	mode: M,
@@ -492,14 +497,9 @@ where
 	)
 	.await;
 
-	let filters = filters?
-		.into_iter()
-		.map(|filter| filter.map_id)
-		.collect::<HashSet<_>>();
+	let filters = filters?.into_iter().map(|filter| filter.map_id).collect::<HashSet<_>>();
 
-	let uncompleted = filters
-		.difference(&completed)
-		.collect::<HashSet<_>>();
+	let uncompleted = filters.difference(&completed).collect::<HashSet<_>>();
 
 	let unfinished = global_maps?
 		.into_iter()

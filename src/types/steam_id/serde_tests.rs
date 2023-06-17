@@ -14,7 +14,9 @@ struct Player {
 #[test]
 fn ser_steam_id() -> Result<()> {
 	let alphakeks = SteamID::new("STEAM_1:1:161178172")?;
-	let p = Player { steam_id: alphakeks };
+	let p = Player {
+		steam_id: alphakeks,
+	};
 
 	let serialized = serde_json::to_string(&p.steam_id)?;
 	let serialized_player = serde_json::to_string(&p)?;

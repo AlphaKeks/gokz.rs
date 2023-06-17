@@ -32,4 +32,4 @@ pub mod kzgo_api;
 pub mod schnose_api;
 
 #[cfg(feature = "reqwest")]
-pub use reqwest::Client;
+pub use reqwest::{self, Client};

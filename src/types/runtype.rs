@@ -11,6 +11,10 @@ pub enum Runtype {
 	Pro = 0,
 }
 
+impl Default for Runtype {
+	fn default() -> Self { Self::Pro }
+}
+
 impl std::fmt::Display for Runtype {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		// The `Debug` representation is the same as the variant's name, so this is convenient.
@@ -28,9 +32,7 @@ impl From<bool> for Runtype {
 }
 
 impl From<Runtype> for bool {
-	fn from(runtype: Runtype) -> Self {
-		runtype == Runtype::TP
-	}
+	fn from(runtype: Runtype) -> Self { runtype == Runtype::TP }
 }
 
 impl std::ops::Deref for Runtype {
@@ -74,7 +76,7 @@ impl std::str::FromStr for Runtype {
 
 #[cfg(feature = "serde")]
 impl serde::Serialize for Runtype {
-	#[tracing::instrument(level = "debug", skip(serializer), err(Debug))]
+	#[tracing::instrument(level = "DEBUG", skip(serializer), err(Debug))]
 	fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
 	where
 		S: serde::Serializer,
@@ -88,7 +90,7 @@ impl serde::Serialize for Runtype {
 
 #[cfg(feature = "serde")]
 impl<'de> serde::Deserialize<'de> for Runtype {
-	#[tracing::instrument(level = "debug", skip(deserializer), err(Debug))]
+	#[tracing::instrument(level = "DEBUG", skip(deserializer), err(Debug))]
 	fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
 	where
 		D: serde::Deserializer<'de>,

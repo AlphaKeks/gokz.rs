@@ -68,21 +68,15 @@ impl std::fmt::Display for PlayerIdentifier {
 }
 
 impl From<String> for PlayerIdentifier {
-	fn from(map_name: String) -> Self {
-		Self::Name(map_name)
-	}
+	fn from(map_name: String) -> Self { Self::Name(map_name) }
 }
 
 impl From<&str> for PlayerIdentifier {
-	fn from(map_name: &str) -> Self {
-		Self::Name(map_name.to_owned())
-	}
+	fn from(map_name: &str) -> Self { Self::Name(map_name.to_owned()) }
 }
 
 impl From<SteamID> for PlayerIdentifier {
-	fn from(steam_id: SteamID) -> Self {
-		Self::SteamID(steam_id)
-	}
+	fn from(steam_id: SteamID) -> Self { Self::SteamID(steam_id) }
 }
 
 impl TryFrom<PlayerIdentifier> for SteamID {
@@ -104,14 +98,13 @@ impl std::str::FromStr for PlayerIdentifier {
 			return Err(err!("An empty string is not a valid PlayerIdentifier."));
 		}
 
-		Ok(s.parse::<SteamID>()
-			.map_or(Self::Name(s.to_owned()), Into::into))
+		Ok(s.parse::<SteamID>().map_or(Self::Name(s.to_owned()), Into::into))
 	}
 }
 
 #[cfg(feature = "serde")]
 impl serde::Serialize for PlayerIdentifier {
-	#[tracing::instrument(level = "debug", skip(serializer), err(Debug))]
+	#[tracing::instrument(level = "DEBUG", skip(serializer), err(Debug))]
 	fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
 	where
 		S: serde::Serializer,
@@ -125,7 +118,7 @@ impl serde::Serialize for PlayerIdentifier {
 
 #[cfg(feature = "serde")]
 impl<'de> serde::Deserialize<'de> for PlayerIdentifier {
-	#[tracing::instrument(level = "debug", skip(deserializer), err(Debug))]
+	#[tracing::instrument(level = "DEBUG", skip(deserializer), err(Debug))]
 	fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
 	where
 		D: serde::Deserializer<'de>,

@@ -99,9 +99,9 @@ impl Default for Params {
 /// Fetches maps
 #[tracing::instrument(
 	name = "GlobalAPI request to `/maps`",
-	level = "trace"
+	level = "TRACE",
 	skip(client),
-	err(Debug),
+	err(Debug)
 )]
 pub async fn root(params: &Params, client: &crate::Client) -> Result<Vec<Map>> {
 	let response: Vec<_> = get_json(&format!("{BASE_URL}/maps"), params, client).await?;
@@ -118,9 +118,9 @@ pub async fn root(params: &Params, client: &crate::Client) -> Result<Vec<Map>> {
 /// Fetches a single map by id
 #[tracing::instrument(
 	name = "GlobalAPI request to `/maps/id/:map_id`",
-	level = "trace"
+	level = "TRACE",
 	skip(client),
-	err(Debug),
+	err(Debug)
 )]
 pub async fn id(map_id: u16, client: &crate::Client) -> Result<Map> {
 	get_json(&format!("{BASE_URL}/maps/{map_id}"), &[()], client).await
@@ -131,9 +131,9 @@ pub async fn id(map_id: u16, client: &crate::Client) -> Result<Map> {
 /// Fetches a single map by name
 #[tracing::instrument(
 	name = "GlobalAPI request to `/maps/id/:name`",
-	level = "trace"
+	level = "TRACE",
 	skip(client),
-	err(Debug),
+	err(Debug)
 )]
 pub async fn name(map_name: &str, client: &crate::Client) -> Result<Map> {
 	get_json(&format!("{BASE_URL}/maps/{map_name}"), &[()], client).await

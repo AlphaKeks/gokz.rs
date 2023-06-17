@@ -120,9 +120,9 @@ impl Default for Params {
 /// Fetches bans
 #[tracing::instrument(
 	name = "GlobalAPI request to `/bans`",
-	level = "trace"
+	level = "TRACE",
 	skip(client),
-	err(Debug),
+	err(Debug)
 )]
 pub async fn root(params: &Params, client: &crate::Client) -> Result<Vec<Ban>> {
 	let response: Vec<_> = get_json(&format!("{BASE_URL}/bans"), params, client).await?;

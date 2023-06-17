@@ -49,9 +49,7 @@ impl SteamID {
 	pub const MAGIC_OFFSET: u64 = 76561197960265728_u64;
 
 	/// Extracts the inner 64-bit id.
-	pub const fn as_id64(&self) -> u64 {
-		self.0
-	}
+	pub const fn as_id64(&self) -> u64 { self.0 }
 
 	/// Extracts the inner [`AccountUniverse`].
 	pub const fn account_universe(&self) -> AccountUniverse {
@@ -155,17 +153,11 @@ impl std::str::FromStr for SteamID {
 	type Err = Error;
 
 	fn from_str(steam_id: &str) -> Result<Self> {
-		if let Ok(Ok(steam_id)) = steam_id
-			.parse::<u32>()
-			.map(Self::try_from)
-		{
+		if let Ok(Ok(steam_id)) = steam_id.parse::<u32>().map(Self::try_from) {
 			return Ok(steam_id);
 		}
 
-		if let Ok(Ok(steam_id)) = steam_id
-			.parse::<u64>()
-			.map(Self::try_from)
-		{
+		if let Ok(Ok(steam_id)) = steam_id.parse::<u64>().map(Self::try_from) {
 			return Ok(steam_id);
 		}
 
@@ -221,22 +213,18 @@ impl std::str::FromStr for SteamID {
 impl TryFrom<&str> for SteamID {
 	type Error = Error;
 
-	fn try_from(steam_id: &str) -> Result<Self> {
-		steam_id.parse()
-	}
+	fn try_from(steam_id: &str) -> Result<Self> { steam_id.parse() }
 }
 
 impl TryFrom<String> for SteamID {
 	type Error = Error;
 
-	fn try_from(steam_id: String) -> Result<Self> {
-		steam_id.parse()
-	}
+	fn try_from(steam_id: String) -> Result<Self> { steam_id.parse() }
 }
 
 #[cfg(feature = "serde")]
 impl serde::Serialize for SteamID {
-	#[tracing::instrument(level = "debug", skip(serializer), err(Debug))]
+	#[tracing::instrument(level = "DEBUG", skip(serializer), err(Debug))]
 	fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
 	where
 		S: serde::Serializer,
@@ -247,7 +235,7 @@ impl serde::Serialize for SteamID {
 
 #[cfg(feature = "serde")]
 impl<'de> serde::Deserialize<'de> for SteamID {
-	#[tracing::instrument(level = "debug", skip(deserializer), err(Debug))]
+	#[tracing::instrument(level = "DEBUG", skip(deserializer), err(Debug))]
 	fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
 	where
 		D: serde::Deserializer<'de>,
@@ -255,9 +243,7 @@ impl<'de> serde::Deserialize<'de> for SteamID {
 		use serde::de;
 
 		match crate::utils::Either::<String, u64>::deserialize(deserializer)? {
-			crate::utils::Either::A(steam_id) => steam_id
-				.parse()
-				.map_err(de::Error::custom),
+			crate::utils::Either::A(steam_id) => steam_id.parse().map_err(de::Error::custom),
 
 			crate::utils::Either::B(steam_id) => match u32::try_from(steam_id) {
 				Ok(steam_id) => SteamID::try_from(steam_id).map_err(de::Error::custom),

@@ -15,9 +15,7 @@ pub fn serialize_date<S: Serializer>(
 	date: &DateTime<Utc>,
 	serializer: S,
 ) -> Result<S::Ok, S::Error> {
-	date.format("%Y-%m-%dT%H:%M:%S")
-		.to_string()
-		.serialize(serializer)
+	date.format("%Y-%m-%dT%H:%M:%S").to_string().serialize(serializer)
 }
 
 #[cfg(all(feature = "chrono", feature = "serde"))]

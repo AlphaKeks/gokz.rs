@@ -83,7 +83,7 @@ impl std::str::FromStr for Tier {
 
 #[cfg(feature = "serde")]
 impl serde::Serialize for Tier {
-	#[tracing::instrument(level = "debug", skip(serializer), err(Debug))]
+	#[tracing::instrument(level = "DEBUG", skip(serializer), err(Debug))]
 	fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
 	where
 		S: serde::Serializer,
@@ -94,7 +94,7 @@ impl serde::Serialize for Tier {
 
 #[cfg(feature = "serde")]
 impl<'de> serde::Deserialize<'de> for Tier {
-	#[tracing::instrument(level = "debug", skip(deserializer), err(Debug))]
+	#[tracing::instrument(level = "DEBUG", skip(deserializer), err(Debug))]
 	fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
 	where
 		D: serde::Deserializer<'de>,

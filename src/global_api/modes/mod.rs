@@ -51,9 +51,9 @@ pub struct Mode {
 /// Fetches all modes
 #[tracing::instrument(
 	name = "GlobalAPI request to `/modes`",
-	level = "trace"
+	level = "TRACE",
 	skip(client),
-	err(Debug),
+	err(Debug)
 )]
 pub async fn root(client: &crate::Client) -> Result<Vec<Mode>> {
 	let response: Vec<_> = get_json(&format!("{BASE_URL}/modes"), &[()], client).await?;
@@ -70,9 +70,9 @@ pub async fn root(client: &crate::Client) -> Result<Vec<Mode>> {
 /// Fetches a single mode by id
 #[tracing::instrument(
 	name = "GlobalAPI request to `/modes/id/:mode_id`",
-	level = "trace"
+	level = "TRACE",
 	skip(client),
-	err(Debug),
+	err(Debug)
 )]
 pub async fn id(mode_id: u8, client: &crate::Client) -> Result<Mode> {
 	get_json(&format!("{BASE_URL}/modes/{mode_id}"), &[()], client).await
@@ -83,9 +83,9 @@ pub async fn id(mode_id: u8, client: &crate::Client) -> Result<Mode> {
 /// Fetches a single mode by name
 #[tracing::instrument(
 	name = "GlobalAPI request to `/modes/id/:name`",
-	level = "trace"
+	level = "TRACE",
 	skip(client),
-	err(Debug),
+	err(Debug)
 )]
 pub async fn name(mode_name: &str, client: &crate::Client) -> Result<Mode> {
 	get_json(&format!("{BASE_URL}/modes/{mode_name}"), &[()], client).await
