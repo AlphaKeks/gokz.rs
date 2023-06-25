@@ -1,6 +1,7 @@
 use crate::error::{err, Error, Result};
 
-/// NOTE: [Official Documentation](https://developer.valvesoftware.com/wiki/SteamID#Universes_Available_for_Steam_Accounts)
+/// NOTE: [Official Documentation]
+///       (https://developer.valvesoftware.com/wiki/SteamID#Universes_Available_for_Steam_Accounts)
 #[allow(missing_docs)] // I honestly have no idea what to put here.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(
