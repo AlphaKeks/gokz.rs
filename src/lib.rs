@@ -1,48 +1,36 @@
-//! Rust wrapper for [CS:GO KZ](https://forum.gokz.org/).
-#![warn(rust_2018_idioms, missing_docs, missing_debug_implementations)]
+#![doc = include_str!("../README.md")]
+#![warn(rust_2018_idioms, missing_debug_implementations)]
+#![deny(missing_docs)]
 #![warn(clippy::style, clippy::complexity, clippy::cognitive_complexity)]
 #![deny(clippy::correctness, clippy::perf)]
 
-#[cfg(feature = "reqwest")]
-pub use reqwest::Client;
-
-mod error;
-pub use error::{Error, Result};
-
-mod steam_id;
-pub use steam_id::{AccountType, AccountUniverse, SteamID};
-
-mod mode;
-pub use mode::Mode;
-
-mod player_identifier;
-pub use player_identifier::PlayerIdentifier;
-
-mod map_identifier;
-pub use map_identifier::MapIdentifier;
-
-mod server_identifier;
-pub use server_identifier::ServerIdentifier;
-
-mod rank;
-pub use rank::Rank;
-
-mod tier;
-pub use tier::Tier;
+#[cfg(feature = "serde")]
+pub(crate) mod utils;
 
 #[cfg(feature = "reqwest")]
-mod http;
-#[cfg(feature = "reqwest")]
-pub use http::{get, get_text, get_text_with_params, get_with_params, StatusCode};
+pub(crate) mod http;
 
-#[cfg(feature = "global_api")]
+/// Some basics you will probably need when working with this crate.
+pub mod prelude;
+
+/// Anything related to errors in this crate.
+pub mod error;
+
+/// All the custom KZ-related types exposed by this crate.
+pub mod types;
+
+/// Functions and types related to the
+/// [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2).
+#[cfg(feature = "global-api")]
 pub mod global_api;
 
-#[cfg(feature = "chrono")]
-pub(crate) mod chrono;
-
-#[cfg(feature = "kzgo_api")]
+/// Functions and types related to the [KZ:GO API](https://kzgo.eu/).
+#[cfg(feature = "kzgo-api")]
 pub mod kzgo_api;
 
-#[cfg(feature = "schnose_api")]
+/// Functions and types related to the [SchnoseAPI](https://schnose.xyz/api).
+#[cfg(feature = "schnose-api")]
 pub mod schnose_api;
+
+#[cfg(feature = "reqwest")]
+pub use reqwest::{self, Client};

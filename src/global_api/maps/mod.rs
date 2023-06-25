@@ -1,14 +1,17 @@
+#[cfg(feature = "chrono")]
+use chrono::{DateTime, Utc};
 use {
 	crate::{
-		chrono::{deser_date, parse_date, ser_date},
-		http, Error, Result, SteamID, Tier,
+		error::{Error, Result},
+		global_api::BASE_URL,
+		http::get_json,
+		types::{SteamID, Tier},
 	},
-	chrono::NaiveDateTime,
 	serde::{Deserialize, Serialize},
 };
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[allow(missing_docs)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Map {
 	pub id: u16,
 	pub name: String,
@@ -18,65 +21,120 @@ pub struct Map {
 	pub approved_by: SteamID,
 	pub workshop_url: String,
 	pub download_url: String,
-	#[serde(serialize_with = "ser_date")]
-	#[serde(deserialize_with = "deser_date")]
-	pub created_on: NaiveDateTime,
-	#[serde(serialize_with = "ser_date")]
-	#[serde(deserialize_with = "deser_date")]
-	pub updated_on: NaiveDateTime,
+
+	#[cfg(feature = "chrono")]
+	#[serde(
+		serialize_with = "crate::utils::serialize_date",
+		deserialize_with = "crate::utils::deserialize_date"
+	)]
+	pub created_on: DateTime<Utc>,
+
+	#[cfg(not(feature = "chrono"))]
+	pub created_on: String,
+
+	#[cfg(feature = "chrono")]
+	#[serde(
+		serialize_with = "crate::utils::serialize_date",
+		deserialize_with = "crate::utils::deserialize_date"
+	)]
+	pub updated_on: DateTime<Utc>,
+
+	#[cfg(not(feature = "chrono"))]
+	pub updated_on: String,
 }
 
-/// `/maps` route
-pub mod index;
-impl TryFrom<index::Response> for Map {
-	type Error = Error;
+#[allow(missing_docs)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct Params {
+	pub id: Option<u16>,
+	pub name: Option<String>,
+	pub larger_than_filesize: Option<u64>,
+	pub smaller_than_filesize: Option<u64>,
+	pub is_validated: Option<bool>,
+	pub difficulty: Option<Tier>,
 
-	fn try_from(value: index::Response) -> Result<Self> {
-		let download_url = format!("https://maps.global-api.com/bsps/{}.bsp", &value.name);
+	#[cfg(feature = "chrono")]
+	#[serde(
+		serialize_with = "crate::utils::serialize_date_opt",
+		deserialize_with = "crate::utils::deserialize_date_opt"
+	)]
+	pub created_on: Option<DateTime<Utc>>,
 
-		Ok(Self {
-			id: value.id.try_into()?,
-			name: value.name,
-			difficulty: u8::try_from(value.difficulty)?.try_into()?,
-			validated: value.validated,
-			filesize: value.filesize.try_into()?,
-			approved_by: value.approved_by_steamid64.parse()?,
-			workshop_url: value.workshop_url,
-			download_url,
-			created_on: parse_date!(value.created_on),
-			updated_on: parse_date!(value.updated_on),
-		})
+	#[cfg(not(feature = "chrono"))]
+	pub created_on: Option<String>,
+
+	#[cfg(feature = "chrono")]
+	#[serde(
+		serialize_with = "crate::utils::serialize_date_opt",
+		deserialize_with = "crate::utils::deserialize_date_opt"
+	)]
+	pub updated_on: Option<DateTime<Utc>>,
+
+	#[cfg(not(feature = "chrono"))]
+	pub updated_on: Option<String>,
+
+	pub offset: Option<i32>,
+	pub limit: Option<u32>,
+}
+
+impl Default for Params {
+	fn default() -> Self {
+		Self {
+			id: None,
+			name: None,
+			larger_than_filesize: None,
+			smaller_than_filesize: None,
+			is_validated: None,
+			difficulty: None,
+			created_on: None,
+			updated_on: None,
+			offset: None,
+			limit: Some(1),
+		}
 	}
 }
 
-/// Fetches maps with the given `params`.
-pub async fn get_maps(params: index::Params, client: &crate::Client) -> Result<Vec<Map>> {
-	let response: Vec<index::Response> =
-		http::get_with_params(&format!("{}/maps", super::BASE_URL), params, client).await?;
+/// # /maps
+///
+/// Fetches maps
+#[tracing::instrument(
+	name = "GlobalAPI request to `/maps`",
+	level = "TRACE",
+	skip(client),
+	err(Debug)
+)]
+pub async fn root(params: &Params, client: &crate::Client) -> Result<Vec<Map>> {
+	let response: Vec<_> = get_json(&format!("{BASE_URL}/maps"), params, client).await?;
 
 	if response.is_empty() {
 		return Err(Error::EmptyResponse);
 	}
 
-	Ok(response
-		.into_iter()
-		.filter_map(|res| res.try_into().ok())
-		.collect())
+	Ok(response)
 }
 
-/// Fetches a map by its name.
-pub async fn get_map_by_name(map_name: &str, client: &crate::Client) -> Result<Map> {
-	http::get::<index::Response>(
-		&format!("{}/maps/name/{}", super::BASE_URL, map_name),
-		client,
-	)
-	.await?
-	.try_into()
+/// # /maps/id/:map_id
+///
+/// Fetches a single map by id
+#[tracing::instrument(
+	name = "GlobalAPI request to `/maps/id/:map_id`",
+	level = "TRACE",
+	skip(client),
+	err(Debug)
+)]
+pub async fn id(map_id: u16, client: &crate::Client) -> Result<Map> {
+	get_json(&format!("{BASE_URL}/maps/{map_id}"), &[()], client).await
 }
 
-/// Fetches a map by its ID.
-pub async fn get_map_by_id(map_id: u16, client: &crate::Client) -> Result<Map> {
-	http::get::<index::Response>(&format!("{}/maps/id/{}", super::BASE_URL, map_id), client)
-		.await?
-		.try_into()
+/// # /maps/name/:map_name
+///
+/// Fetches a single map by name
+#[tracing::instrument(
+	name = "GlobalAPI request to `/maps/id/:name`",
+	level = "TRACE",
+	skip(client),
+	err(Debug)
+)]
+pub async fn name(map_name: &str, client: &crate::Client) -> Result<Map> {
+	get_json(&format!("{BASE_URL}/maps/{map_name}"), &[()], client).await
 }

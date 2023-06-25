@@ -1,124 +1,73 @@
-use {
-	serde::Serialize,
-	std::fmt::Display,
-	std::num::{ParseIntError, TryFromIntError},
-};
+use thiserror::Error;
 
-/// Crate-level `Result` type for convenience.
+/// # Result type for the entire crate.
+///
+/// This mainly exists for convenience so that you don't have to write the `, gokz_rs::Error` part
+/// of [Result](std::result::Result) each time.
 pub type Result<T> = std::result::Result<T, Error>;
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize)]
-#[allow(missing_docs)]
+/// Shortcut to creating a custom error
+macro_rules! err {
+    ($($args:tt)*) => { $crate::error::Error::Custom(format!($($args)*)) };
+}
+
+pub(crate) use err;
+
+/// # Error type for the entire crate.
+///
+/// This type is returned as the `Err` variant from each fallible function in this crate.
 #[non_exhaustive]
+#[derive(Debug, Clone, PartialEq, Eq, Error)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub enum Error {
-	/// Any error that only occurs once and therefore does not deserve its own variant.
-	Custom(&'static str),
+	/// Any one-off error that does not justify a separate variant.
+	#[error("{0}")]
+	Custom(String),
 
-	InvalidAccountUniverse {
-		value: String,
-	},
-
-	InvalidAccountType {
-		value: String,
-	},
-
-	InvalidSteamID {
-		value: String,
-	},
-
-	InvalidMode {
-		value: String,
-	},
-
-	InvalidMapIdentifier {
-		value: String,
-	},
-
-	InvalidRank {
-		value: String,
-	},
-
-	InvalidTier {
-		value: String,
-	},
-
-	EmptyInput,
-
-	#[cfg(feature = "chrono")]
-	InvalidDate {
-		value: String,
-	},
-
+	/// An invalid URL was provided for an HTTP request.
 	#[cfg(feature = "reqwest")]
-	InvalidUrl {
-		value: String,
-	},
+	#[error("`{0}` is not a valid URL.")]
+	InvalidUrl(String),
 
+	/// An HTTP request with [`reqwest`] failed without a status code.
 	#[cfg(feature = "reqwest")]
+	#[error("HTTP request failed: {0}")]
+	Reqwest(String),
+
+	/// An HTTP request with [`reqwest`] failed with a status code.
+	#[cfg(feature = "reqwest")]
+	#[error("HTTP request failed with code {code} ({message}).")]
 	Http {
-		status_code: crate::http::StatusCode,
+		/// The HTTP status code
+		code: u16,
+
+		/// The HTTP status code in text form
+		message: String,
 	},
 
+	/// An HTTP request returned an empty array / string / whatever
 	#[cfg(feature = "reqwest")]
+	#[error("Got an empty HTTP response.")]
 	EmptyResponse,
 }
 
-impl Display for Error {
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		match self {
-			Self::Custom(message) => f.write_str(message),
-			Self::InvalidAccountUniverse { value } => f.write_fmt(format_args!(
-				"Invalid Account Universe `{value}`. Please use a number from 0-5."
-			)),
-			Self::InvalidAccountType { value } => f.write_fmt(format_args!(
-				"Invalid Account Type `{value}`. Please use a number from 0-10."
-			)),
-			Self::InvalidSteamID { value } => {
-				f.write_fmt(format_args!("Invalid SteamID `{value}`."))
-			}
-			Self::InvalidMode { value } => f.write_fmt(format_args!("Invalid Mode `{value}`.")),
-			Self::InvalidMapIdentifier { value } => {
-				f.write_fmt(format_args!("Invalid Map `{value}`."))
-			}
-			Self::InvalidRank { value } => f.write_fmt(format_args!("Invalid Rank `{value}`.")),
-			Self::InvalidTier { value } => f.write_fmt(format_args!("Invalid Tier `{value}`.")),
-			Self::EmptyInput => f.write_str("Empty strings are not allowed."),
-			#[cfg(feature = "chrono")]
-			Self::InvalidDate { value } => f.write_fmt(format_args!("Invalid Date `{value}`.")),
-			#[cfg(feature = "reqwest")]
-			Self::InvalidUrl { value } => f.write_fmt(format_args!("Invalid URL `{value}`.")),
-			#[cfg(feature = "reqwest")]
-			Self::Http { status_code } => f.write_fmt(format_args!(
-				"Http request failed with code `{status_code}`."
-			)),
-			#[cfg(feature = "reqwest")]
-			Self::EmptyResponse => f.write_str("Got an empty API response."),
-		}
-	}
+impl From<String> for Error {
+	fn from(custom_err: String) -> Self { err!("{custom_err}") }
 }
 
-impl std::error::Error for Error {}
+impl From<&str> for Error {
+	fn from(custom_err: &str) -> Self { err!("{custom_err}") }
+}
 
 #[cfg(feature = "reqwest")]
 impl From<reqwest::Error> for Error {
-	fn from(value: reqwest::Error) -> Self {
-		let status_code = value
-			.status()
-			.unwrap_or(reqwest::StatusCode::IM_A_TEAPOT);
-		Self::Http {
-			status_code: crate::http::StatusCode(status_code),
-		}
-	}
-}
-
-impl From<TryFromIntError> for Error {
-	fn from(_: TryFromIntError) -> Self {
-		Self::Custom("Failed to cast integer.")
-	}
-}
-
-impl From<ParseIntError> for Error {
-	fn from(_: ParseIntError) -> Self {
-		Self::Custom("Failed to parse integer.")
+	#[tracing::instrument(level = "ERROR", fields(code = ?err.status(), error = ?err))]
+	fn from(err: reqwest::Error) -> Self {
+		err.status()
+			.map(|code| Self::Http {
+				code: code.as_u16(),
+				message: code.to_string(),
+			})
+			.unwrap_or_else(|| Self::Reqwest(err.to_string()))
 	}
 }

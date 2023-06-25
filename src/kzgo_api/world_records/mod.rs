@@ -1,75 +1,114 @@
+#[cfg(feature = "chrono")]
+use chrono::{DateTime, Utc};
 use {
 	crate::{
-		chrono::{deser_date, parse_date, ser_date},
-		Error, Result, SteamID,
+		error::{Error, Result},
+		http::get_json,
+		kzgo_api::BASE_URL,
+		types::{Mode, Runtype, SteamID},
 	},
-	chrono::NaiveDateTime,
 	serde::{Deserialize, Serialize},
 };
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[allow(missing_docs)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct WorldRecord {
 	pub map_id: u16,
 	pub map_name: String,
 	pub player_name: String,
 	pub steam_id: SteamID,
 	pub time: f64,
+	#[serde(rename = "diff")]
 	pub time_difference: f64,
+	#[serde(rename = "tps")]
 	pub teleports: u32,
 	pub server_id: u16,
 	pub server_name: String,
-	#[serde(serialize_with = "ser_date")]
-	#[serde(deserialize_with = "deser_date")]
-	pub created_on: NaiveDateTime,
+
+	#[cfg(feature = "chrono")]
+	#[serde(
+		serialize_with = "crate::utils::serialize_date",
+		deserialize_with = "crate::utils::deserialize_date"
+	)]
+	pub created_on: DateTime<Utc>,
+
+	#[cfg(not(feature = "chrono"))]
+	pub created_on: String,
 }
 
-/// `/wrs/:mode`
-pub mod mode;
-impl TryFrom<mode::Response> for WorldRecord {
-	type Error = Error;
+/// # /wrs/:mode
+///
+/// Fetches all world records for a given mode
+#[tracing::instrument(
+	name = "KZ:GO request to `/wrs/:mode`",
+	level = "TRACE",
+	skip(client),
+	err(Debug)
+)]
+pub async fn get_wrs(
+	mode: Mode,
+	runtype: Option<Runtype>,
+	client: &crate::Client,
+) -> Result<Vec<WorldRecord>> {
+	let mut url = format!("{BASE_URL}/wrs/{mode}/", mode = mode.api());
 
-	fn try_from(value: mode::Response) -> Result<Self> {
-		let steam_id = if let Ok(steam_id) = value.steamId.parse() {
-			steam_id
-		} else {
-			SteamID::new(&value.steamId64)?
-		};
+	match runtype.unwrap_or_default() {
+		Runtype::TP => url += "tp",
+		Runtype::Pro => url += "pro",
+	};
 
-		Ok(Self {
-			map_id: value.mapId,
-			map_name: value.mapName,
-			player_name: value.playerName,
-			steam_id,
-			time: value.time,
-			time_difference: value.diff,
-			teleports: value.tps,
-			server_id: value.serverId,
-			server_name: value.serverName,
-			created_on: parse_date!(value.createdOn),
-		})
+	let records: Vec<_> = get_json(&url, &[()], client).await?;
+
+	if records.is_empty() {
+		return Err(Error::EmptyResponse);
 	}
+
+	Ok(records)
 }
 
-/// `/wrs/leaderboards/:mode/:runtype`
-pub mod leaderboard;
+/// The `/wrs/leaderboards` routes
+pub mod leaderboards {
+	use super::*;
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[allow(missing_docs)]
-pub struct LeaderboardEntry {
-	pub name: String,
-	pub steam_id: SteamID,
-	pub count: u16,
-}
+	#[allow(missing_docs)]
+	#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+	#[serde(rename_all = "camelCase")]
+	pub struct Player {
+		pub name: String,
+		pub steam_id: SteamID,
+		pub count: u16,
+	}
 
-impl TryFrom<leaderboard::Response> for LeaderboardEntry {
-	type Error = Error;
+	/// # /wrs/leaderboards/:mode/:runtype
+	///
+	/// Fetches a leaderboard of players with the most world records in a given mode
+	#[tracing::instrument(
+		name = "KZ:GO request to `/wrs/leaderboards/:mode/:runtype`",
+		level = "TRACE",
+		skip(client),
+		err(Debug)
+	)]
+	pub async fn get_wr_leaderboard(
+		mode: Mode,
+		runtype: Runtype,
+		client: &crate::Client,
+	) -> Result<Vec<Player>> {
+		let url = format!(
+			"{BASE_URL}/wrs/{mode}/{runtype}",
+			mode = mode.api(),
+			runtype = match runtype {
+				Runtype::TP => "tp",
+				Runtype::Pro => "pro",
+			}
+		);
 
-	fn try_from(value: leaderboard::Response) -> Result<Self> {
-		Ok(Self {
-			name: value.playerName,
-			steam_id: value._id.parse()?,
-			count: value.count,
-		})
+		let players: Vec<_> = get_json(&url, &[()], client).await?;
+
+		if players.is_empty() {
+			return Err(Error::EmptyResponse);
+		}
+
+		Ok(players)
 	}
 }

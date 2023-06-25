@@ -1,514 +1,517 @@
-//! Types and functions to interact with the
-//! [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2).
-
-use {
-	crate::{
-		http, Error, MapIdentifier, Mode, PlayerIdentifier, Result, ServerIdentifier, SteamID, Tier,
-	},
-	chrono::NaiveDateTime,
-	futures::future::join_all,
-	log::trace,
-	std::collections::HashSet,
-};
-
-/// Base URL for GlobalAPI requests.
-pub const BASE_URL: &str = "https://kztimerglobal.com/api/v2";
-
-/// The `/bans` route.
+/// The `/bans` route
 pub mod bans;
+
 pub use bans::{Ban, BanType};
 
-/// Fetches `limit` bans.
-pub async fn get_bans(limit: u32, client: &crate::Client) -> Result<Vec<Ban>> {
-	let params = bans::index::Params {
-		limit: Some(limit),
-		..Default::default()
-	};
-	trace!("> get_bans {params:#?} ");
-
-	bans::get_bans(params, client).await
-}
-
-/// Fetches all bans for a given [`SteamID`].
-pub async fn get_bans_for_player(steam_id: &SteamID, client: &crate::Client) -> Result<Vec<Ban>> {
-	let params = bans::index::Params {
-		steamid64: Some(steam_id.as_id64()),
-		..Default::default()
-	};
-	trace!("> get_bans_for_player {params:#?}");
-
-	bans::get_bans(params, client).await
-}
-
-/// Fetches all bans that happened since a specific date.
-pub async fn get_bans_since(since: NaiveDateTime, client: &crate::Client) -> Result<Vec<Ban>> {
-	let params = bans::index::Params {
-		created_since: Some(since),
-		..Default::default()
-	};
-	trace!("> get_bans_since {params:#?}");
-
-	bans::get_bans(params, client).await
-}
-
-/// API health checks
-pub mod health;
-pub use health::{checkhealth, HealthReport};
-
-/// The `/maps` route.
+/// The `/maps` routes
 pub mod maps;
 pub use maps::Map;
 
-/// Fetches all maps.
-pub async fn get_maps(client: &crate::Client) -> Result<Vec<Map>> {
-	let params = maps::index::Params {
-		limit: Some(9999),
-		..Default::default()
-	};
-	trace!("> get_maps {params:#?}");
+/// The `/modes` routes
+pub mod modes;
+pub use modes::Mode;
 
-	maps::get_maps(params, client).await
-}
-
-/// Fetches all global/validated maps.
-pub async fn get_global_maps(client: &crate::Client) -> Result<Vec<Map>> {
-	let params = maps::index::Params {
-		is_validated: Some(true),
-		limit: Some(9999),
-		..Default::default()
-	};
-	trace!("> get_global_maps {params:#?}");
-
-	maps::get_maps(params, client).await
-}
-
-/// Fetches all non-global/non-validated maps.
-pub async fn get_nonglobal_maps(client: &crate::Client) -> Result<Vec<Map>> {
-	let params = maps::index::Params {
-		is_validated: Some(false),
-		limit: Some(9999),
-		..Default::default()
-	};
-	trace!("> get_nonglobal_maps {params:#?}");
-
-	maps::get_maps(params, client).await
-}
-
-/// Fetches a list of all global map names.
-pub async fn get_mapcycle(tier: Option<Tier>, client: &crate::Client) -> Result<Vec<String>> {
-	let url = format!(
-		"https://maps.global-api.com/mapcycles/{}",
-		match tier {
-			Some(tier) => format!("tier{}.txt", tier as u8),
-			None => String::from("gokz.txt"),
-		}
-	);
-	trace!("> get_mapcycle {{ tier: {tier:?}, url: {url} }}");
-
-	Ok(http::get_text(&url, client)
-		.await?
-		.lines()
-		.map(String::from)
-		.collect())
-}
-
-/// Fetches a single map.
-pub async fn get_map(map_identifier: &MapIdentifier, client: &crate::Client) -> Result<Map> {
-	trace!("> get_map {{ map_identifier: {map_identifier} }}");
-	match map_identifier {
-		MapIdentifier::Name(map_name) => maps::get_map_by_name(map_name, client).await,
-		MapIdentifier::ID(map_id) => maps::get_map_by_id(*map_id, client).await,
-	}
-}
-
-/// Fetches all global maps and checks if a map exists that matches the given [`MapIdentifier`].
-pub async fn is_global(map_ident: &MapIdentifier, client: &crate::Client) -> Result<Option<Map>> {
-	trace!("> is_global {{ map_ident: {map_ident} }}");
-	Ok(get_global_maps(client)
-		.await?
-		.into_iter()
-		.find(|map| match map_ident {
-			MapIdentifier::Name(map_name) => map
-				.name
-				.contains(&map_name.to_lowercase()),
-			MapIdentifier::ID(map_id) => map.id == *map_id,
-		}))
-}
-
-/// The `/players` route.
+/// The `/players` routes
 pub mod players;
 pub use players::Player;
 
-/// Fetches players.
-pub async fn get_players(offset: i32, limit: u32, client: &crate::Client) -> Result<Vec<Player>> {
-	let params = players::index::Params {
-		offset: Some(offset),
-		limit: Some(limit),
-		..Default::default()
-	};
-	trace!("> get_players {params:#?}");
-
-	players::get_players(params, client).await
-}
-
-/// Fetches a single player.
-pub async fn get_player(
-	player_identifier: PlayerIdentifier,
-	client: &crate::Client,
-) -> Result<Player> {
-	let mut params = players::index::Params::default();
-	match player_identifier {
-		PlayerIdentifier::Name(player_name) => params.name = Some(player_name),
-		PlayerIdentifier::SteamID(steam_id) => params.steam_id = Some(steam_id),
-	};
-	trace!("> get_player {params:#?}");
-
-	Ok(players::get_players(params, client)
-		.await?
-		.remove(0))
-}
-
-/// The `/record_filters` route.
+/// The `/record_filters` routes
 pub mod record_filters;
 pub use record_filters::RecordFilter;
 
-/// Fetches all filters for a given map.
-pub async fn get_filters(map_id: u16, client: &crate::Client) -> Result<Vec<RecordFilter>> {
-	let params = record_filters::index::Params {
-		map_ids: Some(map_id),
+/// The `/records/*` routes
+pub mod records;
+pub use records::Record;
+
+#[rustfmt::skip]
+#[cfg(feature = "chrono")]
+use chrono::{DateTime, Utc};
+
+#[rustfmt::skip]
+use crate::{error::{Error, Result}, prelude};
+use std::collections::HashSet;
+
+/// The base URL for all API requests.
+pub const BASE_URL: &str = "https://kztimerglobal.com/api/v2";
+
+/// Get the last `limit` bans
+#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
+pub async fn get_bans(limit: u32, client: &crate::Client) -> Result<Vec<bans::Ban>> {
+	let params = bans::Params {
+		limit: Some(limit),
 		..Default::default()
 	};
-	trace!("> get_filters {params:#?}");
 
-	record_filters::get_filters(params, client).await
+	bans::root(&params, client).await
 }
 
-/// The `/servers` route.
-pub mod servers;
-pub use servers::Server;
-
-/// Fetches all servers.
-pub async fn get_servers(client: &crate::Client) -> Result<Vec<Server>> {
-	let params = servers::index::Params {
-		limit: Some(9999),
+/// Get all bans for a given player
+#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
+pub async fn get_player_bans<S>(steam_id: S, client: &crate::Client) -> Result<Vec<bans::Ban>>
+where
+	S: Into<prelude::SteamID> + std::fmt::Debug,
+{
+	let params = bans::Params {
+		steam_id: Some(steam_id.into()),
+		limit: None,
 		..Default::default()
 	};
-	trace!("> get_servers {params:#?}");
 
-	servers::get_servers(params, client).await
+	bans::root(&params, client).await
 }
 
-/// Fetches a single server.
-pub async fn get_server(
-	server_identifier: &ServerIdentifier,
-	client: &crate::Client,
-) -> Result<Server> {
-	trace!("> get_server {{ server_identifier: {server_identifier} }}");
-	match server_identifier {
-		ServerIdentifier::Name(server_name) => {
-			servers::get_server_by_name(server_name, client).await
+/// Get all bans since a given date
+#[cfg(feature = "chrono")]
+#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
+pub async fn get_bans_since<D>(since: D, client: &crate::Client) -> Result<Vec<bans::Ban>>
+where
+	D: Into<DateTime<Utc>> + std::fmt::Debug,
+{
+	let params = bans::Params {
+		created_since: Some(since.into()),
+		limit: None,
+		..Default::default()
+	};
+
+	bans::root(&params, client).await
+}
+
+/// Get all bans since a given date
+#[cfg(not(feature = "chrono"))]
+#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
+pub async fn get_bans_since(since: String, client: &crate::Client) -> Result<Vec<bans::Ban>> {
+	let params = bans::Params {
+		created_since: Some(since),
+		limit: None,
+		..Default::default()
+	};
+
+	bans::root(&params, client).await
+}
+
+/// Get `limit` or less maps
+#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
+pub async fn get_maps(limit: u32, client: &crate::Client) -> Result<Vec<maps::Map>> {
+	let params = maps::Params {
+		limit: Some(limit),
+		..Default::default()
+	};
+
+	maps::root(&params, client).await
+}
+
+/// Get global (`validated`) maps
+#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
+pub async fn get_global_maps(limit: u32, client: &crate::Client) -> Result<Vec<maps::Map>> {
+	let params = maps::Params {
+		is_validated: Some(true),
+		limit: Some(limit),
+		..Default::default()
+	};
+
+	maps::root(&params, client).await
+}
+
+/// Get non-global (`validated`) maps
+#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
+pub async fn get_non_global_maps(limit: u32, client: &crate::Client) -> Result<Vec<maps::Map>> {
+	let params = maps::Params {
+		is_validated: Some(false),
+		limit: Some(limit),
+		..Default::default()
+	};
+
+	maps::root(&params, client).await
+}
+
+/// Get a single map
+#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
+pub async fn get_map<M>(map_identifier: M, client: &crate::Client) -> Result<maps::Map>
+where
+	M: Into<prelude::MapIdentifier> + std::fmt::Debug,
+{
+	match map_identifier.into() {
+		// For some reason the `/maps/:map_id` endpoint seems to be broken.
+		prelude::MapIdentifier::Id(map_id) => {
+			let params = maps::Params {
+				id: Some(map_id),
+				..Default::default()
+			};
+
+			let response = maps::root(&params, client).await?;
+			let map = response.into_iter().next().expect("The response should not be empty.");
+
+			Ok(map)
 		}
-		ServerIdentifier::ID(server_id) => servers::get_server_by_id(*server_id, client).await,
+		prelude::MapIdentifier::Name(map_name) => maps::name(&map_name, client).await,
 	}
 }
 
-/// The `/records` route (and subroutes).
-pub mod records;
-pub use records::{get_place, get_record, get_wr_top, Record};
+/// Get a list of all global maps
+#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
+pub async fn get_mapcycle<T>(tier_filter: T, client: &crate::Client) -> Result<String>
+where
+	T: Into<Option<prelude::Tier>> + std::fmt::Debug,
+{
+	let url = format!(
+		"https://maps.global-api.com/mapcycles/{tier}",
+		tier = match tier_filter.into() {
+			None => String::from("gokz.txt"),
+			Some(tier) => format!("tier{}.txt", tier as u8),
+		}
+	);
 
-/// Fetches `limit` records. Note that this only includes personal bests, not all records.
-pub async fn get_records(limit: u32, client: &crate::Client) -> Result<Vec<Record>> {
-	let params = records::top::Params {
+	crate::http::get_text(&url, &[()], client).await
+}
+
+/// Check if a map is global by fetching all global maps and checking if it's in the list
+#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
+pub async fn is_global<M>(
+	map_identifier: M,
+	client: &crate::Client,
+) -> Result<(Option<Map>, Vec<Map>)>
+where
+	M: Into<prelude::MapIdentifier> + std::fmt::Debug,
+{
+	let mut map_identifier = map_identifier.into();
+	let global_maps = get_global_maps(9999, client).await?;
+
+	if let prelude::MapIdentifier::Name(ref mut map_name) = map_identifier {
+		*map_name = map_name.to_lowercase();
+	}
+
+	let mut iter = global_maps.iter();
+	let map = match map_identifier {
+		prelude::MapIdentifier::Id(map_id) => iter.find(|map| map.id == map_id),
+		prelude::MapIdentifier::Name(ref map_name) => iter.find(|map| map.name.contains(map_name)),
+	}
+	.map(ToOwned::to_owned);
+
+	Ok((map, global_maps))
+}
+
+/// Get information about all global modes
+#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
+pub async fn get_modes(client: &crate::Client) -> Result<Vec<modes::Mode>> {
+	modes::root(client).await
+}
+
+/// Get information about a specific mode
+#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
+pub async fn get_mode<M>(mode: M, client: &crate::Client) -> Result<modes::Mode>
+where
+	M: Into<prelude::Mode> + std::fmt::Debug,
+{
+	modes::id(mode.into() as u8, client).await
+}
+
+/// Get `limit` or less players
+#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
+pub async fn get_players(limit: u32, client: &crate::Client) -> Result<Vec<players::Player>> {
+	let params = players::Params {
 		limit: Some(limit),
 		..Default::default()
 	};
-	trace!("> get_records {params:#?}");
 
-	records::get_top(params, client).await
+	players::root(&params, client).await
 }
 
-/// Fetches `limit` records for a player. Note that this only includes personal bests, not all
-/// records.
-pub async fn get_player_records(
-	player_identifier: PlayerIdentifier,
-	mode: Mode,
-	has_teleports: bool,
+/// Get a single player
+#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
+pub async fn get_player<P>(player_identifier: P, client: &crate::Client) -> Result<players::Player>
+where
+	P: Into<prelude::PlayerIdentifier> + std::fmt::Debug,
+{
+	match player_identifier.into() {
+		prelude::PlayerIdentifier::SteamID(steam_id) => players::steam_id(steam_id, client).await,
+
+		prelude::PlayerIdentifier::Name(name) => {
+			let params = players::Params {
+				name: Some(name),
+				..Default::default()
+			};
+
+			let response = players::root(&params, client).await?;
+			let player = response.into_iter().next().expect("The response should not be empty.");
+
+			Ok(player)
+		}
+	}
+}
+
+/// Get the filters for a given map
+#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
+pub async fn get_filters(
+	map_id: u16,
+	client: &crate::Client,
+) -> Result<Vec<record_filters::RecordFilter>> {
+	let params = record_filters::Params {
+		map_ids: Some(map_id),
+		limit: Some(999),
+		..Default::default()
+	};
+
+	record_filters::root(&params, client).await
+}
+
+/// Get a record by id
+#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
+pub async fn get_record(record_id: u32, client: &crate::Client) -> Result<records::Record> {
+	records::root(record_id, client).await
+}
+
+/// Get the leaderboard spot of a single record
+#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
+pub async fn get_place(record_id: u32, client: &crate::Client) -> Result<u32> {
+	records::place(record_id, client).await
+}
+
+/// Get `limit` personal bests of a player
+#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
+pub async fn get_player_records<P, MI, M, R>(
+	player_identifier: P,
+	map_identifier: MI,
+	mode: M,
+	runtype: R,
 	course: u8,
 	limit: u32,
 	client: &crate::Client,
-) -> Result<Vec<Record>> {
+) -> Result<Vec<records::Record>>
+where
+	P: Into<prelude::PlayerIdentifier> + std::fmt::Debug,
+	MI: Into<Option<prelude::MapIdentifier>> + std::fmt::Debug,
+	M: Into<prelude::Mode> + std::fmt::Debug,
+	R: Into<prelude::Runtype> + std::fmt::Debug,
+{
 	let mut params = records::top::Params {
-		tickrate: Some(128),
-		modes_list_string: Some(mode.api()),
-		has_teleports: Some(has_teleports),
+		modes_list_string: Some(mode.into().api()),
+		runtype: Some(runtype.into()),
 		stage: Some(course),
 		limit: Some(limit),
 		..Default::default()
 	};
-	match player_identifier {
-		PlayerIdentifier::Name(player_name) => params.player_name = Some(player_name),
-		PlayerIdentifier::SteamID(steam_id) => params.steam_id = Some(steam_id),
-	};
-	trace!("> get_player_records {params:#?}");
 
-	records::get_top(params, client).await
-}
-
-async fn get_records_on_map(
-	map_identifier: MapIdentifier,
-	player_identifier: Option<PlayerIdentifier>,
-	mode: Mode,
-	has_teleports: bool,
-	course: u8,
-	limit: u32,
-	client: &crate::Client,
-) -> Result<Vec<Record>> {
-	let mut params = records::top::Params {
-		modes_list_string: Some(mode.api()),
-		has_teleports: Some(has_teleports),
-		stage: Some(course),
-		limit: Some(limit),
-		..Default::default()
+	match player_identifier.into() {
+		prelude::PlayerIdentifier::SteamID(steam_id) => params.steam_id = Some(steam_id),
+		prelude::PlayerIdentifier::Name(name) => params.player_name = Some(name),
 	};
-	if let Some(player_identifier) = player_identifier {
-		match player_identifier {
-			PlayerIdentifier::Name(player_name) => params.player_name = Some(player_name),
-			PlayerIdentifier::SteamID(steam_id) => params.steam_id = Some(steam_id),
+
+	if let Some(map_identifier) = map_identifier.into() {
+		match map_identifier {
+			prelude::MapIdentifier::Id(map_id) => params.map_id = Some(map_id),
+			prelude::MapIdentifier::Name(map_name) => params.map_name = Some(map_name),
 		};
 	}
-	match map_identifier {
-		MapIdentifier::Name(map_name) => params.map_name = Some(map_name),
-		MapIdentifier::ID(map_id) => params.map_id = Some(map_id),
+
+	records::top::root(&params, client).await
+}
+
+/// Get the world record on a map
+#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
+pub async fn get_wr<MI, M, R>(
+	map_identifier: MI,
+	mode: M,
+	runtype: R,
+	course: u8,
+	client: &crate::Client,
+) -> Result<records::Record>
+where
+	MI: Into<prelude::MapIdentifier> + std::fmt::Debug,
+	M: Into<prelude::Mode> + std::fmt::Debug,
+	R: Into<prelude::Runtype> + std::fmt::Debug,
+{
+	let mut params = records::top::Params {
+		modes_list_string: Some(mode.into().api()),
+		runtype: Some(runtype.into()),
+		stage: Some(course),
+		..Default::default()
 	};
-	trace!("> get_records_on_map {params:#?}");
 
-	records::get_top(params, client).await
+	match map_identifier.into() {
+		prelude::MapIdentifier::Id(map_id) => params.map_id = Some(map_id),
+		prelude::MapIdentifier::Name(map_name) => params.map_name = Some(map_name),
+	};
+
+	records::top::root(&params, client)
+		.await
+		.map(|records| records.into_iter().next().expect("The response should not be empty."))
 }
 
-/// Fetches the world record on a given map.
-pub async fn get_wr(
-	map_identifier: MapIdentifier,
-	mode: Mode,
-	has_teleports: bool,
+/// Get a player's personal best on a map
+#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
+pub async fn get_pb<P, MI, M, R>(
+	player_identifier: P,
+	map_identifier: MI,
+	mode: M,
+	runtype: R,
 	course: u8,
 	client: &crate::Client,
-) -> Result<Record> {
-	trace!("> get_wr -> get_records_on_map");
-	Ok(
-		get_records_on_map(map_identifier, None, mode, has_teleports, course, 1, client)
-			.await?
-			.remove(0),
-	)
+) -> Result<records::Record>
+where
+	P: Into<prelude::PlayerIdentifier> + std::fmt::Debug,
+	MI: Into<prelude::MapIdentifier> + std::fmt::Debug,
+	M: Into<prelude::Mode> + std::fmt::Debug,
+	R: Into<prelude::Runtype> + std::fmt::Debug,
+{
+	let mut params = records::top::Params {
+		modes_list_string: Some(mode.into().api()),
+		runtype: Some(runtype.into()),
+		stage: Some(course),
+		..Default::default()
+	};
+
+	match player_identifier.into() {
+		prelude::PlayerIdentifier::SteamID(steam_id) => params.steam_id = Some(steam_id),
+		prelude::PlayerIdentifier::Name(name) => params.player_name = Some(name),
+	};
+
+	match map_identifier.into() {
+		prelude::MapIdentifier::Id(map_id) => params.map_id = Some(map_id),
+		prelude::MapIdentifier::Name(map_name) => params.map_name = Some(map_name),
+	};
+
+	records::top::root(&params, client)
+		.await
+		.map(|records| records.into_iter().next().expect("The response should not be empty."))
 }
 
-/// Fetches the top 100 records on a given map.
-pub async fn get_maptop(
-	map_identifier: MapIdentifier,
-	mode: Mode,
-	has_teleports: bool,
+/// Get the top 100 records on a map
+#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
+pub async fn get_maptop<MI, M, R>(
+	map_identifier: MI,
+	mode: M,
+	runtype: R,
 	course: u8,
 	client: &crate::Client,
-) -> Result<Vec<Record>> {
-	trace!("> get_maptop -> get_records_on_map");
-	get_records_on_map(
-		map_identifier,
-		None,
-		mode,
-		has_teleports,
-		course,
-		100,
-		client,
-	)
-	.await
+) -> Result<Vec<records::Record>>
+where
+	MI: Into<prelude::MapIdentifier> + std::fmt::Debug,
+	M: Into<prelude::Mode> + std::fmt::Debug,
+	R: Into<prelude::Runtype> + std::fmt::Debug,
+{
+	let mut params = records::top::Params {
+		modes_list_string: Some(mode.into().api()),
+		runtype: Some(runtype.into()),
+		stage: Some(course),
+		limit: Some(100),
+		..Default::default()
+	};
+
+	match map_identifier.into() {
+		prelude::MapIdentifier::Id(map_id) => params.map_id = Some(map_id),
+		prelude::MapIdentifier::Name(map_name) => params.map_name = Some(map_name),
+	};
+
+	records::top::root(&params, client).await
 }
 
-/// Fetches a player's personal best on a given map.
-pub async fn get_pb(
-	player_identifier: PlayerIdentifier,
-	map_identifier: MapIdentifier,
-	mode: Mode,
-	has_teleports: bool,
-	course: u8,
-	client: &crate::Client,
-) -> Result<Record> {
-	trace!("> get_pb -> get_records_on_map");
-	Ok(get_records_on_map(
-		map_identifier,
-		Some(player_identifier),
-		mode,
-		has_teleports,
-		course,
-		1,
-		client,
-	)
-	.await?
-	.remove(0))
-}
-
-/// Fetches a player's most recent personal best.
-pub async fn get_recent(
-	player_identifier: PlayerIdentifier,
+/// Get a player's most recent `limit` personal best(s)
+#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
+pub async fn get_recent<P>(
+	player_identifier: P,
 	limit: u32,
 	client: &crate::Client,
-) -> Result<Vec<Record>> {
-	trace!("> get_recent {{ player_identifier: {player_identifier}, limit: {limit} }}");
+) -> Result<Vec<records::Record>>
+where
+	P: Into<prelude::PlayerIdentifier> + std::fmt::Debug,
+{
+	let player_identifier = player_identifier.into();
+
+	let requests = [
+		(prelude::Mode::KZTimer, prelude::Runtype::TP),
+		(prelude::Mode::KZTimer, prelude::Runtype::Pro),
+		(prelude::Mode::SimpleKZ, prelude::Runtype::TP),
+		(prelude::Mode::SimpleKZ, prelude::Runtype::Pro),
+		(prelude::Mode::Vanilla, prelude::Runtype::TP),
+		(prelude::Mode::Vanilla, prelude::Runtype::Pro),
+	]
+	.into_iter()
+	.map(|(mode, runtype)| {
+		get_player_records(player_identifier.clone(), None, mode, runtype, 0, 99999, client)
+	});
 
 	let mut records = Vec::new();
 
-	for chunk in join_all([
-		get_player_records(
-			player_identifier.clone(),
-			Mode::KZTimer,
-			true,
-			0,
-			999999,
-			client,
-		),
-		get_player_records(
-			player_identifier.clone(),
-			Mode::KZTimer,
-			false,
-			0,
-			999999,
-			client,
-		),
-		get_player_records(
-			player_identifier.clone(),
-			Mode::SimpleKZ,
-			true,
-			0,
-			999999,
-			client,
-		),
-		get_player_records(
-			player_identifier.clone(),
-			Mode::SimpleKZ,
-			false,
-			0,
-			999999,
-			client,
-		),
-		get_player_records(
-			player_identifier.clone(),
-			Mode::Vanilla,
-			true,
-			0,
-			999999,
-			client,
-		),
-		get_player_records(
-			player_identifier.clone(),
-			Mode::Vanilla,
-			false,
-			0,
-			999999,
-			client,
-		),
-	])
-	.await
-	.into_iter()
-	{
-		match chunk {
-			Ok(recs) => records.extend(recs),
-			Err(why) => {
-				if let Error::Http { status_code } = &why {
-					// If this is ever `true` we probably made too many requests and want to abort.
-					// The GlobalAPI unfortunately sometimes returns `INTERNAL_SERVER_ERROR`
-					// even if it _should_ return `TOO_MANY_REQUESTS`.
-					if status_code.0 == reqwest::StatusCode::INTERNAL_SERVER_ERROR
-						|| status_code.0 == reqwest::StatusCode::TOO_MANY_REQUESTS
-					{
-						return Err(why);
-					}
-				}
+	for batch in futures::future::join_all(requests).await {
+		match batch {
+			Ok(batch) => records.extend(batch),
+			Err(Error::EmptyResponse) => {}
+			Err(Error::Http {
+				code,
+				message,
+			}) if code == 429 => {
+				return Err(Error::Http {
+					code,
+					message,
+				});
 			}
+			Err(err) => return Err(err),
 		};
 	}
 
-	if records.is_empty() {
-		return Err(Error::EmptyResponse);
+	match records.is_empty() {
+		true => Err(Error::EmptyResponse),
+		false => Ok(records),
 	}
-
-	records.sort_by(|a, b| b.created_on.cmp(&a.created_on));
-
-	Ok(records
-		.into_iter()
-		.take(limit as usize)
-		.collect())
 }
 
-/// Fetches all the maps a player hasn't finished yet.
-pub async fn get_unfinished(
-	player_identifier: PlayerIdentifier,
-	mode: Mode,
-	has_teleports: bool,
-	tier: Option<Tier>,
+/// Get a list of maps a player hasn't finished yet
+#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
+pub async fn get_unfinished<P, M, R, T>(
+	player_identifier: P,
+	mode: M,
+	runtype: R,
+	tier: T,
+	limit: u32,
 	client: &crate::Client,
-) -> Result<Option<Vec<Map>>> {
-	trace!("> get_unfinished {{ player_identifier: {player_identifier:?}, mode: {mode:?}, has_teleports: {has_teleports:?}, tier: {tier:?} }}");
+) -> Result<Option<Vec<maps::Map>>>
+where
+	P: Into<prelude::PlayerIdentifier> + std::fmt::Debug,
+	M: Into<prelude::Mode> + std::fmt::Debug,
+	R: Into<prelude::Runtype> + std::fmt::Debug,
+	T: Into<Option<prelude::Tier>> + std::fmt::Debug,
+{
+	let player_identifier = player_identifier.into();
+	let mode = mode.into();
+	let runtype = runtype.into();
+	let tier = tier.into();
 
-	let completed_map_ids =
-		get_player_records(player_identifier, mode, has_teleports, 0, 99999, client)
-			.await?
-			.into_iter()
-			.map(|record| record.map_id)
-			.collect::<HashSet<_>>();
-
-	let all_map_ids = record_filters::get_filters(
-		record_filters::index::Params {
-			stages: Some(0),
-			mode_ids: Some(mode as u8),
-			tickrates: Some(128),
-			has_teleports: Some(has_teleports),
-			limit: Some(99999),
-			..Default::default()
-		},
-		client,
-	)
-	.await?
-	.into_iter()
-	.map(|record_filter| record_filter.map_id)
-	.collect::<HashSet<_>>();
-
-	let uncompleted_map_ids = all_map_ids
-		.difference(&completed_map_ids)
+	let completed = get_player_records(player_identifier, None, mode, runtype, 0, limit, client)
+		.await?
+		.into_iter()
+		.map(|record| record.map_id)
 		.collect::<HashSet<_>>();
 
-	let uncompleted_maps = get_global_maps(client)
-		.await?
+	let filter_params = record_filters::Params {
+		stages: Some(0),
+		mode_ids: Some(mode as u8),
+		tickrates: Some(128),
+		runtype: Some(runtype),
+		limit: Some(99999),
+		..Default::default()
+	};
+
+	let (filters, global_maps) = futures::future::join(
+		record_filters::root(&filter_params, client),
+		get_global_maps(99999, client),
+	)
+	.await;
+
+	let filters = filters?.into_iter().map(|filter| filter.map_id).collect::<HashSet<_>>();
+
+	let uncompleted = filters.difference(&completed).collect::<HashSet<_>>();
+
+	let unfinished = global_maps?
 		.into_iter()
 		.filter_map(|map| {
 			let tier_matches = tier.map_or(true, |tier| tier == map.difficulty);
-			let runtype_matches = if has_teleports {
-				!map.name.starts_with("kzpro_")
-			} else {
-				true
-			};
-
-			if uncompleted_map_ids.contains(&map.id) && tier_matches && runtype_matches {
-				return Some(map);
-			}
-
-			None
+			let runtype_matches = *runtype && !map.name.starts_with("kzpro_");
+			(uncompleted.contains(&map.id) && tier_matches && runtype_matches).then_some(map)
 		})
 		.collect::<Vec<_>>();
 
-	if uncompleted_maps.is_empty() {
-		Ok(None)
-	} else {
-		Ok(Some(uncompleted_maps))
+	match unfinished.is_empty() {
+		true => Ok(None),
+		false => Ok(Some(unfinished)),
 	}
-}
-
-/// Returns a link to download a global replay by its ID.
-pub async fn get_replay_download_link(replay_id: u32) -> String {
-	trace!("> get_replay_download_link {{ replay_id: {replay_id} }}");
-	format!("{}/records/replay/{}", BASE_URL, replay_id)
-}
-
-/// Returns a link to watch a global replay using
-/// [GameChaos' GlobalReplays Project](https://github.com/GameChaos/GlobalReplays).
-pub async fn get_replay_view_link(replay_id: u32) -> String {
-	trace!("> get_replay_view_link {{ replay_id: {replay_id} }}");
-	format!("http://gokzmaptest.site.nfoservers.com/GlobalReplays/?replay={replay_id}")
 }
