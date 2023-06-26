@@ -3,6 +3,7 @@ use chrono::{DateTime, Utc};
 use {
 	crate::types::{SteamID, Tier},
 	serde::{Deserialize, Serialize},
+	serde_json::Value as JsonValue,
 };
 
 #[allow(missing_docs)]
@@ -13,6 +14,7 @@ pub struct Map {
 	pub name: String,
 	pub tier: Tier,
 	pub bonuses: u8,
+	#[serde(deserialize_with = "deserialize_mapper_names")]
 	pub mapper_names: Vec<String>,
 	#[serde(deserialize_with = "deserialize_mapper_ids")]
 	pub mapper_ids: Vec<SteamID>,
@@ -42,5 +44,15 @@ where
 	Ok(Vec::<String>::deserialize(deserializer)?
 		.into_iter()
 		.flat_map(|steam_id| steam_id.parse())
+		.collect())
+}
+
+fn deserialize_mapper_names<'de, D>(deserializer: D) -> Result<Vec<String>, D::Error>
+where
+	D: serde::Deserializer<'de>,
+{
+	Ok(Vec::<JsonValue>::deserialize(deserializer)?
+		.into_iter()
+		.filter_map(|name| if let JsonValue::String(name) = name { Some(name) } else { None })
 		.collect())
 }
