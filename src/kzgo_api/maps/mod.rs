@@ -14,6 +14,7 @@ pub struct Map {
 	pub tier: Tier,
 	pub bonuses: u8,
 	pub mapper_names: Vec<String>,
+	#[serde(deserialize_with = "deserialize_mapper_ids")]
 	pub mapper_ids: Vec<SteamID>,
 	#[serde(rename = "sp")]
 	pub skz: bool,
@@ -32,4 +33,14 @@ pub struct Map {
 	#[cfg(not(feature = "chrono"))]
 	#[serde(rename = "date")]
 	pub created_on: String,
+}
+
+fn deserialize_mapper_ids<'de, D>(deserializer: D) -> Result<Vec<SteamID>, D::Error>
+where
+	D: serde::Deserializer<'de>,
+{
+	Ok(Vec::<String>::deserialize(deserializer)?
+		.into_iter()
+		.flat_map(|steam_id| steam_id.parse())
+		.collect())
 }
