@@ -7,6 +7,10 @@ pub use bans::{Ban, BanType};
 pub mod maps;
 pub use maps::Map;
 
+/// The `/servers` routes
+pub mod servers;
+pub use servers::Server;
+
 /// The `/modes` routes
 pub mod modes;
 pub use modes::Mode;
