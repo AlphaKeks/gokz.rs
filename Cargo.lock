@@ -162,7 +162,7 @@ dependencies = [
 
 [[package]]
 name = "gokz_rs"
-version = "0.21.2"
+version = "0.21.3"
 dependencies = [
  "chrono",
  "futures",

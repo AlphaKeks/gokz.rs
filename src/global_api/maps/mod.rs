@@ -19,7 +19,7 @@ pub struct Map {
 	pub difficulty: Tier,
 	pub validated: bool,
 	pub filesize: u64,
-	pub approved_by: SteamID,
+	pub approved_by: Option<SteamID>,
 	pub workshop_url: String,
 	pub download_url: String,
 
