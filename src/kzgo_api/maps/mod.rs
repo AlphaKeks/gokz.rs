@@ -19,7 +19,7 @@ pub struct Map {
 	pub skz: bool,
 	#[serde(rename = "vp")]
 	pub vnl: bool,
-	pub workshop_id: u32,
+	pub workshop_id: String,
 
 	#[cfg(feature = "chrono")]
 	#[serde(
