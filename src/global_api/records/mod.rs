@@ -6,6 +6,7 @@ use {
 		global_api::BASE_URL,
 		http::get_json,
 		types::{Mode, Runtype, SteamID},
+		utils::EmptyParams,
 	},
 	serde::{Deserialize, Serialize},
 };
@@ -83,7 +84,7 @@ impl Record {
 	err(Debug)
 )]
 pub async fn root(record_id: u32, client: &crate::Client) -> Result<Record> {
-	get_json(&format!("{BASE_URL}/records/{record_id}"), &[()], client).await
+	get_json(&format!("{BASE_URL}/records/{record_id}"), &EmptyParams, client).await
 }
 
 #[derive(Debug, Deserialize)]
@@ -100,7 +101,7 @@ struct Place(u32);
 )]
 pub async fn place(record_id: u32, client: &crate::Client) -> Result<u32> {
 	let Place(place) =
-		get_json(&format!("{BASE_URL}/records/place/{record_id}"), &[()], client).await?;
+		get_json(&format!("{BASE_URL}/records/place/{record_id}"), &EmptyParams, client).await?;
 
 	Ok(place)
 }

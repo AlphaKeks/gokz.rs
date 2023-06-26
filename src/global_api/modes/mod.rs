@@ -6,6 +6,7 @@ use {
 		global_api::BASE_URL,
 		http::get_json,
 		types::SteamID,
+		utils::EmptyParams,
 	},
 	serde::{Deserialize, Serialize},
 };
@@ -56,7 +57,7 @@ pub struct Mode {
 	err(Debug)
 )]
 pub async fn root(client: &crate::Client) -> Result<Vec<Mode>> {
-	let response: Vec<_> = get_json(&format!("{BASE_URL}/modes"), &[()], client).await?;
+	let response: Vec<_> = get_json(&format!("{BASE_URL}/modes"), &EmptyParams, client).await?;
 
 	if response.is_empty() {
 		return Err(Error::EmptyResponse);
@@ -75,7 +76,7 @@ pub async fn root(client: &crate::Client) -> Result<Vec<Mode>> {
 	err(Debug)
 )]
 pub async fn id(mode_id: u8, client: &crate::Client) -> Result<Mode> {
-	get_json(&format!("{BASE_URL}/modes/{mode_id}"), &[()], client).await
+	get_json(&format!("{BASE_URL}/modes/{mode_id}"), &EmptyParams, client).await
 }
 
 /// # /modes/name/:mode_name
@@ -88,5 +89,5 @@ pub async fn id(mode_id: u8, client: &crate::Client) -> Result<Mode> {
 	err(Debug)
 )]
 pub async fn name(mode_name: &str, client: &crate::Client) -> Result<Mode> {
-	get_json(&format!("{BASE_URL}/modes/{mode_name}"), &[()], client).await
+	get_json(&format!("{BASE_URL}/modes/{mode_name}"), &EmptyParams, client).await
 }

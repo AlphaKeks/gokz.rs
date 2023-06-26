@@ -6,6 +6,7 @@ use {
 		global_api::BASE_URL,
 		http::get_json,
 		types::{SteamID, Tier},
+		utils::EmptyParams,
 	},
 	serde::{Deserialize, Serialize},
 };
@@ -123,7 +124,7 @@ pub async fn root(params: &Params, client: &crate::Client) -> Result<Vec<Map>> {
 	err(Debug)
 )]
 pub async fn id(map_id: u16, client: &crate::Client) -> Result<Map> {
-	get_json(&format!("{BASE_URL}/maps/{map_id}"), &[()], client).await
+	get_json(&format!("{BASE_URL}/maps/{map_id}"), &EmptyParams, client).await
 }
 
 /// # /maps/name/:map_name
@@ -136,5 +137,5 @@ pub async fn id(map_id: u16, client: &crate::Client) -> Result<Map> {
 	err(Debug)
 )]
 pub async fn name(map_name: &str, client: &crate::Client) -> Result<Map> {
-	get_json(&format!("{BASE_URL}/maps/{map_name}"), &[()], client).await
+	get_json(&format!("{BASE_URL}/maps/{map_name}"), &EmptyParams, client).await
 }

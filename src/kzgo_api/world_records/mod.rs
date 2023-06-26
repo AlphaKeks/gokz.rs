@@ -6,6 +6,7 @@ use {
 		http::get_json,
 		kzgo_api::BASE_URL,
 		types::{Mode, Runtype, SteamID},
+		utils::EmptyParams,
 	},
 	serde::{Deserialize, Serialize},
 };
@@ -58,7 +59,7 @@ pub async fn get_wrs(
 		Runtype::Pro => url += "pro",
 	};
 
-	let records: Vec<_> = get_json(&url, &[()], client).await?;
+	let records: Vec<_> = get_json(&url, &EmptyParams, client).await?;
 
 	if records.is_empty() {
 		return Err(Error::EmptyResponse);
@@ -103,7 +104,7 @@ pub mod leaderboards {
 			}
 		);
 
-		let players: Vec<_> = get_json(&url, &[()], client).await?;
+		let players: Vec<_> = get_json(&url, &EmptyParams, client).await?;
 
 		if players.is_empty() {
 			return Err(Error::EmptyResponse);

@@ -4,6 +4,7 @@ use {
 		global_api::BASE_URL,
 		http::get_json,
 		types::SteamID,
+		utils::EmptyParams,
 	},
 	serde::{Deserialize, Serialize},
 };
@@ -75,7 +76,7 @@ pub async fn root(params: &Params, client: &crate::Client) -> Result<Vec<Server>
 	err(Debug)
 )]
 pub async fn id(server_id: u16, client: &crate::Client) -> Result<Server> {
-	get_json(&format!("{BASE_URL}/servers/{server_id}"), &[()], client).await
+	get_json(&format!("{BASE_URL}/servers/{server_id}"), &EmptyParams, client).await
 }
 
 /// # /servers/name/:server_name
@@ -88,5 +89,5 @@ pub async fn id(server_id: u16, client: &crate::Client) -> Result<Server> {
 	err(Debug)
 )]
 pub async fn name(server_name: &str, client: &crate::Client) -> Result<Server> {
-	get_json(&format!("{BASE_URL}/servers/{server_name}"), &[()], client).await
+	get_json(&format!("{BASE_URL}/servers/{server_name}"), &EmptyParams, client).await
 }

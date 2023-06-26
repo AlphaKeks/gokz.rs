@@ -2,6 +2,8 @@
 use chrono::{DateTime, NaiveDateTime, Utc};
 #[cfg(feature = "serde")]
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
+#[cfg(feature = "serde")]
+use serde_json::json;
 
 #[derive(serde::Deserialize)]
 #[serde(untagged)]
@@ -53,4 +55,18 @@ pub fn deserialize_date_opt<'de, D: Deserializer<'de>>(
 			Some(date)
 		}
 	})
+}
+
+#[cfg(feature = "serde")]
+#[derive(Debug, Clone, Copy)]
+pub struct EmptyParams;
+
+#[cfg(feature = "serde")]
+impl Serialize for EmptyParams {
+	fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+	where
+		S: Serializer,
+	{
+		json!({}).serialize(serializer)
+	}
 }

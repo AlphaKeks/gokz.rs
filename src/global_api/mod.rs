@@ -31,6 +31,7 @@ pub use records::Record;
 #[cfg(feature = "chrono")]
 use chrono::{DateTime, Utc};
 
+use crate::utils::EmptyParams;
 #[rustfmt::skip]
 use crate::{error::{Error, Result}, prelude};
 use std::collections::HashSet;
@@ -165,7 +166,7 @@ where
 		}
 	);
 
-	crate::http::get_text(&url, &[()], client).await
+	crate::http::get_text(&url, &EmptyParams, client).await
 }
 
 /// Check if a map is global by fetching all global maps and checking if it's in the list
