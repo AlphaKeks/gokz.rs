@@ -20,8 +20,8 @@ pub struct Map {
 	pub validated: bool,
 	pub filesize: u64,
 	pub approved_by: Option<SteamID>,
-	pub workshop_url: String,
-	pub download_url: String,
+	pub workshop_url: Option<String>,
+	pub download_url: Option<String>,
 
 	#[cfg(feature = "chrono")]
 	#[serde(
