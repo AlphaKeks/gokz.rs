@@ -520,3 +520,26 @@ where
 		false => Ok(Some(unfinished)),
 	}
 }
+
+/// Get a specific server
+#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
+pub async fn get_server<S>(server_identifier: S, client: &crate::Client) -> Result<Server>
+where
+	S: Into<prelude::ServerIdentifier> + std::fmt::Debug,
+{
+	match server_identifier.into() {
+		prelude::ServerIdentifier::Id(server_id) => servers::id(server_id, client).await,
+		prelude::ServerIdentifier::Name(server_name) => servers::name(&server_name, client).await,
+	}
+}
+
+/// Get a list of servers
+#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
+pub async fn get_servers(limit: u32, client: &crate::Client) -> Result<Vec<Server>> {
+	let params = servers::Params {
+		limit: Some(limit),
+		..Default::default()
+	};
+
+	servers::root(&params, client).await
+}
