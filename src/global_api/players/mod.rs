@@ -74,8 +74,8 @@ pub async fn root(params: &Params, client: &crate::Client) -> Result<Vec<Player>
 	err(Debug)
 )]
 pub async fn steam_id(steam_id: SteamID, client: &crate::Client) -> Result<Player> {
-	let response =
+	let mut response: Vec<_> =
 		get_json(&format!("{BASE_URL}/players/steamid/{steam_id}"), &EmptyParams, client).await?;
 
-	Ok(response)
+	response.pop().ok_or(Error::EmptyResponse)
 }
