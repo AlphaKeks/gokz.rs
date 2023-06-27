@@ -64,7 +64,7 @@ pub async fn root(params: &Params, client: &crate::Client) -> Result<Vec<Player>
 	Ok(response)
 }
 
-/// # /players/steam_id/:steam_id
+/// # /players/steamid/:steam_id
 ///
 /// Fetches a player by [`SteamID`]
 #[tracing::instrument(
@@ -75,7 +75,7 @@ pub async fn root(params: &Params, client: &crate::Client) -> Result<Vec<Player>
 )]
 pub async fn steam_id(steam_id: SteamID, client: &crate::Client) -> Result<Player> {
 	let response =
-		get_json(&format!("{BASE_URL}/players/steam_id/{steam_id}"), &EmptyParams, client).await?;
+		get_json(&format!("{BASE_URL}/players/steamid/{steam_id}"), &EmptyParams, client).await?;
 
 	Ok(response)
 }
