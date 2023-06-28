@@ -122,8 +122,8 @@ impl std::fmt::Display for Rank {
 impl std::str::FromStr for Rank {
 	type Err = Error;
 
-	fn from_str(s: &str) -> Result<Self> {
-		Ok(match s.to_lowercase().as_str() {
+	fn from_str(input: &str) -> Result<Self> {
+		Ok(match input.to_lowercase().as_str() {
 			"legend" => Rank::Legend,
 			"master" => Rank::Master,
 			"pro" => Rank::Pro,

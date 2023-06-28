@@ -104,7 +104,6 @@ impl std::str::FromStr for PlayerIdentifier {
 
 #[cfg(feature = "serde")]
 impl serde::Serialize for PlayerIdentifier {
-	#[tracing::instrument(level = "DEBUG", skip(serializer), err(Debug))]
 	fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
 	where
 		S: serde::Serializer,
@@ -118,7 +117,6 @@ impl serde::Serialize for PlayerIdentifier {
 
 #[cfg(feature = "serde")]
 impl<'de> serde::Deserialize<'de> for PlayerIdentifier {
-	#[tracing::instrument(level = "DEBUG", skip(deserializer), err(Debug))]
 	fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
 	where
 		D: serde::Deserializer<'de>,

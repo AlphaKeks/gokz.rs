@@ -94,8 +94,8 @@ try_from_int!(u8, u16, u32, u64, u128, usize, i16, i32, i64, i128, isize);
 impl std::str::FromStr for Mode {
 	type Err = Error;
 
-	fn from_str(s: &str) -> Result<Self> {
-		Ok(match s.to_lowercase().as_str() {
+	fn from_str(input: &str) -> Result<Self> {
+		Ok(match input.to_lowercase().as_str() {
 			"200" | "kztimer" | "kz_timer" | "kzt" => Self::KZTimer,
 			"201" | "simplekz" | "simple_kz" | "kz_simple" | "skz" => Self::SimpleKZ,
 			"202" | "vanilla" | "vanillakz" | "vanilla_kz" | "kz_vanilla" | "vnl" => Self::Vanilla,
@@ -108,7 +108,6 @@ impl std::str::FromStr for Mode {
 
 #[cfg(feature = "serde")]
 impl serde::Serialize for Mode {
-	#[tracing::instrument(level = "DEBUG", skip(serializer), err(Debug))]
 	fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
 	where
 		S: serde::Serializer,
@@ -119,7 +118,6 @@ impl serde::Serialize for Mode {
 
 #[cfg(feature = "serde")]
 impl<'de> serde::Deserialize<'de> for Mode {
-	#[tracing::instrument(level = "DEBUG", skip(deserializer))]
 	fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
 	where
 		D: serde::Deserializer<'de>,

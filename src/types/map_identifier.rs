@@ -1,4 +1,4 @@
-use crate::error::{err, Error, Result};
+use crate::error::{err, Error};
 
 /// Usually a map in KZ has a name and an ID. Functions might be fine with either, so this enum
 /// abstracts this union away.
@@ -13,13 +13,14 @@ pub enum MapIdentifier {
 
 impl MapIdentifier {
 	/// Provides a link to an image of the map, assuming [`Self`] is a `Name`.
-	pub fn image_url(&self) -> Result<String> {
-		match self {
-			MapIdentifier::Id(_) => Err(err!("MapIdentifier was not a Name.")),
-			MapIdentifier::Name(map_name) => Ok(format!(
+	pub fn image_url(&self) -> Option<String> {
+		if let MapIdentifier::Name(map_name) = self {
+			return Some(format!(
 				"https://raw.githubusercontent.com/KZGlobalTeam/map-images/master/images/{map_name}.jpg"
-			)),
+			));
 		}
+
+		None
 	}
 
 	/// Provides a link to the map's associated
@@ -38,23 +39,27 @@ impl MapIdentifier {
 	/// Provides a link to the map's associated [KZ:GO](https://kzgo.eu/) page, assuming [`Self`]
 	/// is a `Name`.
 	#[cfg(feature = "kzgo-api")]
-	pub fn kzgo(&self) -> Result<String> {
+	pub fn kzgo(&self) -> Option<String> {
 		use crate::kzgo_api::BASE_URL;
-		match self {
-			MapIdentifier::Id(_) => Err(err!("MapIdentifier was not a Name.")),
-			MapIdentifier::Name(map_name) => Ok(format!("{BASE_URL}/maps/{map_name}")),
+
+		if let MapIdentifier::Name(map_name) = self {
+			return Some(format!("{BASE_URL}/maps/{map_name}"));
 		}
+
+		None
 	}
 
 	/// Provides a link to the map's associated [KZ:GO](https://kzgo.eu/) API route, assuming
 	/// [`Self`] is a `Name`.
 	#[cfg(feature = "kzgo-api")]
-	pub fn kzgo_api(&self) -> Result<String> {
+	pub fn kzgo_api(&self) -> Option<String> {
 		use crate::kzgo_api::BASE_URL;
-		match self {
-			MapIdentifier::Id(_) => Err(err!("MapIdentifier was not a Name.")),
-			MapIdentifier::Name(map_name) => Ok(format!("{BASE_URL}/maps/{map_name}")),
+
+		if let MapIdentifier::Name(map_name) = self {
+			return Some(format!("{BASE_URL}/maps/{map_name}"));
 		}
+
+		None
 	}
 
 	/// Provides a link to the map's associated [SchnoseAPI](https://schnose.xyz/) route.
@@ -180,7 +185,6 @@ impl std::str::FromStr for MapIdentifier {
 
 #[cfg(feature = "serde")]
 impl serde::Serialize for MapIdentifier {
-	#[tracing::instrument(level = "DEBUG", skip(serializer), err(Debug))]
 	fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
 	where
 		S: serde::Serializer,
@@ -194,7 +198,6 @@ impl serde::Serialize for MapIdentifier {
 
 #[cfg(feature = "serde")]
 impl<'de> serde::Deserialize<'de> for MapIdentifier {
-	#[tracing::instrument(level = "DEBUG", skip(deserializer), err(Debug))]
 	fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
 	where
 		D: serde::Deserializer<'de>,

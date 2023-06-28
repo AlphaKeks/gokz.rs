@@ -70,3 +70,11 @@ impl Serialize for EmptyParams {
 		json!({}).serialize(serializer)
 	}
 }
+
+#[cfg(all(feature = "reqwest", feature = "serde"))]
+pub fn serialize_status_code<S: Serializer>(
+	status_code: &reqwest::StatusCode,
+	serializer: S,
+) -> Result<S::Ok, S::Error> {
+	status_code.as_u16().serialize(serializer)
+}

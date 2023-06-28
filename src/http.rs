@@ -4,7 +4,7 @@ use {
 	serde::{de::DeserializeOwned, Serialize},
 };
 
-#[tracing::instrument(level = "DEBUG", skip(client), err(Debug))]
+#[tracing::instrument(level = "TRACE", skip(client), err(Debug))]
 pub async fn get_json<T, P>(url: &str, params: &P, client: &crate::Client) -> Result<T>
 where
 	T: DeserializeOwned + std::fmt::Debug,
@@ -13,7 +13,7 @@ where
 	Ok(get(url, params, client).await?.json().await?)
 }
 
-#[tracing::instrument(level = "DEBUG", skip(client), err(Debug))]
+#[tracing::instrument(level = "TRACE", skip(client), err(Debug))]
 pub async fn get_text<P>(url: &str, params: &P, client: &crate::Client) -> Result<String>
 where
 	P: Serialize + std::fmt::Debug,
@@ -21,7 +21,7 @@ where
 	Ok(get(url, params, client).await?.text().await?)
 }
 
-#[tracing::instrument(level = "DEBUG", skip(client), err(Debug))]
+#[tracing::instrument(level = "TRACE", skip(client), err(Debug))]
 pub async fn get<P>(url: &str, params: &P, client: &crate::Client) -> Result<reqwest::Response>
 where
 	P: Serialize + std::fmt::Debug,

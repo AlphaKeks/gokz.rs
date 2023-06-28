@@ -1,4 +1,4 @@
-use crate::error::{err, Error};
+use crate::error::{err, Error, Result};
 
 /// Usually a server in KZ has a name and an ID. Functions might be fine with either, so this enum
 /// abstracts this union away.
@@ -116,8 +116,8 @@ try_from_int!(u32, u64, u128, usize, i8, i16, i32, i64, i128, isize);
 impl std::str::FromStr for ServerIdentifier {
 	type Err = Error;
 
-	fn from_str(s: &str) -> std::result::Result<Self, Self::Err> {
-		if s.is_empty() {
+	fn from_str(input: &str) -> Result<Self> {
+		if input.is_empty() {
 			return Err(err!("An empty string is not a valid ServerIdentifier."));
 		}
 
@@ -139,16 +139,15 @@ impl std::str::FromStr for ServerIdentifier {
 			};
 		}
 
-		try_parse_id!(s, u8, u16);
-		try_parse_id!(s, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize);
+		try_parse_id!(input, u8, u16);
+		try_parse_id!(input, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize);
 
-		Ok(Self::Name(s.to_owned()))
+		Ok(Self::Name(input.to_owned()))
 	}
 }
 
 #[cfg(feature = "serde")]
 impl serde::Serialize for ServerIdentifier {
-	#[tracing::instrument(level = "DEBUG", skip(serializer), err(Debug))]
 	fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
 	where
 		S: serde::Serializer,
@@ -162,7 +161,6 @@ impl serde::Serialize for ServerIdentifier {
 
 #[cfg(feature = "serde")]
 impl<'de> serde::Deserialize<'de> for ServerIdentifier {
-	#[tracing::instrument(level = "DEBUG", skip(deserializer), err(Debug))]
 	fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
 	where
 		D: serde::Deserializer<'de>,

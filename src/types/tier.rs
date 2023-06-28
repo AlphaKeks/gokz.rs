@@ -67,8 +67,8 @@ try_from_int!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize);
 impl std::str::FromStr for Tier {
 	type Err = Error;
 
-	fn from_str(s: &str) -> Result<Self> {
-		Ok(match s.to_lowercase().as_str() {
+	fn from_str(input: &str) -> Result<Self> {
+		Ok(match input.to_lowercase().as_str() {
 			"very easy" | "very_easy" => Self::VeryEasy,
 			"easy" => Self::Easy,
 			"medium" => Self::Medium,
@@ -83,7 +83,6 @@ impl std::str::FromStr for Tier {
 
 #[cfg(feature = "serde")]
 impl serde::Serialize for Tier {
-	#[tracing::instrument(level = "DEBUG", skip(serializer), err(Debug))]
 	fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
 	where
 		S: serde::Serializer,
@@ -94,7 +93,6 @@ impl serde::Serialize for Tier {
 
 #[cfg(feature = "serde")]
 impl<'de> serde::Deserialize<'de> for Tier {
-	#[tracing::instrument(level = "DEBUG", skip(deserializer), err(Debug))]
 	fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
 	where
 		D: serde::Deserializer<'de>,
