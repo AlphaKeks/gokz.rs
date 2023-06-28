@@ -40,7 +40,7 @@ use std::collections::HashSet;
 pub const BASE_URL: &str = "https://kztimerglobal.com/api/v2";
 
 /// Get the last `limit` bans
-#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
+#[tracing::instrument(level = "DEBUG", skip(client), err(Debug))]
 pub async fn get_bans(limit: u32, client: &crate::Client) -> Result<Vec<bans::Ban>> {
 	let params = bans::Params {
 		limit: Some(limit),
@@ -51,7 +51,7 @@ pub async fn get_bans(limit: u32, client: &crate::Client) -> Result<Vec<bans::Ba
 }
 
 /// Get all bans for a given player
-#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
+#[tracing::instrument(level = "DEBUG", skip(client), err(Debug))]
 pub async fn get_player_bans<S>(steam_id: S, client: &crate::Client) -> Result<Vec<bans::Ban>>
 where
 	S: Into<prelude::SteamID> + std::fmt::Debug,
@@ -67,7 +67,7 @@ where
 
 /// Get all bans since a given date
 #[cfg(feature = "chrono")]
-#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
+#[tracing::instrument(level = "DEBUG", skip(client), err(Debug))]
 pub async fn get_bans_since<D>(since: D, client: &crate::Client) -> Result<Vec<bans::Ban>>
 where
 	D: Into<DateTime<Utc>> + std::fmt::Debug,
@@ -83,7 +83,7 @@ where
 
 /// Get all bans since a given date
 #[cfg(not(feature = "chrono"))]
-#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
+#[tracing::instrument(level = "DEBUG", skip(client), err(Debug))]
 pub async fn get_bans_since(since: String, client: &crate::Client) -> Result<Vec<bans::Ban>> {
 	let params = bans::Params {
 		created_since: Some(since),
@@ -95,7 +95,7 @@ pub async fn get_bans_since(since: String, client: &crate::Client) -> Result<Vec
 }
 
 /// Get `limit` or less maps
-#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
+#[tracing::instrument(level = "DEBUG", skip(client), err(Debug))]
 pub async fn get_maps(limit: u32, client: &crate::Client) -> Result<Vec<maps::Map>> {
 	let params = maps::Params {
 		limit: Some(limit),
@@ -106,7 +106,7 @@ pub async fn get_maps(limit: u32, client: &crate::Client) -> Result<Vec<maps::Ma
 }
 
 /// Get global (`validated`) maps
-#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
+#[tracing::instrument(level = "DEBUG", skip(client), err(Debug))]
 pub async fn get_global_maps(limit: u32, client: &crate::Client) -> Result<Vec<maps::Map>> {
 	let params = maps::Params {
 		is_validated: Some(true),
@@ -118,7 +118,7 @@ pub async fn get_global_maps(limit: u32, client: &crate::Client) -> Result<Vec<m
 }
 
 /// Get non-global (`validated`) maps
-#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
+#[tracing::instrument(level = "DEBUG", skip(client), err(Debug))]
 pub async fn get_non_global_maps(limit: u32, client: &crate::Client) -> Result<Vec<maps::Map>> {
 	let params = maps::Params {
 		is_validated: Some(false),
@@ -130,7 +130,7 @@ pub async fn get_non_global_maps(limit: u32, client: &crate::Client) -> Result<V
 }
 
 /// Get a single map
-#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
+#[tracing::instrument(level = "DEBUG", skip(client), err(Debug))]
 pub async fn get_map<M>(map_identifier: M, client: &crate::Client) -> Result<maps::Map>
 where
 	M: Into<prelude::MapIdentifier> + std::fmt::Debug,
@@ -153,7 +153,7 @@ where
 }
 
 /// Get a list of all global maps
-#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
+#[tracing::instrument(level = "DEBUG", skip(client), err(Debug))]
 pub async fn get_mapcycle<T>(tier_filter: T, client: &crate::Client) -> Result<String>
 where
 	T: Into<Option<prelude::Tier>> + std::fmt::Debug,
@@ -170,7 +170,7 @@ where
 }
 
 /// Check if a map is global by fetching all global maps and checking if it's in the list
-#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
+#[tracing::instrument(level = "DEBUG", skip(client), err(Debug))]
 pub async fn is_global<M>(
 	map_identifier: M,
 	client: &crate::Client,
@@ -196,13 +196,13 @@ where
 }
 
 /// Get information about all global modes
-#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
+#[tracing::instrument(level = "DEBUG", skip(client), err(Debug))]
 pub async fn get_modes(client: &crate::Client) -> Result<Vec<modes::Mode>> {
 	modes::root(client).await
 }
 
 /// Get information about a specific mode
-#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
+#[tracing::instrument(level = "DEBUG", skip(client), err(Debug))]
 pub async fn get_mode<M>(mode: M, client: &crate::Client) -> Result<modes::Mode>
 where
 	M: Into<prelude::Mode> + std::fmt::Debug,
@@ -211,7 +211,7 @@ where
 }
 
 /// Get `limit` or less players
-#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
+#[tracing::instrument(level = "DEBUG", skip(client), err(Debug))]
 pub async fn get_players(limit: u32, client: &crate::Client) -> Result<Vec<players::Player>> {
 	let params = players::Params {
 		limit: Some(limit),
@@ -222,7 +222,7 @@ pub async fn get_players(limit: u32, client: &crate::Client) -> Result<Vec<playe
 }
 
 /// Get a single player
-#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
+#[tracing::instrument(level = "DEBUG", skip(client), err(Debug))]
 pub async fn get_player<P>(player_identifier: P, client: &crate::Client) -> Result<players::Player>
 where
 	P: Into<prelude::PlayerIdentifier> + std::fmt::Debug,
@@ -245,7 +245,7 @@ where
 }
 
 /// Get the filters for a given map
-#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
+#[tracing::instrument(level = "DEBUG", skip(client), err(Debug))]
 pub async fn get_filters(
 	map_id: u16,
 	client: &crate::Client,
@@ -260,19 +260,19 @@ pub async fn get_filters(
 }
 
 /// Get a record by id
-#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
+#[tracing::instrument(level = "DEBUG", skip(client), err(Debug))]
 pub async fn get_record(record_id: u32, client: &crate::Client) -> Result<records::Record> {
 	records::root(record_id, client).await
 }
 
 /// Get the leaderboard spot of a single record
-#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
+#[tracing::instrument(level = "DEBUG", skip(client), err(Debug))]
 pub async fn get_place(record_id: u32, client: &crate::Client) -> Result<u32> {
 	records::place(record_id, client).await
 }
 
 /// Get `limit` personal bests of a player
-#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
+#[tracing::instrument(level = "DEBUG", skip(client), err(Debug))]
 pub async fn get_player_records<P, MI, M, R>(
 	player_identifier: P,
 	map_identifier: MI,
@@ -312,7 +312,7 @@ where
 }
 
 /// Get the world record on a map
-#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
+#[tracing::instrument(level = "DEBUG", skip(client), err(Debug))]
 pub async fn get_wr<MI, M, R>(
 	map_identifier: MI,
 	mode: M,
@@ -343,7 +343,7 @@ where
 }
 
 /// Get a player's personal best on a map
-#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
+#[tracing::instrument(level = "DEBUG", skip(client), err(Debug))]
 pub async fn get_pb<P, MI, M, R>(
 	player_identifier: P,
 	map_identifier: MI,
@@ -381,7 +381,7 @@ where
 }
 
 /// Get the top 100 records on a map
-#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
+#[tracing::instrument(level = "DEBUG", skip(client), err(Debug))]
 pub async fn get_maptop<MI, M, R>(
 	map_identifier: MI,
 	mode: M,
@@ -411,7 +411,7 @@ where
 }
 
 /// Get a player's most recent `limit` personal best(s)
-#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
+#[tracing::instrument(level = "DEBUG", skip(client), err(Debug))]
 pub async fn get_recent<P>(
 	player_identifier: P,
 	limit: u32,
@@ -461,7 +461,7 @@ where
 }
 
 /// Get a list of maps a player hasn't finished yet
-#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
+#[tracing::instrument(level = "DEBUG", skip(client), err(Debug))]
 pub async fn get_unfinished<P, M, R, T>(
 	player_identifier: P,
 	mode: M,
@@ -522,7 +522,7 @@ where
 }
 
 /// Get a specific server
-#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
+#[tracing::instrument(level = "DEBUG", skip(client), err(Debug))]
 pub async fn get_server<S>(server_identifier: S, client: &crate::Client) -> Result<Server>
 where
 	S: Into<prelude::ServerIdentifier> + std::fmt::Debug,
@@ -534,7 +534,7 @@ where
 }
 
 /// Get a list of servers
-#[tracing::instrument(level = "INFO", skip(client), err(Debug))]
+#[tracing::instrument(level = "DEBUG", skip(client), err(Debug))]
 pub async fn get_servers(limit: u32, client: &crate::Client) -> Result<Vec<Server>> {
 	let params = servers::Params {
 		limit: Some(limit),

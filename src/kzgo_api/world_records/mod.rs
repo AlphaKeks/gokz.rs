@@ -86,7 +86,7 @@ pub mod leaderboards {
 	/// Fetches a leaderboard of players with the most world records in a given mode
 	#[tracing::instrument(
 		name = "KZ:GO request to `/wrs/leaderboards/:mode/:runtype`",
-		level = "TRACE",
+		level = "DEBUG",
 		skip(client),
 		err(Debug)
 	)]
