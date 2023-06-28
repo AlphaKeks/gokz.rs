@@ -46,11 +46,18 @@ impl std::fmt::Display for ServerIdentifier {
 }
 
 impl From<String> for ServerIdentifier {
-	fn from(server_name: String) -> Self { Self::Name(server_name) }
+	fn from(server_identifier: String) -> Self {
+		server_identifier.parse::<u16>().map(Self::Id).unwrap_or(Self::Name(server_identifier))
+	}
 }
 
 impl From<&str> for ServerIdentifier {
-	fn from(server_name: &str) -> Self { Self::Name(server_name.to_owned()) }
+	fn from(server_identifier: &str) -> Self {
+		server_identifier
+			.parse::<u16>()
+			.map(Self::Id)
+			.unwrap_or(Self::Name(server_identifier.to_owned()))
+	}
 }
 
 macro_rules! try_into_int {

@@ -83,11 +83,15 @@ impl std::fmt::Display for MapIdentifier {
 }
 
 impl From<String> for MapIdentifier {
-	fn from(map_name: String) -> Self { Self::Name(map_name) }
+	fn from(map_identifier: String) -> Self {
+		map_identifier.parse::<u16>().map(Self::Id).unwrap_or(Self::Name(map_identifier))
+	}
 }
 
 impl From<&str> for MapIdentifier {
-	fn from(map_name: &str) -> Self { Self::Name(map_name.to_owned()) }
+	fn from(map_identifier: &str) -> Self {
+		map_identifier.parse::<u16>().map(Self::Id).unwrap_or(Self::Name(map_identifier.to_owned()))
+	}
 }
 
 macro_rules! try_into_int {

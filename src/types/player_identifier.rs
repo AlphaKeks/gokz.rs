@@ -68,11 +68,21 @@ impl std::fmt::Display for PlayerIdentifier {
 }
 
 impl From<String> for PlayerIdentifier {
-	fn from(map_name: String) -> Self { Self::Name(map_name) }
+	fn from(player_identifier: String) -> Self {
+		player_identifier
+			.parse::<SteamID>()
+			.map(Self::SteamID)
+			.unwrap_or(Self::Name(player_identifier))
+	}
 }
 
 impl From<&str> for PlayerIdentifier {
-	fn from(map_name: &str) -> Self { Self::Name(map_name.to_owned()) }
+	fn from(player_identifier: &str) -> Self {
+		player_identifier
+			.parse::<SteamID>()
+			.map(Self::SteamID)
+			.unwrap_or(Self::Name(player_identifier.to_owned()))
+	}
 }
 
 impl From<SteamID> for PlayerIdentifier {
@@ -93,12 +103,12 @@ impl TryFrom<PlayerIdentifier> for SteamID {
 impl std::str::FromStr for PlayerIdentifier {
 	type Err = Error;
 
-	fn from_str(s: &str) -> Result<Self> {
-		if s.is_empty() {
+	fn from_str(input: &str) -> Result<Self> {
+		if input.is_empty() {
 			return Err(err!("An empty string is not a valid PlayerIdentifier."));
 		}
 
-		Ok(s.parse::<SteamID>().map_or(Self::Name(s.to_owned()), Into::into))
+		Ok(input.parse::<SteamID>().map(Self::SteamID).unwrap_or(Self::Name(input.to_owned())))
 	}
 }
 
