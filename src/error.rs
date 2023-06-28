@@ -39,7 +39,11 @@ pub enum Error {
 	#[error("HTTP request failed with code {code} ({message}).")]
 	Http {
 		/// The HTTP status code
-		code: u16,
+		#[cfg_attr(
+			feature = "serde",
+			serde(serialize_with = "crate::utils::serialize_status_code")
+		)]
+		code: reqwest::StatusCode,
 
 		/// The HTTP status code in text form
 		message: String,
@@ -65,7 +69,7 @@ impl From<reqwest::Error> for Error {
 	fn from(err: reqwest::Error) -> Self {
 		err.status()
 			.map(|code| Self::Http {
-				code: code.as_u16(),
+				code,
 				message: code.to_string(),
 			})
 			.unwrap_or_else(|| Self::Reqwest(err.to_string()))
