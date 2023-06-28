@@ -1,6 +1,6 @@
 [package]
 name = "gokz_rs"
-version = "0.21.11"
+version = "0.21.12"
 description = "CS:GO KZ in Rust."
 authors = ["AlphaKeks <alphakeks@dawn.sh>"]
 edition = "2021"
@@ -18,47 +18,47 @@ kzgo-api = ["reqwest"]
 schnose-api = ["reqwest"]
 
 [dependencies.chrono]
-version = "0.4.26"
+version = "0.4"
 default-features = false
 features = ["std", "serde"]
 optional = true
 
 [dependencies.futures]
-version = "0.3.28"
+version = "0.3"
 default-features = false
 features = ["std"]
 
 [dependencies.lazy_static]
-version = "1.4.0"
+version = "1.4"
 
 [dependencies.regex]
-version = "1.8.4"
+version = "1.8"
 default-features = false
 features = ["std", "unicode-perl"]
 
 [dependencies.reqwest]
-version = "0.11.18"
+version = "0.11"
 default-features = false
 features = ["rustls-tls", "json", "serde_json"]
 optional = true
 
 [dependencies.serde]
-version = "1.0.164"
+version = "1"
 default-features = false
 features = ["derive"]
 optional = true
 
 [dependencies.serde_json]
-version = "1.0.96"
+version = "1"
 default-features = false
 features = ["std"]
 optional = true
 
 [dependencies.thiserror]
-version = "1.0.40"
+version = "1"
 
 [dependencies.tracing]
-version = "0.1.37"
+version = "0.1"
 default-features = false
 features = ["std", "attributes"]
 
