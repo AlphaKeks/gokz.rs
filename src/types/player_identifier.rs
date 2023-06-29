@@ -133,8 +133,10 @@ impl<'de> serde::Deserialize<'de> for PlayerIdentifier {
 	{
 		use crate::utils::Either;
 
-		Ok(match Either::<SteamID, String>::deserialize(deserializer)? {
-			Either::A(steam_id) => steam_id.into(),
+		Ok(match Either::<u64, String>::deserialize(deserializer)? {
+			Either::A(steam_id) => SteamID::try_from(steam_id)
+				.map_err(|err| serde::de::Error::custom(err.to_string()))?
+				.into(),
 			Either::B(name) => name.into(),
 		})
 	}
