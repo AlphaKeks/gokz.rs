@@ -52,15 +52,8 @@ pub async fn get_maps(client: &crate::Client) -> Result<Vec<Map>> {
 
 /// Fetches a single map
 #[tracing::instrument(level = "DEBUG", skip(client), err(Debug))]
-pub async fn get_map(map_name: &str, client: &crate::Client) -> Result<Vec<Map>> {
-	let maps: Vec<_> =
-		get_json(&format!("{BASE_URL}/maps/{map_name}"), &EmptyParams, client).await?;
-
-	if maps.is_empty() {
-		return Err(Error::EmptyResponse);
-	}
-
-	Ok(maps)
+pub async fn get_map(map_name: &str, client: &crate::Client) -> Result<Map> {
+	get_json(&format!("{BASE_URL}/maps/{map_name}"), &EmptyParams, client).await
 }
 
 /// Fetches information about a player
