@@ -67,8 +67,8 @@ impl std::str::FromStr for Runtype {
 
 	fn from_str(input: &str) -> Result<Self> {
 		Ok(match input.to_lowercase().as_str() {
-			"tp" => Runtype::TP,
-			"pro" => Runtype::Pro,
+			"tp" | "true" => Runtype::TP,
+			"pro" | "false" => Runtype::Pro,
 			input => return Err(err!("`{input}` is not a valid Runtype.")),
 		})
 	}
@@ -93,6 +93,19 @@ impl<'de> serde::Deserialize<'de> for Runtype {
 	where
 		D: serde::Deserializer<'de>,
 	{
-		Ok(if bool::deserialize(deserializer)? { Runtype::TP } else { Runtype::Pro })
+		use crate::utils::Either;
+
+		Ok(match Either::<bool, String>::deserialize(deserializer)? {
+			Either::A(bool) => {
+				if bool {
+					Runtype::TP
+				} else {
+					Runtype::Pro
+				}
+			}
+			Either::B(runtype) => runtype
+				.parse::<Runtype>()
+				.map_err(|err| serde::de::Error::custom(err.to_string()))?,
+		})
 	}
 }
