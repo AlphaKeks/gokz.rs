@@ -68,12 +68,15 @@ macro_rules! try_into_int {
 				server_identifier: $crate::types::ServerIdentifier,
 			) -> ::std::result::Result<$int, Self::Error> {
 				Ok(match server_identifier {
-					$crate::types::ServerIdentifier::Id(server_id) => server_id.try_into().map_err(|err| {
-						$crate::error::err!(
-							"ServerId `{server_id}` could not be converted into a valid {}. ({err:?})",
-							stringify!($int),
-						)
-					})?,
+					$crate::types::ServerIdentifier::Id(server_id) => server_id
+						.try_into()
+						.map_err(|err| {
+							$crate::error::err!(
+								"ServerId `{server_id}` could not be converted into a valid {}.
+								({err:?})",
+								stringify!($int),
+							)
+						})?,
 					$crate::types::ServerIdentifier::Name(server_name) => {
 						return Err($crate::error::err!(
 							"ServerIdentifier (`{server_name}`) was not an Id."

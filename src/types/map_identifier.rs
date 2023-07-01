@@ -14,9 +14,8 @@ pub enum MapIdentifier {
 impl crate::traits::MapIdentifier for MapIdentifier {
 	fn image_url(&self) -> Option<String> {
 		if let MapIdentifier::Name(map_name) = self {
-			return Some(format!(
-				"https://raw.githubusercontent.com/KZGlobalTeam/map-images/master/images/{map_name}.jpg"
-			));
+			let base = "https://raw.githubusercontent.com/KZGlobalTeam/map-images/master/images";
+			return Some(format!("{base}/{map_name}.jpg"));
 		}
 
 		None

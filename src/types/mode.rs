@@ -1,7 +1,4 @@
-use crate::{
-	error::{err, Error, Result},
-	traits::Mode as _,
-};
+use crate::error::{err, Error, Result};
 
 /// The 3 gamemodes that currently exist in GOKZ.
 ///
@@ -113,7 +110,7 @@ impl serde::Serialize for Mode {
 	where
 		S: serde::Serializer,
 	{
-		self.api().serialize(serializer)
+		<Self as crate::traits::Mode>::api(self).serialize(serializer)
 	}
 }
 
@@ -143,7 +140,7 @@ mod tests {
 	use super::*;
 
 	mod formatting {
-		use {super::*, pretty_assertions::assert_eq};
+		use {super::*, crate::traits::Mode as _, pretty_assertions::assert_eq};
 
 		#[test]
 		fn display() {
