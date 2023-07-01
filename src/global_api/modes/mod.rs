@@ -5,6 +5,7 @@ use {
 		error::{Error, Result},
 		global_api::BASE_URL,
 		http::get_json,
+		prelude,
 		types::SteamID,
 		utils::EmptyParams,
 	},
@@ -45,6 +46,22 @@ pub struct Mode {
 	pub updated_on: String,
 
 	pub updated_by_id: SteamID,
+}
+
+impl crate::traits::Mode for Mode {
+	#[inline]
+	fn api(&self) -> String {
+		prelude::Mode::try_from(self.id)
+			.expect("Mode returned by the GlobalAPI should be a valid `Mode` type.")
+			.api()
+	}
+
+	#[inline]
+	fn short(&self) -> String {
+		prelude::Mode::try_from(self.id)
+			.expect("Mode returned by the GlobalAPI should be a valid `Mode` type.")
+			.short()
+	}
 }
 
 /// # /modes

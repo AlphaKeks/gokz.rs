@@ -7,6 +7,7 @@ use {
 		http::get_json,
 		prelude,
 		schnose_api::BASE_URL,
+		types::MapIdentifier,
 		utils::EmptyParams,
 	},
 	serde::{Deserialize, Serialize},
@@ -24,6 +25,26 @@ pub struct Map {
 	pub mappers: Option<Vec<Player>>,
 	pub created_on: DateTime<Utc>,
 	pub updated_on: DateTime<Utc>,
+}
+
+impl crate::traits::MapIdentifier for Map {
+	#[inline]
+	fn image_url(&self) -> Option<String> { MapIdentifier::Name(self.name.clone()).image_url() }
+
+	#[inline]
+	#[cfg(feature = "global-api")]
+	fn global_api(&self) -> String { MapIdentifier::Name(self.name.clone()).global_api() }
+
+	#[inline]
+	#[cfg(feature = "kzgo-api")]
+	fn kzgo(&self) -> Option<String> { MapIdentifier::Name(self.name.clone()).kzgo() }
+
+	#[inline]
+	#[cfg(feature = "kzgo-api")]
+	fn kzgo_api(&self) -> Option<String> { MapIdentifier::Name(self.name.clone()).kzgo_api() }
+
+	#[inline]
+	fn schnose_api(&self) -> String { MapIdentifier::Id(self.id).schnose_api() }
 }
 
 #[allow(missing_docs)]

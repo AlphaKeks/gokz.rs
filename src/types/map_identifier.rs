@@ -11,9 +11,8 @@ pub enum MapIdentifier {
 	Name(String),
 }
 
-impl MapIdentifier {
-	/// Provides a link to an image of the map, assuming [`Self`] is a `Name`.
-	pub fn image_url(&self) -> Option<String> {
+impl crate::traits::MapIdentifier for MapIdentifier {
+	fn image_url(&self) -> Option<String> {
 		if let MapIdentifier::Name(map_name) = self {
 			return Some(format!(
 				"https://raw.githubusercontent.com/KZGlobalTeam/map-images/master/images/{map_name}.jpg"
@@ -23,10 +22,8 @@ impl MapIdentifier {
 		None
 	}
 
-	/// Provides a link to the map's associated
-	/// [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2) route.
 	#[cfg(feature = "global-api")]
-	pub fn global_api(&self) -> String {
+	fn global_api(&self) -> String {
 		use crate::global_api::BASE_URL;
 		match self {
 			MapIdentifier::Id(map_id) => format!("{BASE_URL}/maps/{map_id}"),
@@ -36,10 +33,8 @@ impl MapIdentifier {
 		}
 	}
 
-	/// Provides a link to the map's associated [KZ:GO](https://kzgo.eu/) page, assuming [`Self`]
-	/// is a `Name`.
 	#[cfg(feature = "kzgo-api")]
-	pub fn kzgo(&self) -> Option<String> {
+	fn kzgo(&self) -> Option<String> {
 		use crate::kzgo_api::BASE_URL;
 
 		if let MapIdentifier::Name(map_name) = self {
@@ -49,10 +44,8 @@ impl MapIdentifier {
 		None
 	}
 
-	/// Provides a link to the map's associated [KZ:GO](https://kzgo.eu/) API route, assuming
-	/// [`Self`] is a `Name`.
 	#[cfg(feature = "kzgo-api")]
-	pub fn kzgo_api(&self) -> Option<String> {
+	fn kzgo_api(&self) -> Option<String> {
 		use crate::kzgo_api::BASE_URL;
 
 		if let MapIdentifier::Name(map_name) = self {
@@ -62,9 +55,8 @@ impl MapIdentifier {
 		None
 	}
 
-	/// Provides a link to the map's associated [SchnoseAPI](https://schnose.xyz/) route.
 	#[cfg(feature = "schnose-api")]
-	pub fn schnose_api(&self) -> String {
+	fn schnose_api(&self) -> String {
 		use crate::schnose_api::BASE_URL;
 		match self {
 			MapIdentifier::Id(map_id) => format!("{BASE_URL}/maps/{map_id}"),

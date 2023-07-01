@@ -3,7 +3,7 @@ use {
 		error::{Error, Result},
 		global_api::BASE_URL,
 		http::get_json,
-		types::SteamID,
+		types::{PlayerIdentifier, SteamID},
 		utils::EmptyParams,
 	},
 	serde::{Deserialize, Serialize},
@@ -15,6 +15,22 @@ pub struct Player {
 	pub name: String,
 	pub steam_id: SteamID,
 	pub is_banned: bool,
+}
+
+impl crate::traits::PlayerIdentifier for Player {
+	#[inline]
+	fn steam_profile(&self) -> String { PlayerIdentifier::SteamID(self.steam_id).steam_profile() }
+
+	#[inline]
+	fn global_api(&self) -> String { PlayerIdentifier::SteamID(self.steam_id).global_api() }
+
+	#[inline]
+	#[cfg(feature = "kzgo-api")]
+	fn kzgo(&self) -> String { PlayerIdentifier::SteamID(self.steam_id).kzgo() }
+
+	#[inline]
+	#[cfg(feature = "schnose-api")]
+	fn schnose_api(&self) -> String { PlayerIdentifier::SteamID(self.steam_id).schnose_api() }
 }
 
 #[allow(missing_docs)]

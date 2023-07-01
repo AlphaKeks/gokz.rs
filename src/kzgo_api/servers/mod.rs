@@ -1,5 +1,5 @@
 use {
-	crate::types::Tier,
+	crate::types::{ServerIdentifier, Tier},
 	serde::{Deserialize, Serialize},
 };
 
@@ -18,6 +18,14 @@ pub struct Server {
 	pub tags: Vec<String>,
 	pub err_before: bool,
 	pub max_players: u8,
+}
+
+impl crate::traits::ServerIdentifier for Server {
+	#[inline]
+	fn global_api(&self) -> String { ServerIdentifier::Name(self.name.clone()).global_api() }
+
+	#[inline]
+	fn schnose_api(&self) -> String { ServerIdentifier::Name(self.name.clone()).schnose_api() }
 }
 
 #[allow(missing_docs)]

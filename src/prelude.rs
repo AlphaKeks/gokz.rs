@@ -9,5 +9,8 @@ pub use crate::types::Rank;
 #[rustfmt::skip]
 pub use crate::{
 	error::{Error, Result},
-	types::{steam_id::*, MapIdentifier, Mode, PlayerIdentifier, ServerIdentifier, Tier, Runtype},
+	traits::{
+		MapIdentifier as _, Mode as _, PlayerIdentifier as _, Record as _, ServerIdentifier as _,
+	},
+	types::{steam_id::*, MapIdentifier, Mode, PlayerIdentifier, Runtype, ServerIdentifier, Tier},
 };

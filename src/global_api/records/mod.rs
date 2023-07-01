@@ -52,19 +52,17 @@ pub struct Record {
 	pub updated_on: String,
 }
 
-impl Record {
-	/// Returns a link to download the replay for this record
-	pub fn replay_download_link(&self) -> Option<String> {
+impl crate::traits::Record for Record {
+	#[inline]
+	fn replay_download_link(&self) -> Option<String> {
 		match self.replay_id {
 			0 => None,
 			id => Some(format!("{BASE_URL}/records/replay/{id}")),
 		}
 	}
 
-	/// Returns a link to watch the replay for this record online
-	///
-	/// s/o [GC](https://github.com/GameChaos/GlobalReplays)
-	pub fn replay_view_link(&self) -> Option<String> {
+	#[inline]
+	fn replay_view_link(&self) -> Option<String> {
 		match self.replay_id {
 			0 => None,
 			id => {

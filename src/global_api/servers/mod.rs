@@ -3,7 +3,7 @@ use {
 		error::{Error, Result},
 		global_api::BASE_URL,
 		http::get_json,
-		types::SteamID,
+		types::{ServerIdentifier, SteamID},
 		utils::EmptyParams,
 	},
 	serde::{Deserialize, Serialize},
@@ -18,6 +18,15 @@ pub struct Server {
 	pub name: String,
 	#[serde(rename = "owner_steamid64")]
 	pub owner_id: SteamID,
+}
+
+impl crate::traits::ServerIdentifier for Server {
+	#[inline]
+	fn global_api(&self) -> String { ServerIdentifier::Name(self.name.clone()).global_api() }
+
+	#[inline]
+	#[cfg(feature = "schnose-api")]
+	fn schnose_api(&self) -> String { ServerIdentifier::Id(self.id).schnose_api() }
 }
 
 #[allow(missing_docs)]

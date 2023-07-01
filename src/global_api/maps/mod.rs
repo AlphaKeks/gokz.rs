@@ -5,7 +5,7 @@ use {
 		error::{Error, Result},
 		global_api::BASE_URL,
 		http::get_json,
-		types::{SteamID, Tier},
+		types::{MapIdentifier, SteamID, Tier},
 		utils::EmptyParams,
 	},
 	serde::{Deserialize, Serialize},
@@ -42,6 +42,26 @@ pub struct Map {
 
 	#[cfg(not(feature = "chrono"))]
 	pub updated_on: String,
+}
+
+impl crate::traits::MapIdentifier for Map {
+	#[inline]
+	fn image_url(&self) -> Option<String> { MapIdentifier::Name(self.name.clone()).image_url() }
+
+	#[inline]
+	fn global_api(&self) -> String { MapIdentifier::Name(self.name.clone()).global_api() }
+
+	#[inline]
+	#[cfg(feature = "kzgo-api")]
+	fn kzgo(&self) -> Option<String> { MapIdentifier::Name(self.name.clone()).kzgo() }
+
+	#[inline]
+	#[cfg(feature = "kzgo-api")]
+	fn kzgo_api(&self) -> Option<String> { MapIdentifier::Name(self.name.clone()).kzgo_api() }
+
+	#[inline]
+	#[cfg(feature = "schnose-api")]
+	fn schnose_api(&self) -> String { MapIdentifier::Id(self.id).schnose_api() }
 }
 
 #[allow(missing_docs)]

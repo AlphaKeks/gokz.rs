@@ -12,9 +12,9 @@ pub enum PlayerIdentifier {
 	Name(String),
 }
 
-impl PlayerIdentifier {
-	/// Provides a link to the player's steam profile.
-	pub fn steam_profile(&self) -> String {
+impl crate::traits::PlayerIdentifier for PlayerIdentifier {
+	#[inline]
+	fn steam_profile(&self) -> String {
 		match self {
 			PlayerIdentifier::SteamID(steam_id) => {
 				let steam_id = steam_id.as_id64();
@@ -24,10 +24,9 @@ impl PlayerIdentifier {
 		}
 	}
 
-	/// Provides a link to the players's associated
-	/// [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2) route.
+	#[inline]
 	#[cfg(feature = "global-api")]
-	pub fn global_api(&self) -> String {
+	fn global_api(&self) -> String {
 		use crate::global_api::BASE_URL;
 		match self {
 			PlayerIdentifier::SteamID(steam_id) => {
@@ -37,9 +36,9 @@ impl PlayerIdentifier {
 		}
 	}
 
-	/// Provides a link to the player's associated [KZ:GO](https://kzgo.eu/) page.
+	#[inline]
 	#[cfg(feature = "kzgo-api")]
-	pub fn kzgo(&self) -> String {
+	fn kzgo(&self) -> String {
 		use crate::kzgo_api::BASE_URL;
 		match self {
 			PlayerIdentifier::SteamID(steam_id) => format!("{BASE_URL}/players/{steam_id}"),
@@ -47,9 +46,9 @@ impl PlayerIdentifier {
 		}
 	}
 
-	/// Provides a link to the player's associated [SchnoseAPI](https://schnose.xyz/) route.
+	#[inline]
 	#[cfg(feature = "schnose-api")]
-	pub fn schnose_api(&self) -> String {
+	fn schnose_api(&self) -> String {
 		use crate::schnose_api::BASE_URL;
 		match self {
 			PlayerIdentifier::SteamID(steam_id) => format!("{BASE_URL}/players/{steam_id}"),

@@ -1,7 +1,7 @@
 #[cfg(feature = "chrono")]
 use chrono::{DateTime, Utc};
 use {
-	crate::types::{SteamID, Tier},
+	crate::types::{MapIdentifier, SteamID, Tier},
 	serde::{Deserialize, Serialize},
 	serde_json::Value as JsonValue,
 };
@@ -35,6 +35,25 @@ pub struct Map {
 	#[cfg(not(feature = "chrono"))]
 	#[serde(rename = "date")]
 	pub created_on: String,
+}
+
+impl crate::traits::MapIdentifier for Map {
+	#[inline]
+	fn image_url(&self) -> Option<String> { MapIdentifier::Name(self.name.clone()).image_url() }
+
+	#[inline]
+	#[cfg(feature = "global-api")]
+	fn global_api(&self) -> String { MapIdentifier::Name(self.name.clone()).global_api() }
+
+	#[inline]
+	fn kzgo(&self) -> Option<String> { MapIdentifier::Name(self.name.clone()).kzgo() }
+
+	#[inline]
+	fn kzgo_api(&self) -> Option<String> { MapIdentifier::Name(self.name.clone()).kzgo_api() }
+
+	#[inline]
+	#[cfg(feature = "schnose-api")]
+	fn schnose_api(&self) -> String { MapIdentifier::Id(self.id).schnose_api() }
 }
 
 fn deserialize_mapper_ids<'de, D>(deserializer: D) -> Result<Vec<SteamID>, D::Error>

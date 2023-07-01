@@ -2,6 +2,7 @@ use crate::{
 	error::{Error, Result},
 	http::get_json,
 	prelude,
+	traits::Mode as _,
 	types::SteamID,
 	utils::EmptyParams,
 };

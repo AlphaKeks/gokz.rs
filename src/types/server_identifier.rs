@@ -11,11 +11,10 @@ pub enum ServerIdentifier {
 	Name(String),
 }
 
-impl ServerIdentifier {
-	/// Provides a link to the server's associated
-	/// [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2) route.
+impl crate::traits::ServerIdentifier for ServerIdentifier {
+	#[inline]
 	#[cfg(feature = "global-api")]
-	pub fn global_api(&self) -> String {
+	fn global_api(&self) -> String {
 		use crate::global_api::BASE_URL;
 		match self {
 			ServerIdentifier::Id(server_id) => format!("{BASE_URL}/servers/{server_id}"),
@@ -25,9 +24,9 @@ impl ServerIdentifier {
 		}
 	}
 
-	/// Provides a link to the server's associated [SchnoseAPI](https://schnose.xyz/) route.
+	#[inline]
 	#[cfg(feature = "schnose-api")]
-	pub fn schnose_api(&self) -> String {
+	fn schnose_api(&self) -> String {
 		use crate::schnose_api::BASE_URL;
 		match self {
 			ServerIdentifier::Id(server_id) => format!("{BASE_URL}/servers/{server_id}"),

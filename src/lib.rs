@@ -19,6 +19,9 @@ pub mod error;
 /// All the custom KZ-related types exposed by this crate.
 pub mod types;
 
+/// Various extension traits for types in the [`types`] module.
+pub mod traits;
+
 /// Functions and types related to the
 /// [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2).
 #[cfg(feature = "global-api")]

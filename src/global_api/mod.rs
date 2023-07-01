@@ -39,6 +39,7 @@ use {
 	crate::{
 		error::{Error, Result},
 		prelude,
+		traits::Mode as _,
 		utils::EmptyParams
 	},
 	std::collections::HashSet,

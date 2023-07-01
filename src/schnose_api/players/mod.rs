@@ -4,6 +4,7 @@ use {
 		http::get_json,
 		prelude,
 		schnose_api::BASE_URL,
+		types::PlayerIdentifier,
 		utils::EmptyParams,
 	},
 	serde::{Deserialize, Serialize},
@@ -15,6 +16,22 @@ pub struct Player {
 	pub steam_id: prelude::SteamID,
 	pub name: String,
 	pub is_banned: bool,
+}
+
+impl crate::traits::PlayerIdentifier for Player {
+	#[inline]
+	fn steam_profile(&self) -> String { PlayerIdentifier::SteamID(self.steam_id).steam_profile() }
+
+	#[inline]
+	#[cfg(feature = "global-api")]
+	fn global_api(&self) -> String { PlayerIdentifier::SteamID(self.steam_id).global_api() }
+
+	#[inline]
+	#[cfg(feature = "kzgo-api")]
+	fn kzgo(&self) -> String { PlayerIdentifier::SteamID(self.steam_id).kzgo() }
+
+	#[inline]
+	fn schnose_api(&self) -> String { PlayerIdentifier::SteamID(self.steam_id).schnose_api() }
 }
 
 #[allow(missing_docs)]

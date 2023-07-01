@@ -5,6 +5,7 @@ use {
 		http::get_json,
 		prelude,
 		schnose_api::BASE_URL,
+		types::ServerIdentifier,
 		utils::EmptyParams,
 	},
 	serde::{Deserialize, Serialize},
@@ -16,6 +17,15 @@ pub struct Server {
 	pub id: u16,
 	pub name: String,
 	pub owned_by: Player,
+}
+
+impl crate::traits::ServerIdentifier for Server {
+	#[inline]
+	#[cfg(feature = "global-api")]
+	fn global_api(&self) -> String { ServerIdentifier::Name(self.name.clone()).global_api() }
+
+	#[inline]
+	fn schnose_api(&self) -> String { ServerIdentifier::Id(self.id).schnose_api() }
 }
 
 #[allow(missing_docs)]

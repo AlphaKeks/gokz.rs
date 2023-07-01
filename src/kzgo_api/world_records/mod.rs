@@ -5,6 +5,7 @@ use {
 		error::{Error, Result},
 		http::get_json,
 		kzgo_api::BASE_URL,
+		traits::Mode as _,
 		types::{Mode, Runtype, SteamID},
 		utils::EmptyParams,
 	},

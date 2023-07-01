@@ -1,4 +1,7 @@
-use crate::error::{err, Error, Result};
+use crate::{
+	error::{err, Error, Result},
+	traits::Mode as _,
+};
 
 /// The 3 gamemodes that currently exist in GOKZ.
 ///
@@ -27,10 +30,9 @@ pub enum Mode {
 	Vanilla = 202,
 }
 
-impl Mode {
-	/// The standard format of a [`Mode`] in the context of most popular APIs.
+impl crate::traits::Mode for Mode {
 	#[inline]
-	pub fn api(&self) -> String {
+	fn api(&self) -> String {
 		String::from(match self {
 			Mode::KZTimer => "kz_timer",
 			Mode::SimpleKZ => "kz_simple",
@@ -38,9 +40,8 @@ impl Mode {
 		})
 	}
 
-	/// Abbreviation of the given mode's name. This is how players usually refer to the modes.
 	#[inline]
-	pub fn short(&self) -> String {
+	fn short(&self) -> String {
 		String::from(match self {
 			Mode::KZTimer => "KZT",
 			Mode::SimpleKZ => "SKZ",

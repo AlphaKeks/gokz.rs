@@ -16,6 +16,22 @@ pub struct Mode {
 	pub name: String,
 }
 
+impl crate::traits::Mode for Mode {
+	#[inline]
+	fn api(&self) -> String {
+		prelude::Mode::try_from(self.id)
+			.expect("Mode returned by the GlobalAPI should be a valid `Mode` type.")
+			.api()
+	}
+
+	#[inline]
+	fn short(&self) -> String {
+		prelude::Mode::try_from(self.id)
+			.expect("Mode returned by the GlobalAPI should be a valid `Mode` type.")
+			.short()
+	}
+}
+
 /// # /modes
 ///
 /// Fetches all modes
