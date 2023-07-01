@@ -166,7 +166,7 @@ impl std::str::FromStr for MapIdentifier {
 			($s:expr, u8, u16) => {
 				if let Ok(map_id) = $s.parse::<u8>() {
 					return Ok(map_id.into());
-				} else if let Ok(map_id) = $s.parse::<u8>() {
+				} else if let Ok(map_id) = $s.parse::<u16>() {
 					return Ok(map_id.into());
 				}
 			};
