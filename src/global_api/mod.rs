@@ -198,17 +198,30 @@ where
 	crate::http::get_text(&url, &EmptyParams, client).await
 }
 
-/// Check if a map is global by fetching all global maps and checking if it's in the list
+/// Check if a map is global either by fetching all global maps and checking if it's in the list,
+/// or by checking if the provided `maps` contains it. Returns the list of maps it searched
+/// through as well.
 #[tracing::instrument(level = "DEBUG", skip(client), err(Debug))]
 pub async fn is_global<M>(
 	map_identifier: M,
+	maps: Option<Vec<maps::Map>>,
 	client: &crate::Client,
-) -> Result<(Option<Map>, Vec<Map>)>
+) -> Result<(Option<Map>, Vec<maps::Map>)>
 where
 	M: Into<prelude::MapIdentifier> + std::fmt::Debug,
 {
 	let mut map_identifier = map_identifier.into();
-	let global_maps = get_global_maps(9999, client).await?;
+
+	let params = maps::Params {
+		is_validated: Some(true),
+		limit: Some(9999),
+		..Default::default()
+	};
+
+	let global_maps = match maps {
+		None => maps::root(&params, client).await?,
+		Some(maps) => maps,
+	};
 
 	if let prelude::MapIdentifier::Name(ref mut map_name) = map_identifier {
 		*map_name = map_name.to_lowercase();
