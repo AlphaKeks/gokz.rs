@@ -1,7 +1,9 @@
 #[cfg(feature = "chrono")]
 use chrono::{DateTime, NaiveDateTime, Utc};
+#[cfg(all(feature = "chrono", feature = "serde"))]
+use serde::{de, Deserialize, Deserializer};
 #[cfg(feature = "serde")]
-use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
+use serde::{Serialize, Serializer};
 #[cfg(feature = "serde")]
 use serde_json::json;
 

@@ -1,6 +1,9 @@
+/// API healthchecks
+pub mod health;
+pub use health::HealthReport;
+
 /// The `/bans` route
 pub mod bans;
-
 pub use bans::{Ban, BanType};
 
 /// The `/maps` routes
@@ -31,18 +34,38 @@ pub use records::Record;
 #[cfg(feature = "chrono")]
 use chrono::{DateTime, Utc};
 
-use crate::utils::EmptyParams;
 #[rustfmt::skip]
-use crate::{error::{Error, Result}, prelude};
-use std::collections::HashSet;
+use {
+	crate::{
+		error::{Error, Result},
+		prelude,
+		utils::EmptyParams
+	},
+	std::collections::HashSet,
+};
 
 /// The base URL for all API requests.
 pub const BASE_URL: &str = "https://kztimerglobal.com/api/v2";
 
-/// Get a link to the API's SwaggerUI page
-#[tracing::instrument(level = "DEBUG")]
-pub fn swagger() -> &'static str {
-	"https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2"
+/// The URL for the API's SwaggerUI page.
+pub const SWAGGER_URL: &str = "https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2";
+
+/// Get a report on the API's health status
+#[tracing::instrument(level = "DEBUG", skip(client), err(Debug))]
+pub async fn health(client: &crate::Client) -> Result<health::HealthReport> {
+	let health_stats: health::Response =
+		crate::http::get_json(health::URL, &EmptyParams, client).await?;
+
+	Ok(health::HealthReport {
+		successful_responses: health_stats.results[0..10]
+			.iter()
+			.filter(|result| result.condition_results[0].success)
+			.count() as u8,
+		fast_responses: health_stats.results[0..10]
+			.iter()
+			.filter(|result| result.condition_results[1].success)
+			.count() as u8,
+	})
 }
 
 /// Get the last `limit` bans
