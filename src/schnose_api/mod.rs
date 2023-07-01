@@ -1,25 +1,25 @@
 /// `/modes` routes
-mod modes;
+pub mod modes;
 pub use modes::Mode;
 
 /// `/players` routes
-mod players;
+pub mod players;
 pub use players::Player;
 
 /// `/maps` routes
-mod maps;
+pub mod maps;
 pub use maps::{Course, Map};
 
 /// `/filters` routes
-mod filters;
+pub mod filters;
 pub use filters::Filter;
 
 /// `/servers` routes
-mod servers;
+pub mod servers;
 pub use servers::Server;
 
 /// `/records` routes
-mod records;
+pub mod records;
 pub use records::Record;
 
 #[rustfmt::skip]
