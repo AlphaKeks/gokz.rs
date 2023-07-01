@@ -39,6 +39,12 @@ use std::collections::HashSet;
 /// The base URL for all API requests.
 pub const BASE_URL: &str = "https://kztimerglobal.com/api/v2";
 
+/// Get a link to the API's SwaggerUI page
+#[tracing::instrument(level = "DEBUG")]
+pub fn swagger() -> &'static str {
+	"https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2"
+}
+
 /// Get the last `limit` bans
 #[tracing::instrument(level = "DEBUG", skip(client), err(Debug))]
 pub async fn get_bans(limit: u32, client: &crate::Client) -> Result<Vec<bans::Ban>> {
