@@ -51,7 +51,7 @@ impl Default for Params {
 /// # /servers
 ///
 /// Fetches servers
-#[tracing::instrument(level = "TRACE", skip(client), err(Debug))]
+#[tracing::instrument(level = "TRACE", skip(client))]
 pub async fn root(params: &Params, client: &crate::Client) -> Result<Vec<Server>> {
 	let response: Vec<_> = get_json(&format!("{BASE_URL}/servers"), params, client).await?;
 
@@ -65,7 +65,7 @@ pub async fn root(params: &Params, client: &crate::Client) -> Result<Vec<Server>
 /// # /servers/:ident
 ///
 /// Fetches a single server
-#[tracing::instrument(level = "TRACE", skip(client), err(Debug))]
+#[tracing::instrument(level = "TRACE", skip(client))]
 pub async fn ident(
 	server_identifier: prelude::ServerIdentifier,
 	client: &crate::Client,

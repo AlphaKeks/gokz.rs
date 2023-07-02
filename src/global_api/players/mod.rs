@@ -64,12 +64,7 @@ impl Default for Params {
 /// # /players
 ///
 /// Fetches players
-#[tracing::instrument(
-	name = "GlobalAPI request to `/players`",
-	level = "trace",
-	skip(client),
-	err(Debug)
-)]
+#[tracing::instrument(name = "GlobalAPI request to `/players`", level = "trace", skip(client))]
 pub async fn root(params: &Params, client: &crate::Client) -> Result<Vec<Player>> {
 	let response: Vec<_> = get_json(&format!("{BASE_URL}/players"), params, client).await?;
 
@@ -83,12 +78,7 @@ pub async fn root(params: &Params, client: &crate::Client) -> Result<Vec<Player>
 /// # /players/steamid/:steam_id
 ///
 /// Fetches a player by [`SteamID`]
-#[tracing::instrument(
-	name = "GlobalAPI request to `/players`",
-	level = "TRACE",
-	skip(client),
-	err(Debug)
-)]
+#[tracing::instrument(name = "GlobalAPI request to `/players`", level = "TRACE", skip(client))]
 pub async fn steam_id(steam_id: SteamID, client: &crate::Client) -> Result<Player> {
 	let mut response: Vec<_> =
 		get_json(&format!("{BASE_URL}/players/steamid/{steam_id}"), &EmptyParams, client).await?;

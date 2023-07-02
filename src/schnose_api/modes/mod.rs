@@ -35,7 +35,7 @@ impl crate::traits::Mode for Mode {
 /// # /modes
 ///
 /// Fetches all modes
-#[tracing::instrument(level = "TRACE", skip(client), err(Debug))]
+#[tracing::instrument(level = "TRACE", skip(client))]
 pub async fn root(client: &crate::Client) -> Result<Vec<Mode>> {
 	let response: Vec<_> = get_json(&format!("{BASE_URL}/modes"), &EmptyParams, client).await?;
 
@@ -49,7 +49,7 @@ pub async fn root(client: &crate::Client) -> Result<Vec<Mode>> {
 /// # /modes/:ident
 ///
 /// Fetches a single mode
-#[tracing::instrument(level = "TRACE", skip(client), err(Debug))]
+#[tracing::instrument(level = "TRACE", skip(client))]
 pub async fn ident(mode: prelude::Mode, client: &crate::Client) -> Result<Mode> {
 	get_json(&format!("{BASE_URL}/modes/{}", mode as u8), &EmptyParams, client).await
 }

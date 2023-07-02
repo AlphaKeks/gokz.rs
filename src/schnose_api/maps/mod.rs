@@ -104,7 +104,7 @@ impl Default for Params {
 /// # /maps
 ///
 /// Fetches maps
-#[tracing::instrument(level = "TRACE", skip(client), err(Debug))]
+#[tracing::instrument(level = "TRACE", skip(client))]
 pub async fn root(params: &Params, client: &crate::Client) -> Result<Vec<Map>> {
 	let response: Vec<_> = get_json(&format!("{BASE_URL}/maps"), params, client).await?;
 
@@ -118,7 +118,7 @@ pub async fn root(params: &Params, client: &crate::Client) -> Result<Vec<Map>> {
 /// # /maps/:ident
 ///
 /// Fetches a single map
-#[tracing::instrument(level = "TRACE", skip(client), err(Debug))]
+#[tracing::instrument(level = "TRACE", skip(client))]
 pub async fn ident(map_identifier: prelude::MapIdentifier, client: &crate::Client) -> Result<Map> {
 	get_json(&format!("{BASE_URL}/maps/{map_identifier}"), &EmptyParams, client).await
 }

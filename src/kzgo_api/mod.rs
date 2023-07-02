@@ -31,7 +31,7 @@ pub mod world_records;
 pub use world_records::{get_wrs, leaderboards, WorldRecord};
 
 /// Get a player's completions for a given mode
-#[tracing::instrument(level = "DEBUG", skip(client), err(Debug))]
+#[tracing::instrument(level = "DEBUG", skip(client))]
 pub async fn get_completions<M>(mode: M, client: &crate::Client) -> Result<Completions>
 where
 	M: Into<prelude::Mode> + std::fmt::Debug,
@@ -40,7 +40,7 @@ where
 }
 
 /// Fetches maps
-#[tracing::instrument(level = "DEBUG", skip(client), err(Debug))]
+#[tracing::instrument(level = "DEBUG", skip(client))]
 pub async fn get_maps(client: &crate::Client) -> Result<Vec<Map>> {
 	let maps: Vec<_> = get_json(&format!("{BASE_URL}/maps"), &EmptyParams, client).await?;
 
@@ -52,13 +52,13 @@ pub async fn get_maps(client: &crate::Client) -> Result<Vec<Map>> {
 }
 
 /// Fetches a single map
-#[tracing::instrument(level = "DEBUG", skip(client), err(Debug))]
+#[tracing::instrument(level = "DEBUG", skip(client))]
 pub async fn get_map(map_name: &str, client: &crate::Client) -> Result<Map> {
 	get_json(&format!("{BASE_URL}/maps/{map_name}"), &EmptyParams, client).await
 }
 
 /// Fetches information about a player
-#[tracing::instrument(level = "DEBUG", skip(client), err(Debug))]
+#[tracing::instrument(level = "DEBUG", skip(client))]
 pub async fn get_steam_user<S>(steam_id: S, client: &crate::Client) -> Result<User>
 where
 	S: Into<SteamID> + std::fmt::Debug,
@@ -67,7 +67,7 @@ where
 }
 
 /// Fetches all servers from the "servers" tab on kzgo.eu
-#[tracing::instrument(level = "DEBUG", skip(client), err(Debug))]
+#[tracing::instrument(level = "DEBUG", skip(client))]
 pub async fn get_servers(client: &crate::Client) -> Result<Vec<Server>> {
 	let servers: Vec<_> = get_json(&format!("{BASE_URL}/servers"), &EmptyParams, client).await?;
 

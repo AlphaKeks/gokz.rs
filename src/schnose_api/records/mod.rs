@@ -91,7 +91,7 @@ impl Default for Params {
 /// # /records
 ///
 /// Fetches records
-#[tracing::instrument(level = "TRACE", skip(client), err(Debug))]
+#[tracing::instrument(level = "TRACE", skip(client))]
 pub async fn root(params: &Params, client: &crate::Client) -> Result<Vec<Record>> {
 	let response: Vec<_> = get_json(&format!("{BASE_URL}/records"), params, client).await?;
 
@@ -105,7 +105,7 @@ pub async fn root(params: &Params, client: &crate::Client) -> Result<Vec<Record>
 /// # /records/:id
 ///
 /// Fetches a single record by id
-#[tracing::instrument(level = "TRACE", skip(client), err(Debug))]
+#[tracing::instrument(level = "TRACE", skip(client))]
 pub async fn ident(record_id: u32, client: &crate::Client) -> Result<Record> {
 	get_json(&format!("{BASE_URL}/records/{record_id}"), &EmptyParams, client).await
 }

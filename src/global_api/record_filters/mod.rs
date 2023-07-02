@@ -71,8 +71,7 @@ impl Default for Params {
 #[tracing::instrument(
 	name = "GlobalAPI request to `/record_filters`",
 	level = "trace",
-	skip(client),
-	err(Debug)
+	skip(client)
 )]
 pub async fn root(params: &Params, client: &crate::Client) -> Result<Vec<RecordFilter>> {
 	let response: Vec<_> = get_json(&format!("{BASE_URL}/record_filters"), params, client).await?;

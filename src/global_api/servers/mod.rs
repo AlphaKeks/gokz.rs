@@ -59,12 +59,7 @@ impl Default for Params {
 /// # /servers
 ///
 /// Fetches servers
-#[tracing::instrument(
-	name = "GlobalAPI request to `/servers`",
-	level = "TRACE",
-	skip(client),
-	err(Debug)
-)]
+#[tracing::instrument(name = "GlobalAPI request to `/servers`", level = "TRACE", skip(client))]
 pub async fn root(params: &Params, client: &crate::Client) -> Result<Vec<Server>> {
 	let response: Vec<_> = get_json(&format!("{BASE_URL}/servers"), params, client).await?;
 
@@ -81,8 +76,7 @@ pub async fn root(params: &Params, client: &crate::Client) -> Result<Vec<Server>
 #[tracing::instrument(
 	name = "GlobalAPI request to `/servers/:server_id`",
 	level = "TRACE",
-	skip(client),
-	err(Debug)
+	skip(client)
 )]
 pub async fn id(server_id: u16, client: &crate::Client) -> Result<Server> {
 	get_json(&format!("{BASE_URL}/servers/{server_id}"), &EmptyParams, client).await
@@ -94,8 +88,7 @@ pub async fn id(server_id: u16, client: &crate::Client) -> Result<Server> {
 #[tracing::instrument(
 	name = "GlobalAPI request to `/servers/id/:name`",
 	level = "TRACE",
-	skip(client),
-	err(Debug)
+	skip(client)
 )]
 pub async fn name(server_name: &str, client: &crate::Client) -> Result<Server> {
 	get_json(&format!("{BASE_URL}/servers/{server_name}"), &EmptyParams, client).await

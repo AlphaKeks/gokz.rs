@@ -78,8 +78,7 @@ impl crate::traits::Record for Record {
 #[tracing::instrument(
 	name = "GlobalAPI request to `/records/:record_id`",
 	level = "trace",
-	skip(client),
-	err(Debug)
+	skip(client)
 )]
 pub async fn root(record_id: u32, client: &crate::Client) -> Result<Record> {
 	get_json(&format!("{BASE_URL}/records/{record_id}"), &EmptyParams, client).await
@@ -94,8 +93,7 @@ struct Place(u32);
 #[tracing::instrument(
 	name = "GlobalAPI request to `/records/place/:record_id`",
 	level = "trace",
-	skip(client),
-	err(Debug)
+	skip(client)
 )]
 pub async fn place(record_id: u32, client: &crate::Client) -> Result<u32> {
 	let Place(place) =
@@ -155,8 +153,7 @@ pub mod top {
 	#[tracing::instrument(
 		name = "GlobalAPI request to `/records/top`",
 		level = "trace",
-		skip(client),
-		err(Debug)
+		skip(client)
 	)]
 	pub async fn root(params: &Params, client: &crate::Client) -> Result<Vec<Record>> {
 		let records: Vec<_> = get_json(&format!("{BASE_URL}/records/top"), params, client).await?;
@@ -218,8 +215,7 @@ pub mod top {
 		#[tracing::instrument(
 			name = "GlobalAPI request to `/records/world_records`",
 			level = "trace",
-			skip(client),
-			err(Debug)
+			skip(client)
 		)]
 		pub async fn root(
 			params: &Params,
@@ -297,8 +293,7 @@ pub mod top {
 		#[tracing::instrument(
 			name = "GlobalAPI request to `/records/recent`",
 			level = "trace",
-			skip(client),
-			err(Debug)
+			skip(client)
 		)]
 		pub async fn root(params: &Params, client: &crate::Client) -> Result<Vec<Record>> {
 			let records: Vec<_> =

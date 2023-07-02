@@ -42,12 +42,7 @@ pub struct WorldRecord {
 /// # /wrs/:mode
 ///
 /// Fetches all world records for a given mode
-#[tracing::instrument(
-	name = "KZ:GO request to `/wrs/:mode`",
-	level = "TRACE",
-	skip(client),
-	err(Debug)
-)]
+#[tracing::instrument(name = "KZ:GO request to `/wrs/:mode`", level = "TRACE", skip(client))]
 pub async fn get_wrs(
 	mode: Mode,
 	runtype: Option<Runtype>,
@@ -88,8 +83,7 @@ pub mod leaderboards {
 	#[tracing::instrument(
 		name = "KZ:GO request to `/wrs/leaderboards/:mode/:runtype`",
 		level = "DEBUG",
-		skip(client),
-		err(Debug)
+		skip(client)
 	)]
 	pub async fn get_wr_leaderboard(
 		mode: Mode,

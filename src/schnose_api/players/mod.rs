@@ -57,7 +57,7 @@ impl Default for Params {
 /// # /players
 ///
 /// Fetches `limit` or less players (max. 1000).
-#[tracing::instrument(level = "TRACE", skip(client), err(Debug))]
+#[tracing::instrument(level = "TRACE", skip(client))]
 pub async fn root(params: &Params, client: &crate::Client) -> Result<Vec<Player>> {
 	let response: Vec<_> = get_json(&format!("{BASE_URL}/players"), params, client).await?;
 
@@ -71,7 +71,7 @@ pub async fn root(params: &Params, client: &crate::Client) -> Result<Vec<Player>
 /// # /players/:ident
 ///
 /// Fetches a single player
-#[tracing::instrument(level = "TRACE", skip(client), err(Debug))]
+#[tracing::instrument(level = "TRACE", skip(client))]
 pub async fn ident(
 	player_identifier: prelude::PlayerIdentifier,
 	client: &crate::Client,

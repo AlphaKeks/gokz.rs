@@ -36,7 +36,7 @@ pub const BASE_URL: &str = "https://schnose.xyz/api";
 pub const SWAGGER_URL: &str = "https://schnose.xyz/api/docs/swagger";
 
 /// Check if the API is up
-#[tracing::instrument(level = "DEBUG", skip(client), err(Debug))]
+#[tracing::instrument(level = "DEBUG", skip(client))]
 pub async fn health(client: &crate::Client) -> Result<String> {
 	crate::http::get_json::<serde_json::Value, _>(
 		&format!("{BASE_URL}/health"),
@@ -48,13 +48,13 @@ pub async fn health(client: &crate::Client) -> Result<String> {
 }
 
 /// Fetches all game modes
-#[tracing::instrument(level = "DEBUG", skip(client), err(Debug))]
+#[tracing::instrument(level = "DEBUG", skip(client))]
 pub async fn get_modes(client: &crate::Client) -> Result<Vec<modes::Mode>> {
 	modes::root(client).await
 }
 
 /// Fetches a single game mode
-#[tracing::instrument(level = "DEBUG", skip(client), err(Debug))]
+#[tracing::instrument(level = "DEBUG", skip(client))]
 pub async fn get_mode<M>(mode: M, client: &crate::Client) -> Result<modes::Mode>
 where
 	M: Into<prelude::Mode> + std::fmt::Debug,
@@ -63,7 +63,7 @@ where
 }
 
 /// Fetches `limit` or less players (1000 max.)
-#[tracing::instrument(level = "DEBUG", skip(client), err(Debug))]
+#[tracing::instrument(level = "DEBUG", skip(client))]
 pub async fn get_players<L>(limit: L, client: &crate::Client) -> Result<Vec<players::Player>>
 where
 	L: Into<u64> + std::fmt::Debug,
@@ -77,7 +77,7 @@ where
 }
 
 /// Fetches a single player
-#[tracing::instrument(level = "DEBUG", skip(client), err(Debug))]
+#[tracing::instrument(level = "DEBUG", skip(client))]
 pub async fn get_player<P>(player: P, client: &crate::Client) -> Result<players::Player>
 where
 	P: Into<prelude::PlayerIdentifier> + std::fmt::Debug,
@@ -86,7 +86,7 @@ where
 }
 
 /// Fetches maps
-#[tracing::instrument(level = "DEBUG", skip(client), err(Debug))]
+#[tracing::instrument(level = "DEBUG", skip(client))]
 pub async fn get_maps(client: &crate::Client) -> Result<Vec<maps::Map>> {
 	let params = maps::Params {
 		limit: Some(9999),
@@ -97,7 +97,7 @@ pub async fn get_maps(client: &crate::Client) -> Result<Vec<maps::Map>> {
 }
 
 /// Fetches maps made by a specific player
-#[tracing::instrument(level = "DEBUG", skip(client), err(Debug))]
+#[tracing::instrument(level = "DEBUG", skip(client))]
 pub async fn get_maps_by<P>(mapper: P, client: &crate::Client) -> Result<Vec<maps::Map>>
 where
 	P: Into<prelude::PlayerIdentifier> + std::fmt::Debug,
@@ -112,7 +112,7 @@ where
 }
 
 /// Fetches a single map
-#[tracing::instrument(level = "DEBUG", skip(client), err(Debug))]
+#[tracing::instrument(level = "DEBUG", skip(client))]
 pub async fn get_map<M>(map: M, client: &crate::Client) -> Result<maps::Map>
 where
 	M: Into<prelude::MapIdentifier> + std::fmt::Debug,
@@ -123,7 +123,7 @@ where
 /// Check if a map is global either by fetching all global maps and checking if it's in the list,
 /// or by checking if the provided `maps` contains it. Returns the list of maps it searched
 /// through as well.
-#[tracing::instrument(level = "DEBUG", skip(client), err(Debug))]
+#[tracing::instrument(level = "DEBUG", skip(client))]
 pub async fn is_global<M>(
 	map_identifier: M,
 	maps: Option<Vec<maps::Map>>,
@@ -160,7 +160,7 @@ where
 }
 
 /// Fetches filters for a given map
-#[tracing::instrument(level = "DEBUG", skip(client), err(Debug))]
+#[tracing::instrument(level = "DEBUG", skip(client))]
 pub async fn get_filters<M>(map: M, client: &crate::Client) -> Result<Vec<filters::Filter>>
 where
 	M: Into<prelude::MapIdentifier> + std::fmt::Debug,
@@ -169,7 +169,7 @@ where
 }
 
 /// Fetches servers
-#[tracing::instrument(level = "DEBUG", skip(client), err(Debug))]
+#[tracing::instrument(level = "DEBUG", skip(client))]
 pub async fn get_servers(client: &crate::Client) -> Result<Vec<servers::Server>> {
 	let params = servers::Params {
 		limit: Some(9999),
@@ -180,7 +180,7 @@ pub async fn get_servers(client: &crate::Client) -> Result<Vec<servers::Server>>
 }
 
 /// Fetches servers owned by a specific player
-#[tracing::instrument(level = "DEBUG", skip(client), err(Debug))]
+#[tracing::instrument(level = "DEBUG", skip(client))]
 pub async fn get_servers_owned_by<P>(
 	owner: P,
 	client: &crate::Client,
@@ -198,7 +198,7 @@ where
 }
 
 /// Fetches a single server
-#[tracing::instrument(level = "DEBUG", skip(client), err(Debug))]
+#[tracing::instrument(level = "DEBUG", skip(client))]
 pub async fn get_server<S>(server: S, client: &crate::Client) -> Result<servers::Server>
 where
 	S: Into<prelude::ServerIdentifier> + std::fmt::Debug,
@@ -207,7 +207,7 @@ where
 }
 
 /// Fetches the most recent `limit` records (max. 1000).
-#[tracing::instrument(level = "DEBUG", skip(client), err(Debug))]
+#[tracing::instrument(level = "DEBUG", skip(client))]
 pub async fn get_records<L>(limit: L, client: &crate::Client) -> Result<Vec<records::Record>>
 where
 	L: Into<u64> + std::fmt::Debug,
@@ -221,7 +221,7 @@ where
 }
 
 /// Fetches the most recent `limit` records (max. 1000) for a given player.
-#[tracing::instrument(level = "DEBUG", skip(client), err(Debug))]
+#[tracing::instrument(level = "DEBUG", skip(client))]
 pub async fn get_player_records<P, L>(
 	player: P,
 	limit: L,

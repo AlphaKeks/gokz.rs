@@ -23,7 +23,7 @@ pub struct Filter {
 /// # /filters/:map_identifier
 ///
 /// Fetches filters for a given map
-#[tracing::instrument(level = "TRACE", skip(client), err(Debug))]
+#[tracing::instrument(level = "TRACE", skip(client))]
 pub async fn map(
 	map_identifier: prelude::MapIdentifier,
 	client: &crate::Client,

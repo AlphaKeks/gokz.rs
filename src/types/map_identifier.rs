@@ -180,6 +180,7 @@ impl std::str::FromStr for MapIdentifier {
 
 #[cfg(feature = "serde")]
 impl serde::Serialize for MapIdentifier {
+	#[tracing::instrument(level = "TRACE", skip(serializer), err(Debug))]
 	fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
 	where
 		S: serde::Serializer,
@@ -193,6 +194,7 @@ impl serde::Serialize for MapIdentifier {
 
 #[cfg(feature = "serde")]
 impl<'de> serde::Deserialize<'de> for MapIdentifier {
+	#[tracing::instrument(level = "TRACE", skip(deserializer), err(Debug))]
 	fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
 	where
 		D: serde::Deserializer<'de>,
