@@ -20,7 +20,7 @@ pub struct Record {
 	pub steam_id: SteamID,
 	pub player_name: String,
 	pub server_id: u16,
-	pub server_name: String,
+	pub server_name: Option<String>,
 	pub stage: u8,
 	pub mode: Mode,
 	pub teleports: u32,
