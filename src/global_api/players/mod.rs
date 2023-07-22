@@ -22,6 +22,7 @@ impl crate::traits::PlayerIdentifier for Player {
 	fn steam_profile(&self) -> String { PlayerIdentifier::SteamID(self.steam_id).steam_profile() }
 
 	#[inline]
+	#[cfg(feature = "global-api")]
 	fn global_api(&self) -> String { PlayerIdentifier::SteamID(self.steam_id).global_api() }
 
 	#[inline]

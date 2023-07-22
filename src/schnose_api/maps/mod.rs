@@ -44,6 +44,7 @@ impl crate::traits::MapIdentifier for Map {
 	fn kzgo_api(&self) -> Option<String> { MapIdentifier::Name(self.name.clone()).kzgo_api() }
 
 	#[inline]
+	#[cfg(feature = "schnose-api")]
 	fn schnose_api(&self) -> String { MapIdentifier::Id(self.id).schnose_api() }
 }
 

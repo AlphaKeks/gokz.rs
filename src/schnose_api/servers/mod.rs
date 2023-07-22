@@ -25,6 +25,7 @@ impl crate::traits::ServerIdentifier for Server {
 	fn global_api(&self) -> String { ServerIdentifier::Name(self.name.clone()).global_api() }
 
 	#[inline]
+	#[cfg(feature = "schnose-api")]
 	fn schnose_api(&self) -> String { ServerIdentifier::Id(self.id).schnose_api() }
 }
 

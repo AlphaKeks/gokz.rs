@@ -31,6 +31,7 @@ impl crate::traits::PlayerIdentifier for Player {
 	fn kzgo(&self) -> String { PlayerIdentifier::SteamID(self.steam_id).kzgo() }
 
 	#[inline]
+	#[cfg(feature = "schnose-api")]
 	fn schnose_api(&self) -> String { PlayerIdentifier::SteamID(self.steam_id).schnose_api() }
 }
 

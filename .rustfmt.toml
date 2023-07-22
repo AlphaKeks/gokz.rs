@@ -1,8 +1,6 @@
 comment_width = 100
 condense_wildcard_suffixes = true
 edition = "2021"
-error_on_line_overflow = true
-error_on_unformatted = true
 fn_single_line = true
 format_macro_matchers = true
 hard_tabs = true

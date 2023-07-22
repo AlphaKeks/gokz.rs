@@ -22,9 +22,11 @@ pub struct Server {
 
 impl crate::traits::ServerIdentifier for Server {
 	#[inline]
+	#[cfg(feature = "global-api")]
 	fn global_api(&self) -> String { ServerIdentifier::Name(self.name.clone()).global_api() }
 
 	#[inline]
+	#[cfg(feature = "schnose-api")]
 	fn schnose_api(&self) -> String { ServerIdentifier::Name(self.name.clone()).schnose_api() }
 }
 

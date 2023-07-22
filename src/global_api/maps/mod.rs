@@ -49,6 +49,7 @@ impl crate::traits::MapIdentifier for Map {
 	fn image_url(&self) -> Option<String> { MapIdentifier::Name(self.name.clone()).image_url() }
 
 	#[inline]
+	#[cfg(feature = "global-api")]
 	fn global_api(&self) -> String { MapIdentifier::Name(self.name.clone()).global_api() }
 
 	#[inline]

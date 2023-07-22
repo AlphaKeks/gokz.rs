@@ -46,9 +46,11 @@ impl crate::traits::MapIdentifier for Map {
 	fn global_api(&self) -> String { MapIdentifier::Name(self.name.clone()).global_api() }
 
 	#[inline]
+	#[cfg(feature = "kzgo-api")]
 	fn kzgo(&self) -> Option<String> { MapIdentifier::Name(self.name.clone()).kzgo() }
 
 	#[inline]
+	#[cfg(feature = "kzgo-api")]
 	fn kzgo_api(&self) -> Option<String> { MapIdentifier::Name(self.name.clone()).kzgo_api() }
 
 	#[inline]
