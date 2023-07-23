@@ -60,11 +60,19 @@ pub fn deserialize_date_opt<'de, D: Deserializer<'de>>(
 	Ok(match <Option<String>>::deserialize(deserializer)? {
 		None => None,
 		Some(date) => {
-			let date = NaiveDateTime::parse_from_str(&date, "%Y-%m-%dT%H:%M:%S")
-				.map(|date| DateTime::<Utc>::from_utc(date, Utc))
-				.map_err(|err| de::Error::custom(err.to_string()))?;
+			let naive_date_time = 'scope: {
+				if let Ok(ndt) = NaiveDateTime::parse_from_str(&date, "%Y-%m-%dT%H:%M:%S") {
+					break 'scope ndt;
+				}
 
-			Some(date)
+				if let Ok(ndt) = NaiveDateTime::parse_from_str(&date, "%Y-%m-%dT%H:%M:%SZ") {
+					break 'scope ndt;
+				}
+
+				return Err(de::Error::custom("Failed to parse date"));
+			};
+
+			Some(DateTime::<Utc>::from_utc(naive_date_time, Utc))
 		}
 	})
 }
