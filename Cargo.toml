@@ -1,6 +1,6 @@
 [package]
 name = "gokz_rs"
-version = "0.23.3"
+version = "0.23.4"
 description = "CS:GO KZ in Rust."
 authors = ["AlphaKeks <alphakeks@dawn.sh>"]
 edition = "2021"
