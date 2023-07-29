@@ -1,23 +1,24 @@
-comment_width = 100
-condense_wildcard_suffixes = true
 edition = "2021"
-fn_single_line = true
-format_macro_matchers = true
+version = "Two"
+unstable_features = true
+
 hard_tabs = true
-hex_literal_case = "Lower"
+
+max_width = 100
+use_small_heuristics = "Max"
+chain_width = 50
+single_line_let_else_max_width = 0
+
 imports_granularity = "One"
+group_imports = "StdExternalCrate"
+reorder_modules = false
+
+brace_style = "PreferSameLine"
+condense_wildcard_suffixes = true
+empty_item_single_line = false
+format_macro_matchers = true
 newline_style = "Unix"
-normalize_comments = true
-normalize_doc_attributes = true
 overflow_delimited_expr = true
 reorder_impl_items = true
-group_imports = "One"
-single_line_if_else_max_width = 100
-struct_lit_single_line = false
-unstable_features = true
 use_field_init_shorthand = true
-use_small_heuristics = "Max"
 use_try_shorthand = true
-version = "Two"
-wrap_comments = true
-
