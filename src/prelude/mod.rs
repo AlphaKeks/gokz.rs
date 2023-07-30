@@ -5,5 +5,8 @@
 
 pub use crate::{
 	error::{Error, Result},
+	mode::Mode,
+	rank::Rank,
+	runtype::Runtype,
 	steam_id::SteamID,
 };
