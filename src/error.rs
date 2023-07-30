@@ -8,12 +8,16 @@ use {std::result::Result as StdResult, thiserror::Error};
 pub type Result<T> = StdResult<T, Error>;
 
 /// The crate-wide error type.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Error)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Error)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Error {
 	/// Some input failed to parse into a [`SteamID`].
-	#[error("The provided SteamID is invalid.")]
-	InvalidSteamID,
+	#[error("`{0}` is not a valid SteamID.")]
+	InvalidSteamID(String),
+
+	/// Some input failed to parse into a [`Mode`].
+	#[error("`{0}` is not a valid Mode.")]
+	InvalidMode(String),
 }
 
 /// Early return with the given [`Error`] variant.
@@ -21,5 +25,9 @@ pub enum Error {
 macro_rules! yeet {
 	($err:ident) => {{
 		return Err($crate::Error::$err);
+	}};
+
+	($err:ident($into:expr)) => {{
+		return Err($crate::Error::$err($into.to_string()));
 	}};
 }

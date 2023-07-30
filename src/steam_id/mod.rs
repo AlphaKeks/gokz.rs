@@ -71,7 +71,7 @@ impl SteamID {
 		let steam_id: &str = steam_id.as_ref();
 
 		if !STANDARD_REGEX.is_match(steam_id) {
-			yeet!(InvalidSteamID);
+			yeet!(InvalidSteamID(steam_id));
 		}
 
 		assert!(steam_id.is_ascii(), "SteamID is always valid ASCII.");
@@ -121,7 +121,7 @@ impl SteamID {
 		let steam_id: &str = steam_id.as_ref();
 
 		if !COMMUNITY_REGEX.is_match(steam_id) {
-			yeet!(InvalidSteamID);
+			yeet!(InvalidSteamID(steam_id));
 		}
 
 		assert!(steam_id.is_ascii(), "SteamID is always valid ASCII.");
@@ -210,7 +210,7 @@ impl TryFrom<u64> for SteamID {
 	/// [`SteamID::OFFSET`].
 	fn try_from(steam_id64: u64) -> crate::Result<Self> {
 		if steam_id64 <= Self::OFFSET || steam_id64 > Self::MAX {
-			yeet!(InvalidSteamID);
+			yeet!(InvalidSteamID(steam_id64));
 		}
 
 		Ok(Self(steam_id64))
@@ -225,7 +225,7 @@ impl TryFrom<u32> for SteamID {
 		let steam_id64 = steam_id32 as u64 + Self::OFFSET;
 
 		if steam_id64 > Self::MAX {
-			yeet!(InvalidSteamID);
+			yeet!(InvalidSteamID(steam_id32));
 		}
 
 		Ok(Self(steam_id64))
@@ -268,5 +268,6 @@ impl FromStr for SteamID {
 			return Self::try_from(steam_id64);
 		}
 
+		yeet!(InvalidSteamID(input));
 	}
 }
