@@ -1,6 +1,7 @@
 macro_rules! from {
 	([$($from:ty), +] => $for:ty => |$value:pat_param| $impl:block) => {
 		$(impl From<$from> for $for {
+			#[allow(clippy::useless_conversion)]
 			fn from($value: $from) -> $for {
 				$impl
 			}
@@ -9,6 +10,7 @@ macro_rules! from {
 
 	($from:ty => [$($for:ty), +] => |$value:pat_param| $impl:block) => {
 		$(impl From<$from> for $for {
+			#[allow(clippy::useless_conversion)]
 			fn from($value: $from) -> $for {
 				$impl
 			}
@@ -17,6 +19,7 @@ macro_rules! from {
 
 	($from:ty => $for:ty => |$value:pat_param| $impl:block) => {
 		impl From<$from> for $for {
+			#[allow(clippy::useless_conversion)]
 			fn from($value: $from) -> $for {
 				$impl
 			}
@@ -31,6 +34,7 @@ macro_rules! try_from {
 		$(impl TryFrom<$from> for $for {
 			type Error = $crate::Error;
 
+			#[allow(clippy::useless_conversion)]
 			fn try_from($value: $from) -> $crate::Result<$for> {
 				$impl
 			}
@@ -41,6 +45,7 @@ macro_rules! try_from {
 		$(impl TryFrom<$from> for $for {
 			type Error = $crate::Error;
 
+			#[allow(clippy::useless_conversion)]
 			fn try_from($value: $from) -> $crate::Result<$for> {
 				$impl
 			}

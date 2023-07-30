@@ -22,6 +22,9 @@ pub use runtype::Runtype;
 pub mod tier;
 pub use tier::Tier;
 
+pub mod map_identifier;
+pub use map_identifier::MapIdentifier;
+
 pub mod prelude;
 
 pub(crate) mod macros;

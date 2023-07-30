@@ -5,7 +5,7 @@
 use {std::result::Result as StdResult, thiserror::Error};
 
 #[allow(unused_imports)]
-use crate::{Mode, Runtype, SteamID, Tier}; // for doc comments
+use crate::{MapIdentifier, Mode, Runtype, SteamID, Tier}; // for doc comments
 
 /// Any fallible function in this crate will return this type.
 pub type Result<T> = StdResult<T, Error>;
@@ -14,6 +14,10 @@ pub type Result<T> = StdResult<T, Error>;
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Error)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum Error {
+	/// Some error that is very specific and only appears once.
+	#[error("{0}")]
+	Custom(String),
+
 	/// Some input failed to parse into a [`SteamID`].
 	#[error("`{0}` is not a valid SteamID.")]
 	InvalidSteamID(String),
@@ -33,6 +37,10 @@ pub enum Error {
 	/// Some input failed to parse into a [`Tier`].
 	#[error("`{0}` is not a valid Tier.")]
 	InvalidTier(String),
+
+	/// Some input failed to parse into a [`MapIdentifier`].
+	#[error("`{0}` is out of range for a valid MapID.")]
+	InvalidMapID(String),
 }
 
 /// Early return with the given [`enum@Error`] variant.
