@@ -1,7 +1,7 @@
 //! This module holds an enum for player ranks. Based on points each player will have a rank
 //! assigned to them. The threshold for each of these ranks may also depend on the mode.
 
-use crate::Mode;
+use crate::{macros::is, Mode};
 
 /// All GOKZ player ranks.
 #[allow(missing_docs)]
@@ -150,4 +150,31 @@ impl Rank {
 			},
 		}
 	}
+}
+
+#[rustfmt::skip]
+impl Rank {
+	is!(is_new, New);
+	is!(is_beginner_minus, BeginnerMinus);
+	is!(is_beginner, Beginner);
+	is!(is_beginner_plus, BeginnerPlus);
+	is!(is_amateur_minus, AmateurMinus);
+	is!(is_amateur, Amateur);
+	is!(is_amateur_plus, AmateurPlus);
+	is!(is_casual_minus, CasualMinus);
+	is!(is_casual, Casual);
+	is!(is_casual_plus, CasualPlus);
+	is!(is_regular_minus, RegularMinus);
+	is!(is_regular, Regular);
+	is!(is_regular_plus, RegularPlus);
+	is!(is_skilled_minus, SkilledMinus);
+	is!(is_skilled, Skilled);
+	is!(is_skilled_plus, SkilledPlus);
+	is!(is_expert_minus, ExpertMinus);
+	is!(is_expert, Expert);
+	is!(is_expert_plus, ExpertPlus);
+	is!(is_semipro, Semipro);
+	is!(is_pro, Pro);
+	is!(is_master, Master);
+	is!(is_legend, Legend);
 }

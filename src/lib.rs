@@ -16,6 +16,9 @@ pub use mode::Mode;
 pub mod rank;
 pub use rank::Rank;
 
+pub mod runtype;
+pub use runtype::Runtype;
+
 pub mod prelude;
 
 pub(crate) mod macros;
