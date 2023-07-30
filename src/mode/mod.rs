@@ -4,7 +4,10 @@
 
 use {
 	crate::{
-		macros::convert::{from, try_from},
+		macros::{
+			convert::{from, try_from},
+			is,
+		},
 		yeet,
 	},
 	std::{fmt::Display, str::FromStr},
@@ -49,10 +52,22 @@ impl Mode {
 	}
 }
 
+#[rustfmt::skip]
+impl Mode {
+	is!(is_kzt, KZTimer);
+	is!(is_skz, SimpleKZ);
+	is!(is_vnl, Vanilla);
+}
+
 impl Display for Mode {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		write!(f, "{self:?}")
 	}
+}
+
+impl Default for Mode {
+	#[rustfmt::skip]
+	fn default() -> Self { Self::KZTimer }
 }
 
 from!(Mode => [i8, u8, i16, u16, i32, u32, i64, u64, i128, u128, isize, usize] => |mode| {
