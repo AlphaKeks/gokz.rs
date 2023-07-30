@@ -2,8 +2,8 @@
 
 A rust library for working with anything [GOKZ](https://github.com/KZGlobalTeam/gokz)!
 
-This crate features basic types I didn't want to write yourself over and over again for every
-project, as well as some easy to use wrapper functions for calling popular APIs such as the
+This crate features basic types I didn't want to write over and over again for every project, as
+well as some easy to use wrapper functions for calling popular APIs such as the
 [GlobalAPI](https://kztimerglobal.com/swagger/index.html?urls.primaryName=V2).
 
 ## Features
