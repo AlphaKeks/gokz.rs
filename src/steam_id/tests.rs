@@ -1,5 +1,8 @@
-use super::{
-	AccountNumber, AccountType, AccountUniverse, SteamID, COMMUNITY_REGEX, STANDARD_REGEX,
+use {
+	super::{
+		AccountNumber, AccountType, AccountUniverse, SteamID, COMMUNITY_REGEX, STANDARD_REGEX,
+	},
+	pretty_assertions::assert_eq,
 };
 
 mod regex {

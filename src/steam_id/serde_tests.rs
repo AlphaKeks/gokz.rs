@@ -1,4 +1,4 @@
-use {super::SteamID, serde::Deserialize, serde_json::json};
+use {super::SteamID, pretty_assertions::assert_eq, serde::Deserialize, serde_json::json};
 
 #[test]
 fn raw() {

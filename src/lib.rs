@@ -10,7 +10,12 @@ pub use error::{Error, Result};
 pub mod steam_id;
 pub use steam_id::SteamID;
 
+pub mod mode;
+pub use mode::Mode;
+
 pub mod prelude;
+
+pub(crate) mod macros;
 
 #[cfg(test)]
 mod test_setup;
