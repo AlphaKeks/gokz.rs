@@ -5,7 +5,7 @@
 use {std::result::Result as StdResult, thiserror::Error};
 
 #[allow(unused_imports)]
-use crate::{Mode, Runtype, SteamID}; // for doc comments
+use crate::{Mode, Runtype, SteamID, Tier}; // for doc comments
 
 /// Any fallible function in this crate will return this type.
 pub type Result<T> = StdResult<T, Error>;
@@ -29,6 +29,10 @@ pub enum Error {
 	/// Some input failed to parse into a [`Runtype`].
 	#[error("`{0}` is not a valid Runtype.")]
 	InvalidRuntype(String),
+
+	/// Some input failed to parse into a [`Tier`].
+	#[error("`{0}` is not a valid Tier.")]
+	InvalidTier(String),
 }
 
 /// Early return with the given [`enum@Error`] variant.
