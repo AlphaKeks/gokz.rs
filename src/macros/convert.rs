@@ -11,7 +11,7 @@ macro_rules! from {
 pub(crate) use from;
 
 macro_rules! try_from {
-	([$($from:ty), +] => $for:ty => |$value:ident| $impl:block) => {
+	([$($from:ty), +] => $for:ty => |$value:pat_param| $impl:block) => {
 		$(impl TryFrom<$from> for $for {
 			type Error = $crate::Error;
 

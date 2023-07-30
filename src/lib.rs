@@ -13,6 +13,9 @@ pub use steam_id::SteamID;
 pub mod mode;
 pub use mode::Mode;
 
+pub mod rank;
+pub use rank::Rank;
+
 pub mod prelude;
 
 pub(crate) mod macros;
