@@ -21,14 +21,19 @@ mod serde_tests;
 
 /// The 3 game modes in CS:GO KZ
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "sqlx", derive(sqlx::Type))]
+#[cfg_attr(feature = "sqlx", sqlx(type_name = "Mode"))]
 pub enum Mode {
 	/// The default mode. Most people play this.
+	#[cfg_attr(feature = "sqlx", sqlx(rename = "kz_timer"))]
 	KZTimer = 200,
 
 	/// The mode for based individuals.
+	#[cfg_attr(feature = "sqlx", sqlx(rename = "kz_simple"))]
 	SimpleKZ = 201,
 
 	/// In case you really hate yourself.
+	#[cfg_attr(feature = "sqlx", sqlx(rename = "kz_vanilla"))]
 	Vanilla = 202,
 }
 

@@ -8,6 +8,8 @@ use crate::{macros::is, Mode};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "lowercase"))]
+#[cfg_attr(feature = "sqlx", derive(sqlx::Type))]
+#[cfg_attr(feature = "sqlx", sqlx(rename_all = "snake_case", type_name = "Rank"))]
 pub enum Rank {
 	New,
 	#[cfg_attr(feature = "serde", serde(rename = "Beginner-"))]

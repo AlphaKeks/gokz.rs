@@ -45,6 +45,8 @@ pub static COMMUNITY_REGEX: &lazy_regex::Lazy<Regex> = regex!(r#"^(\[U:1:\d+\]|U
 ///
 /// See also: TODO(intradoc-link to `PlayerIdentifier`)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "sqlx", derive(sqlx::Type))]
+#[cfg_attr(feature = "sqlx", sqlx(transparent, no_pg_array))]
 #[repr(transparent)]
 pub struct SteamID(u64);
 
@@ -214,6 +216,22 @@ impl TryFrom<u64> for SteamID {
 		}
 
 		Ok(Self(steam_id64))
+	}
+}
+
+impl TryFrom<i64> for SteamID {
+	type Error = crate::Error;
+
+	fn try_from(value: i64) -> Result<Self, Self::Error> {
+		let id64: u64 = value
+			.try_into()
+			.map_err(|_| crate::Error::InvalidSteamID(value.to_string()))?;
+
+		if let Ok(id32) = u32::try_from(id64) {
+			return Self::try_from(id32);
+		}
+
+		Self::try_from(id64)
 	}
 }
 

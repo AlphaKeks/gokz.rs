@@ -17,6 +17,8 @@ mod serde;
 /// The 7 current map tiers in CS:GO KZ.
 #[allow(missing_docs)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[cfg_attr(feature = "sqlx", derive(sqlx::Type))]
+#[cfg_attr(feature = "sqlx", sqlx(type_name = "Tier", rename_all = "snake_case"))]
 pub enum Tier {
 	VeryEasy = 1,
 	Easy = 2,
