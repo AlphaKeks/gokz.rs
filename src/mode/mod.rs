@@ -10,7 +10,7 @@ use {
 		},
 		yeet,
 	},
-	std::{fmt::Display, str::FromStr},
+	std::str::FromStr,
 };
 
 #[cfg(feature = "serde")]
@@ -64,9 +64,55 @@ impl Mode {
 	is!(is_vnl, Vanilla);
 }
 
-impl Display for Mode {
+impl std::fmt::Display for Mode {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		write!(f, "{self:?}")
+	}
+}
+
+#[cfg(feature = "poise")]
+#[poise::async_trait]
+impl poise::SlashArgument for Mode {
+	async fn extract(
+		_: &poise::serenity_prelude::Context,
+		_: poise::ApplicationCommandOrAutocompleteInteraction<'_>,
+		value: &poise::serenity_prelude::json::Value,
+	) -> Result<Self, poise::SlashArgError> {
+		let choice_key = value
+			.as_u64()
+			.ok_or(poise::SlashArgError::CommandStructureMismatch("expected u64"))?;
+
+		Ok(match choice_key {
+			0 => Mode::KZTimer,
+			1 => Mode::SimpleKZ,
+			2 => Mode::Vanilla,
+			_ => {
+				return Err(poise::SlashArgError::CommandStructureMismatch(
+					"out of bounds choice key",
+				));
+			}
+		})
+	}
+
+	fn create(builder: &mut poise::serenity_prelude::CreateApplicationCommandOption) {
+		builder.kind(poise::serenity_prelude::CommandOptionType::Integer);
+	}
+
+	fn choices() -> Vec<poise::CommandParameterChoice> {
+		vec![
+			poise::CommandParameterChoice {
+				name: String::from("KZTimer"),
+				localizations: Default::default(),
+			},
+			poise::CommandParameterChoice {
+				name: String::from("SimpleKZ"),
+				localizations: Default::default(),
+			},
+			poise::CommandParameterChoice {
+				name: String::from("Vanilla"),
+				localizations: Default::default(),
+			},
+		]
 	}
 }
 
