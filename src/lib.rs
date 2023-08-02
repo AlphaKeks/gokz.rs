@@ -33,6 +33,12 @@ pub use server_identifier::ServerIdentifier;
 
 pub mod prelude;
 
+#[cfg(feature = "reqwest")]
+pub mod http;
+
+#[cfg(feature = "global-api")]
+pub mod global_api;
+
 pub(crate) mod macros;
 
 #[cfg(test)]

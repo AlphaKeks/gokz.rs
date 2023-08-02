@@ -45,6 +45,26 @@ pub enum Error {
 	/// Some input failed to parse into a [`ServerIdentifier`].
 	#[error("`{0}` is out of range for a valid ServerID.")]
 	InvalidServerID(String),
+
+	/// An HTTP Request failed.
+	#[cfg(feature = "reqwest")]
+	#[error("HTTP Request failed{}: {message}", code.map(|code| code.as_u16().to_string()).unwrap_or_default())]
+	Http {
+		/// The HTTP status code returned by the failed request.
+		#[serde(
+			serialize_with = "crate::http::serde::serialize_status_code",
+			deserialize_with = "crate::http::serde::deserialize_status_code"
+		)]
+		code: Option<crate::http::StatusCode>,
+
+		/// The error message for the failed request.
+		message: String,
+	},
+
+	/// An HTTP Response failed to deserialize.
+	#[cfg(feature = "reqwest")]
+	#[error("Failed to deserialize response: {0}")]
+	DeserializeResponse(String),
 }
 
 /// Early return with the given [`enum@Error`] variant.
