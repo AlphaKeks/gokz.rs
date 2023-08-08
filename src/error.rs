@@ -1,11 +1,9 @@
 //! The error type for this crate.
 //!
-//! Any fallible function in this crate should return [`Result`] with an error type of [`enum@Error`].
+//! Any fallible function in this crate should return [`Result`] with an error type of
+//! [`enum@Error`].
 
 use {std::result::Result as StdResult, thiserror::Error};
-
-#[allow(unused_imports)]
-use crate::{MapIdentifier, Mode, Runtype, ServerIdentifier, SteamID, Tier}; // for doc comments
 
 /// Any fallible function in this crate will return this type.
 pub type Result<T> = StdResult<T, Error>;
@@ -18,11 +16,11 @@ pub enum Error {
 	#[error("{0}")]
 	Custom(String),
 
-	/// Some input failed to parse into a [`SteamID`].
+	/// Some input failed to parse into a [`SteamID`](crate::SteamID).
 	#[error("`{0}` is not a valid SteamID.")]
 	InvalidSteamID(String),
 
-	/// Some input failed to parse into a [`Mode`].
+	/// Some input failed to parse into a [`Mode`](crate::Mode).
 	#[error("`{0}` is not a valid Mode.")]
 	InvalidMode(String),
 
@@ -30,19 +28,19 @@ pub enum Error {
 	#[error("There cannot be a negative amount of teleports.")]
 	InvalidTeleportAmount,
 
-	/// Some input failed to parse into a [`Runtype`].
+	/// Some input failed to parse into a [`Runtype`](crate::Runtype).
 	#[error("`{0}` is not a valid Runtype.")]
 	InvalidRuntype(String),
 
-	/// Some input failed to parse into a [`Tier`].
+	/// Some input failed to parse into a [`Tier`](crate::Tier).
 	#[error("`{0}` is not a valid Tier.")]
 	InvalidTier(String),
 
-	/// Some input failed to parse into a [`MapIdentifier`].
+	/// Some input failed to parse into a [`MapIdentifier`](crate::MapIdentifier).
 	#[error("`{0}` is out of range for a valid MapID.")]
 	InvalidMapID(String),
 
-	/// Some input failed to parse into a [`ServerIdentifier`].
+	/// Some input failed to parse into a [`ServerIdentifier`](crate::ServerIdentifier).
 	#[error("`{0}` is out of range for a valid ServerID.")]
 	InvalidServerID(String),
 
@@ -65,6 +63,11 @@ pub enum Error {
 	#[cfg(feature = "reqwest")]
 	#[error("Failed to deserialize response: {0}")]
 	DeserializeResponse(String),
+
+	/// An HTTP Response was empty.
+	#[cfg(feature = "reqwest")]
+	#[error("Empty API response.")]
+	EmptyResponse,
 }
 
 /// Early return with the given [`enum@Error`] variant.
