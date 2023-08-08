@@ -11,7 +11,7 @@
 			};
 		in {
 			devShell = pkgs.mkShell {
-				nativeBuildInputs = with pkgs; [ rustup ];
+				nativeBuildInputs = with pkgs; [ rustup openssl pkg-config ];
 				buildInputs = with pkgs; [ just cargo-watch ];
 				shellHook = ''
 					rustup toolchain install stable
