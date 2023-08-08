@@ -31,6 +31,9 @@ pub use map_identifier::MapIdentifier;
 pub mod server_identifier;
 pub use server_identifier::ServerIdentifier;
 
+pub mod player_identifier;
+pub use player_identifier::PlayerIdentifier;
+
 pub mod prelude;
 
 #[cfg(feature = "reqwest")]

@@ -10,6 +10,9 @@ use {
 	std::{fmt::Display, str::FromStr},
 };
 
+#[allow(unused_imports)] // docs
+use crate::PlayerIdentifier;
+
 #[cfg(test)]
 mod tests;
 
@@ -43,7 +46,7 @@ pub static COMMUNITY_REGEX: &lazy_regex::Lazy<Regex> = regex!(r#"^(\[U:1:\d+\]|U
 ///
 /// NOTE: This implementation is specific to CS:GO and might not work correctly for other games.
 ///
-/// See also: TODO(intradoc-link to `PlayerIdentifier`)
+/// See also: [`PlayerIdentifier`]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "sqlx", derive(sqlx::Type))]
 #[cfg_attr(feature = "sqlx", sqlx(transparent, no_pg_array))]
