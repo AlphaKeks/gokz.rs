@@ -15,11 +15,12 @@ use {
 mod serde;
 
 /// The two runtypes.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(::serde::Serialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "lowercase"))]
 pub enum Runtype {
 	/// The run was done without teleports.
+	#[default]
 	Pro = 0,
 
 	/// The run was done with teleports.
@@ -32,27 +33,26 @@ impl Display for Runtype {
 	}
 }
 
-impl Default for Runtype {
-	#[rustfmt::skip]
-	fn default() -> Self { Self::Pro }
-}
-
 #[rustfmt::skip]
 impl Runtype {
 	is!(is_pro, Pro);
 	is!(is_tp, TP);
 }
 
-from!(bool => Runtype => |value| {
-	match value {
-		true => Runtype::TP,
-		false => Runtype::Pro,
+impl From<bool> for Runtype {
+	fn from(value: bool) -> Self {
+		match value {
+			true => Runtype::TP,
+			false => Runtype::Pro,
+		}
 	}
-});
+}
 
-from!(Runtype => bool => |value| {
-	value.is_tp()
-});
+impl From<Runtype> for bool {
+	fn from(value: Runtype) -> Self {
+		value.is_tp()
+	}
+}
 
 from!([u8, u16, u32, u64, u128, usize] => Runtype => |int| {
 	match int > 0 {
@@ -90,9 +90,9 @@ impl FromStr for Runtype {
 	type Err = crate::Error;
 
 	fn from_str(input: &str) -> crate::Result<Self> {
-		Ok(match input.to_lowercase().as_str() {
-			"pro" => Self::Pro,
-			"tp" => Self::TP,
+		Ok(match input {
+			"PRO" | "PRo" | "PrO" | "pRO" | "Pro" | "pRo" | "prO" | "pro" => Self::Pro,
+			"TP" | "Tp" | "tP" | "tp" => Self::TP,
 			_ => yeet!(InvalidRuntype(input)),
 		})
 	}

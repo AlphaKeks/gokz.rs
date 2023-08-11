@@ -89,8 +89,8 @@ macro_rules! identifier {
 					match Deserializable::deserialize(deserializer)? {
 						Deserializable::U16(map_id) => $type::try_from(map_id),
 						Deserializable::String(map_name) => Ok($type::from(map_name)),
-						}
-						.map_err(|err| de::Error::custom(err.to_string()))
+					}
+					.map_err(|err| de::Error::custom(err.to_string()))
 				}
 			}
 		}

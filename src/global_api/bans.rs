@@ -103,11 +103,11 @@ pub struct Params {
 
 /// `/bans` route
 ///
-/// Makes an HTTP request with the given params and returns the results. This function will not
-/// return an empty [`Vec`]. If the API response is empty, this function will return an
-/// [`Error`](crate::Error).
+/// Fetches the ban data for the given `params`.
+///
+/// If the API response is empty, this function will return an [`Error`](crate::Error).
 #[tracing::instrument(level = "TRACE", skip(client))]
-pub async fn get_bans(params: &Params, client: &http::Client) -> Result<Vec<Ban>> {
+pub async fn get_bans_with(params: &Params, client: &http::Client) -> Result<Vec<Ban>> {
 	let bans = http::get! {
 		url = format!("{API_URL}/bans");
 		params = params;

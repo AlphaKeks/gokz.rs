@@ -20,11 +20,12 @@ mod serde;
 mod serde_tests;
 
 /// The 3 game modes in CS:GO KZ
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "sqlx", derive(sqlx::Type))]
 #[cfg_attr(feature = "sqlx", sqlx(type_name = "Mode"))]
 pub enum Mode {
 	/// The default mode. Most people play this.
+	#[default]
 	#[cfg_attr(feature = "sqlx", sqlx(rename = "kz_timer"))]
 	KZTimer = 200,
 
@@ -114,11 +115,6 @@ impl poise::SlashArgument for Mode {
 			},
 		]
 	}
-}
-
-impl Default for Mode {
-	#[rustfmt::skip]
-	fn default() -> Self { Self::KZTimer }
 }
 
 from!(Mode => [i8, u8, i16, u16, i32, u32, i64, u64, i128, u128, isize, usize] => |mode| {

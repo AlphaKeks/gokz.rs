@@ -1,9 +1,8 @@
+//! Abstraction over a "player". Many APIs accept either a player's [`SteamID`] or name.
+
 use {
 	crate::{
-		macros::{
-			convert::{from, try_from},
-			is,
-		},
+		macros::{convert::from, is},
 		yeet, SteamID,
 	},
 	std::str::FromStr,
@@ -22,29 +21,39 @@ impl PlayerIdentifier {
 	is!(is_name, Name(_));
 }
 
-from!(SteamID => PlayerIdentifier => |steam_id| {
-	PlayerIdentifier::SteamID(steam_id)
-});
+impl From<SteamID> for PlayerIdentifier {
+	fn from(steam_id: SteamID) -> Self {
+		PlayerIdentifier::SteamID(steam_id)
+	}
+}
 
 from!([&str, String] => PlayerIdentifier => |player_name| {
 	PlayerIdentifier::Name(player_name.into())
 });
 
-try_from!(PlayerIdentifier => SteamID => |player_identifier| {
-	let PlayerIdentifier::SteamID(steam_id) = player_identifier else {
-		yeet!(Custom("PlayerIdentifier was not a `SteamID`."));
-	};
+impl TryFrom<PlayerIdentifier> for SteamID {
+	type Error = crate::Error;
 
-	Ok(steam_id)
-});
+	fn try_from(player_identifier: PlayerIdentifier) -> Result<Self, Self::Error> {
+		let PlayerIdentifier::SteamID(steam_id) = player_identifier else {
+			yeet!(Custom("PlayerIdentifier was not a `SteamID`."));
+		};
 
-try_from!(PlayerIdentifier => String => |player_identifier| {
-	let PlayerIdentifier::Name(player_name) = player_identifier else {
-		yeet!(Custom("PlayerIdentifier was not a `Name`."));
-	};
+		Ok(steam_id)
+	}
+}
 
-	Ok(player_name)
-});
+impl TryFrom<PlayerIdentifier> for String {
+	type Error = crate::Error;
+
+	fn try_from(player_identifier: PlayerIdentifier) -> Result<Self, Self::Error> {
+		let PlayerIdentifier::Name(player_name) = player_identifier else {
+			yeet!(Custom("PlayerIdentifier was not a `Name`."));
+		};
+
+		Ok(player_name)
+	}
+}
 
 impl FromStr for PlayerIdentifier {
 	type Err = std::convert::Infallible;
