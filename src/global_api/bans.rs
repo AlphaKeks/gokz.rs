@@ -1,9 +1,11 @@
 //! `/bans` endpoint
 
 use {
-	super::API_URL,
+	super::{serde::append_pairs, API_URL},
 	crate::{http, yeet, Result, SteamID},
+	reqwest::Url,
 	serde::{Deserialize, Serialize},
+	std::fmt::Display,
 };
 
 #[allow(missing_docs)]
@@ -61,13 +63,16 @@ pub enum BanType {
 	Other,
 }
 
+impl Display for BanType {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		write!(f, "{self:?}")
+	}
+}
+
 #[allow(missing_docs)]
 #[derive(Default, Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Params {
-	#[serde(
-		serialize_with = "super::serde::serialize_ban_types",
-		deserialize_with = "super::serde::deserialize_ban_types"
-	)]
+	#[serde(skip)]
 	pub ban_types: Option<Vec<BanType>>,
 
 	pub is_expired: Option<bool>,
@@ -108,8 +113,12 @@ pub struct Params {
 /// If the API response is empty, this function will return an [`Error`](crate::Error).
 #[tracing::instrument(level = "TRACE", skip(client))]
 pub async fn get_bans_with(params: &Params, client: &http::Client) -> Result<Vec<Ban>> {
+	let mut url = Url::parse(&format!("{API_URL}/bans")).expect("This is a valid URL.");
+
+	append_pairs!(&mut url, &params.ban_types, "ban_types");
+
 	let bans = http::get! {
-		url = format!("{API_URL}/bans");
+		url = url;
 		params = params;
 		deserialize = Vec<Ban>;
 		client = client;

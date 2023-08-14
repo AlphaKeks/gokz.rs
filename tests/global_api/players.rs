@@ -18,7 +18,7 @@ async fn get_players() -> Result<()> {
 }
 
 #[tokio::test]
-#[ignore = "Requires `STEAM_WEB_API_KEY` environment variable"]
+#[ignore = "requires `STEAM_WEB_API_KEY` environment variable"]
 async fn get_player_avatar() -> Result<()> {
 	let player = Player {
 		name: String::from("AlphaKeks"),

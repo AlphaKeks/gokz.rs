@@ -8,6 +8,7 @@ pub mod health;
 pub mod bans;
 pub mod maps;
 pub mod players;
+pub mod record_filters;
 
 #[ctor::ctor]
 fn setup() {

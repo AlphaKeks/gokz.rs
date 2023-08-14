@@ -19,6 +19,9 @@ pub use maps::{get_map, get_maps, get_maps_with, Map};
 pub mod players;
 pub use players::{get_player, get_players_with, Player};
 
+pub mod filters;
+pub use filters::{get_filters_with, RecordFilter};
+
 mod serde {
 	use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 
@@ -72,40 +75,16 @@ mod serde {
 		}
 	}
 
-	pub(super) fn serialize_ban_types<S: Serializer>(
-		ban_types: &Option<Vec<super::bans::BanType>>,
-		serializer: S,
-	) -> Result<S::Ok, S::Error> {
-		use std::fmt::Write;
-
-		let Some(ban_types) = ban_types else {
-			return serializer.serialize_none();
-		};
-
-		let mut s = String::new();
-
-		for ban_type in ban_types {
-			write!(&mut s, "{ban_type:?},").expect("This never fails");
-		}
-
-		s.pop();
-		s.serialize(serializer)
+	macro_rules! append_pairs {
+		($url:expr, $value:expr, $name:expr) => {{
+			if let Some(items) = $value {
+				let mut query = $url.query_pairs_mut();
+				for item in items {
+					query.append_pair($name, &item.to_string());
+				}
+			}
+		}};
 	}
 
-	pub(super) fn deserialize_ban_types<'de, D: Deserializer<'de>>(
-		deserializer: D,
-	) -> Result<Option<Vec<super::bans::BanType>>, D::Error> {
-		Ok(Some(
-			String::deserialize(deserializer)?
-				.split(',')
-				.map(|ban_type| match ban_type {
-					"bhop_hack" => super::bans::BanType::BhopHack,
-					"bhop_macro" => super::bans::BanType::BhopMacro,
-					"strafe_hack" => super::bans::BanType::StrafeHack,
-					"ban_evasion" => super::bans::BanType::BanEvasion,
-					_ => super::bans::BanType::Other,
-				})
-				.collect(),
-		))
-	}
+	pub(super) use append_pairs;
 }

@@ -37,6 +37,12 @@ macro_rules! get {
 	};
 
 	(__process, $request:expr, $type:ty) => {
+		// async {
+		// 	::serde_json::from_value::<$type>(
+		// 		dbg!($request.json::<::serde_json::Value>().await.unwrap())
+		// 	)
+		// }
+
 		$request.json::<$type>()
 	};
 

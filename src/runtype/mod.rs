@@ -16,8 +16,6 @@ mod serde;
 
 /// The two runtypes.
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(::serde::Serialize))]
-#[cfg_attr(feature = "serde", serde(rename_all = "lowercase"))]
 pub enum Runtype {
 	/// The run was done without teleports.
 	#[default]
