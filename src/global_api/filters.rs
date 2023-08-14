@@ -3,8 +3,8 @@
 //! NOTE: `/record_filters/distributions` is not supported because I have no idea what it does.
 
 use {
-	super::{serde::append_pairs, API_URL},
-	crate::{http, yeet, Mode, Result, Runtype, SteamID},
+	super::API_URL,
+	crate::{http, http::append_pairs, yeet, Mode, Result, Runtype, SteamID},
 	reqwest::Url,
 	serde::{Deserialize, Serialize},
 };

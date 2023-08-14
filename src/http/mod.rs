@@ -59,3 +59,16 @@ macro_rules! get {
 }
 
 pub(crate) use get;
+
+macro_rules! append_pairs {
+	($url:expr, $value:expr, $name:expr) => {{
+		if let Some(items) = $value {
+			let mut query = $url.query_pairs_mut();
+			for item in items {
+				query.append_pair($name, &item.to_string());
+			}
+		}
+	}};
+}
+
+pub(crate) use append_pairs;

@@ -7,8 +7,8 @@
 //! NOTE: `/servers/:server_id` seems to be broken.
 
 use {
-	super::{serde::append_pairs, API_URL},
-	crate::{http, yeet, Result, SteamID},
+	super::API_URL,
+	crate::{http, http::append_pairs, yeet, Result, SteamID},
 	reqwest::Url,
 	serde::{Deserialize, Serialize},
 	std::net::SocketAddr,
