@@ -9,6 +9,27 @@ impl Serialize for SteamID {
 	}
 }
 
+impl SteamID {
+	/// Method that matches [`serde`]'s `serialize` signature.
+	pub fn serialize_as_u64<S: Serializer>(
+		steam_id: &Self,
+		serializer: S,
+	) -> Result<S::Ok, S::Error> {
+		steam_id.as_id64().serialize(serializer)
+	}
+
+	/// Method that matches [`serde`]'s `serialize` signature.
+	pub fn serialize_opt_as_u64<S: Serializer>(
+		steam_id: &Option<Self>,
+		serializer: S,
+	) -> Result<S::Ok, S::Error> {
+		match steam_id {
+			None => serializer.serialize_none(),
+			Some(steam_id) => serializer.serialize_u64(steam_id.as_id64()),
+		}
+	}
+}
+
 #[derive(Deserialize)]
 #[serde(untagged)]
 enum Deserializable {

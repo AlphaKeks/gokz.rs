@@ -21,7 +21,7 @@ pub struct Map {
 	pub validated: bool,
 	pub difficulty: Tier,
 
-	#[serde(rename = "approved_by_steamid64")]
+	#[serde(rename = "approved_by_steamid64", serialize_with = "SteamID::serialize_opt_as_u64")]
 	pub approved_by: Option<SteamID>,
 
 	pub workshop_url: Option<String>,
@@ -150,18 +150,7 @@ pub async fn get_maps_with(params: &Params, client: &http::Client) -> Result<Vec
 pub async fn get_maps(global: bool, client: &http::Client) -> Result<Vec<Map>> {
 	let params = Params { is_validated: Some(global), limit: Some(9999), ..Default::default() };
 
-	let maps = http::get! {
-		url = format!("{API_URL}/maps");
-		params = &params;
-		deserialize = Vec<Map>;
-		client = client;
-	}?;
-
-	if maps.is_empty() {
-		yeet!(EmptyResponse);
-	}
-
-	Ok(maps)
+	get_maps_with(&params, client).await
 }
 
 /// `/maps/name/:map_name` route

@@ -56,7 +56,6 @@ async fn get_filters() -> Result<()> {
 
 	let expected = serde_json::from_value::<Vec<RecordFilter>>(expected)?;
 
-	// https://kztimerglobal.com/api/v2/record_filters?map_ids=992&stages=0&stages=1&tickrates=128&has_teleports=true
 	let params = global_api::filters::Params {
 		map_ids: Some(vec![992]),
 		stages: Some(vec![0, 1]),

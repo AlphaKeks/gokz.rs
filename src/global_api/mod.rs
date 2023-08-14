@@ -16,6 +16,9 @@ pub use bans::{get_bans_with, Ban};
 pub mod maps;
 pub use maps::{get_map, get_maps, get_maps_with, Map};
 
+pub mod servers;
+pub use servers::{get_servers_owned_by, get_servers_with, Server};
+
 pub mod players;
 pub use players::{get_player, get_players_with, Player};
 
