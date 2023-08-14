@@ -6,7 +6,7 @@ use {
 
 #[tokio::test]
 async fn get_bans() -> Result<()> {
-	let alphakeks = unsafe { SteamID::new_unchecked(76561198282622073) };
+	let alphakeks = SteamID::try_from(76561198282622073_u64)?;
 	let params = global_api::bans::Params { steam_id: Some(alphakeks), ..Default::default() };
 
 	let bans = global_api::get_bans_with(&params, &crate::GOKZ_CLIENT).await?;

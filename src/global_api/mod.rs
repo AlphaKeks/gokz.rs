@@ -11,10 +11,13 @@ pub mod health;
 pub use health::{healthcheck, Health};
 
 pub mod bans;
-pub use bans::get_bans_with;
+pub use bans::{get_bans_with, Ban};
 
 pub mod maps;
-pub use maps::{get_map, get_maps, get_maps_with};
+pub use maps::{get_map, get_maps, get_maps_with, Map};
+
+pub mod players;
+pub use players::{get_player, get_players_with, Player};
 
 mod serde {
 	use serde::{de, Deserialize, Deserializer, Serialize, Serializer};

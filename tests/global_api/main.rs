@@ -7,6 +7,7 @@ static GOKZ_CLIENT: Lazy<Client> = Lazy::new(Client::new);
 pub mod health;
 pub mod bans;
 pub mod maps;
+pub mod players;
 
 #[ctor::ctor]
 fn setup() {
