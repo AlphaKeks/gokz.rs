@@ -2,7 +2,7 @@
 //!
 //! Covered:
 //! - `/servers`
-//! - `/servers/name/:map_name`
+//! - `/servers/name/:server_name`
 //!
 //! NOTE: `/servers/:server_id` seems to be broken.
 
