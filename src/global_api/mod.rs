@@ -25,6 +25,13 @@ pub use players::{get_player, get_players_with, Player};
 pub mod filters;
 pub use filters::{get_filters_with, RecordFilter};
 
+pub mod records;
+pub use records::{
+	get_maptop, get_pb, get_record, get_records_with, get_wr,
+	world_records::{self, get_wr_leaderboard},
+	Record,
+};
+
 mod serde {
 	use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 
