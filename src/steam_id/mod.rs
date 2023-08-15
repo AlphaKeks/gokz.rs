@@ -197,6 +197,24 @@ impl SteamID {
 
 		community_id as u32
 	}
+
+	/// Returns a link to the player's Steam profile.
+	#[inline]
+	pub fn steam_profile(&self) -> String {
+		format!("https://steamcommunity.com/profiles/{}", self.as_id64())
+	}
+
+	/// Returns a link to fetch this player from the GlobalAPI.
+	#[inline]
+	pub fn api(&self) -> String {
+		format!("https://kztimerglobal.com/api/v2/players/steam_id/{}", self)
+	}
+
+	/// Returns a link to the player's KZ:GO profile.
+	#[inline]
+	pub fn kzgo_profile(&self) -> String {
+		format!("https://kzgo.eu/players/{}", self)
+	}
 }
 
 impl Display for SteamID {

@@ -23,16 +23,19 @@ pub struct Player {
 
 impl Player {
 	/// Returns a link to the player's Steam profile.
+	#[inline]
 	pub fn steam_profile(&self) -> String {
 		format!("https://steamcommunity.com/profiles/{}", self.steam_id.as_id64())
 	}
 
 	/// Returns a link to fetch this player from the GlobalAPI.
+	#[inline]
 	pub fn api(&self) -> String {
 		format!("{API_URL}/players/steam_id/{}", self.steam_id)
 	}
 
 	/// Returns a link to the player's KZ:GO profile.
+	#[inline]
 	pub fn kzgo_profile(&self) -> String {
 		format!("https://kzgo.eu/players/{}", self.steam_id)
 	}
