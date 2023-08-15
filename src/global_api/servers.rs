@@ -11,7 +11,7 @@ use {
 	crate::{http, http::append_pairs, yeet, Result, SteamID},
 	reqwest::Url,
 	serde::{Deserialize, Serialize},
-	std::net::SocketAddr,
+	std::net::{IpAddr, SocketAddr},
 };
 
 #[allow(missing_docs)]
@@ -30,11 +30,8 @@ impl Server {
 	/// Returns the server's IP address as a [`SocketAddr`].
 	pub fn ip_addr(&self) -> Option<SocketAddr> {
 		self.ip
-			.parse::<SocketAddr>()
-			.map(|mut addr| {
-				addr.set_port(self.port);
-				addr
-			})
+			.parse::<IpAddr>()
+			.map(|ip| SocketAddr::new(ip, self.port))
 			.ok()
 	}
 }
