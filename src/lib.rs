@@ -39,8 +39,14 @@ pub mod prelude;
 #[cfg(feature = "reqwest")]
 pub mod http;
 
+#[cfg(feature = "serde")]
+pub mod serde;
+
 #[cfg(feature = "global-api")]
 pub mod global_api;
+
+#[cfg(feature = "kzgo-api")]
+pub mod kzgo_api;
 
 pub(crate) mod macros;
 

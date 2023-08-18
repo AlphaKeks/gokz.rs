@@ -18,7 +18,7 @@ poise = ["dep:poise"]
 
 global-api = ["reqwest"]
 kzgo-api = ["reqwest"]
-schnose-api = ["reqwest"]
+# schnose-api = ["reqwest"]
 
 [dependencies]
 thiserror = "1"
@@ -42,7 +42,7 @@ features = ["serde"]
 [dependencies.reqwest]
 optional = true
 version = "0.11"
-features = ["rustls"]
+features = ["rustls", "json"]
 
 [dependencies.sqlx]
 optional = true

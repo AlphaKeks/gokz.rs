@@ -2,7 +2,6 @@ use {
 	color_eyre::Result,
 	gokz_rs::{global_api, global_api::Server, SteamID},
 	serde_json::json,
-	std::time::Duration,
 };
 
 #[tokio::test]
@@ -37,6 +36,5 @@ async fn get_servers() -> Result<()> {
 	let expected = serde_json::from_value::<Vec<Server>>(expected)?;
 
 	assert_eq!(servers, expected);
-	std::thread::sleep(Duration::from_millis(500));
 	Ok(())
 }

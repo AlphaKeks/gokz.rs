@@ -2,7 +2,6 @@ use {
 	color_eyre::Result,
 	gokz_rs::{global_api, global_api::RecordFilter},
 	serde_json::json,
-	std::time::Duration,
 };
 
 #[tokio::test]
@@ -68,6 +67,5 @@ async fn get_filters() -> Result<()> {
 
 	assert_eq!(result, expected);
 
-	std::thread::sleep(Duration::from_millis(500));
 	Ok(())
 }

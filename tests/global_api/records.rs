@@ -5,7 +5,6 @@ use {
 		Mode,
 	},
 	serde_json::json,
-	std::time::Duration,
 };
 
 #[tokio::test]
@@ -37,7 +36,6 @@ async fn get_record() -> Result<()> {
 	let expected = serde_json::from_value::<Record>(expected)?;
 
 	assert_eq!(record, expected);
-	std::thread::sleep(Duration::from_millis(500));
 	Ok(())
 }
 
@@ -45,7 +43,6 @@ async fn get_record() -> Result<()> {
 async fn get_wr() -> Result<()> {
 	global_api::get_wr("kz_lionharder", 0, Mode::SimpleKZ, true, &crate::GOKZ_CLIENT).await?;
 
-	std::thread::sleep(Duration::from_millis(500));
 	Ok(())
 }
 
@@ -86,7 +83,6 @@ async fn get_pb() -> Result<()> {
 	let expected = serde_json::from_value::<Record>(expected)?;
 
 	assert_eq!(record, expected);
-	std::thread::sleep(Duration::from_millis(500));
 	Ok(())
 }
 
@@ -103,7 +99,6 @@ async fn get_maptop() -> Result<()> {
 	.await?;
 
 	assert_eq!(maptop.len(), 100);
-	std::thread::sleep(Duration::from_millis(500));
 	Ok(())
 }
 
@@ -111,6 +106,5 @@ async fn get_maptop() -> Result<()> {
 async fn get_wr_leaderboard() -> Result<()> {
 	global_api::get_wr_leaderboard(0..=0, Mode::KZTimer, false, 1, &crate::GOKZ_CLIENT).await?;
 
-	std::thread::sleep(Duration::from_millis(500));
 	Ok(())
 }

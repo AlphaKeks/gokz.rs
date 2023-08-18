@@ -1,7 +1,6 @@
 use {
 	color_eyre::{eyre::Context, Result},
 	gokz_rs::{global_api, global_api::Player, SteamID},
-	std::time::Duration,
 };
 
 #[tokio::test]
@@ -13,7 +12,6 @@ async fn get_players() -> Result<()> {
 	assert_eq!(player.steam_id.to_string(), "STEAM_1:1:161178172");
 	assert!(!player.is_banned);
 
-	std::thread::sleep(Duration::from_millis(500));
 	Ok(())
 }
 
@@ -33,6 +31,5 @@ async fn get_player_avatar() -> Result<()> {
 		.avatar_url(&api_key, &crate::GOKZ_CLIENT)
 		.await?;
 
-	std::thread::sleep(Duration::from_millis(500));
 	Ok(())
 }

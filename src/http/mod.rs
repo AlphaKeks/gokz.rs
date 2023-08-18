@@ -60,6 +60,7 @@ macro_rules! get {
 
 pub(crate) use get;
 
+#[cfg(feature = "global-api")]
 macro_rules! append_pairs {
 	($url:expr, $value:expr, $name:expr) => {{
 		if let Some(items) = $value {
@@ -71,4 +72,5 @@ macro_rules! append_pairs {
 	}};
 }
 
+#[cfg(feature = "global-api")]
 pub(crate) use append_pairs;

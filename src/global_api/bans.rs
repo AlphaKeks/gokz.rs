@@ -16,8 +16,8 @@ pub struct Ban {
 
 	#[cfg(feature = "chrono")]
 	#[serde(
-		serialize_with = "super::serde::chrono::serialize_date",
-		deserialize_with = "super::serde::chrono::deserialize_date"
+		serialize_with = "crate::serde::chrono::serialize_date",
+		deserialize_with = "crate::serde::chrono::deserialize_date"
 	)]
 	pub expires_on: chrono::DateTime<chrono::Utc>,
 
@@ -33,8 +33,8 @@ pub struct Ban {
 
 	#[cfg(feature = "chrono")]
 	#[serde(
-		serialize_with = "super::serde::chrono::serialize_date",
-		deserialize_with = "super::serde::chrono::deserialize_date"
+		serialize_with = "crate::serde::chrono::serialize_date",
+		deserialize_with = "crate::serde::chrono::deserialize_date"
 	)]
 	pub created_on: chrono::DateTime<chrono::Utc>,
 
@@ -43,8 +43,8 @@ pub struct Ban {
 
 	#[cfg(feature = "chrono")]
 	#[serde(
-		serialize_with = "super::serde::chrono::serialize_date",
-		deserialize_with = "super::serde::chrono::deserialize_date"
+		serialize_with = "crate::serde::chrono::serialize_date",
+		deserialize_with = "crate::serde::chrono::deserialize_date"
 	)]
 	pub updated_on: chrono::DateTime<chrono::Utc>,
 
@@ -84,8 +84,8 @@ pub struct Params {
 
 	#[cfg(feature = "chrono")]
 	#[serde(
-		serialize_with = "super::serde::chrono::serialize_date_opt",
-		deserialize_with = "super::serde::chrono::deserialize_date_opt"
+		serialize_with = "crate::serde::chrono::serialize_date_opt",
+		deserialize_with = "crate::serde::chrono::deserialize_date_opt"
 	)]
 	pub created_since: Option<chrono::DateTime<chrono::Utc>>,
 
@@ -94,8 +94,8 @@ pub struct Params {
 
 	#[cfg(feature = "chrono")]
 	#[serde(
-		serialize_with = "super::serde::chrono::serialize_date_opt",
-		deserialize_with = "super::serde::chrono::deserialize_date_opt"
+		serialize_with = "crate::serde::chrono::serialize_date_opt",
+		deserialize_with = "crate::serde::chrono::deserialize_date_opt"
 	)]
 	pub updated_since: Option<chrono::DateTime<chrono::Utc>>,
 
