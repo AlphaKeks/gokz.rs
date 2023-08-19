@@ -28,39 +28,39 @@ macro_rules! identifier {
 		}
 
 		try_from!([i8, u8, i16, u16, i32, u32, i64, u64, i128, u128, isize, usize] => $type => |int| {
-			let Ok(map_id) = u16::try_from(int) else {
+			let Ok(id) = u16::try_from(int) else {
 				yeet!($id_err(int))
 			};
 
-			Ok($type::ID(map_id))
+			Ok($type::ID(id))
 		});
 
-		try_from!($type => [i8, u8, i16] => |map_identifier| {
-			let $type::ID(map_id) = map_identifier else {
+		try_from!($type => [i8, u8, i16] => |identifier| {
+			let $type::ID(id) = identifier else {
 				yeet!(Custom("`$type` was not an `ID`."));
 			};
 
-			map_id.try_into().map_err(|err: std::num::TryFromIntError| Error::Custom(err.to_string()))
+			id.try_into().map_err(|err: std::num::TryFromIntError| Error::Custom(err.to_string()))
 		});
 
-		try_from!($type => [u16, i32, u32, i64, u64, i128, u128] => |map_identifier| {
-			let $type::ID(map_id) = map_identifier else {
+		try_from!($type => [u16, i32, u32, i64, u64, i128, u128] => |identifier| {
+			let $type::ID(id) = identifier else {
 				yeet!(Custom("`$type` was not an `ID`."));
 			};
 
-			Ok(map_id.into())
+			Ok(id.into())
 		});
 
-		try_from!($type => [isize, usize] => |map_identifier| {
-			let $type::ID(map_id) = map_identifier else {
+		try_from!($type => [isize, usize] => |identifier| {
+			let $type::ID(id) = identifier else {
 				yeet!(Custom("`$type` was not an `ID`."));
 			};
 
-			Ok(map_id as _)
+			Ok(id as _)
 		});
 
-		from!([&str, String] => $type => |map_name| {
-			$type::Name(map_name.into())
+		from!([&str, String] => $type => |name| {
+			$type::Name(name.into())
 		});
 
 		impl FromStr for $type {
@@ -88,8 +88,11 @@ macro_rules! identifier {
 			impl<'de> Deserialize<'de> for $type {
 				fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
 					match Deserializable::deserialize(deserializer)? {
-						Deserializable::U16(map_id) => $type::try_from(map_id),
-						Deserializable::String(map_name) => Ok($type::from(map_name)),
+						Deserializable::U16(id) => $type::try_from(id),
+						Deserializable::String(name) => match name.parse::<u16>() {
+							Ok(id) => $type::try_from(id),
+							Err(_) => Ok($type::from(name)),
+						}
 					}
 					.map_err(|err| de::Error::custom(err.to_string()))
 				}
