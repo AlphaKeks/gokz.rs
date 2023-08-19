@@ -20,6 +20,7 @@ mod serde;
 #[cfg_attr(feature = "sqlx", derive(sqlx::Type))]
 #[cfg_attr(feature = "sqlx", sqlx(type_name = "Tier", rename_all = "snake_case"))]
 #[cfg_attr(feature = "utoipa", derive(utoipa::ToSchema))]
+#[cfg_attr(feature = "utoipa", schema(rename_all = "snake_case"))]
 pub enum Tier {
 	VeryEasy = 1,
 	Easy = 2,
