@@ -8,7 +8,7 @@ use {
 		},
 		yeet,
 	},
-	std::str::FromStr,
+	std::{fmt::Display, str::FromStr},
 };
 
 #[cfg(feature = "serde")]
@@ -19,8 +19,6 @@ mod serde;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(feature = "sqlx", derive(sqlx::Type))]
 #[cfg_attr(feature = "sqlx", sqlx(type_name = "Tier", rename_all = "snake_case"))]
-#[cfg_attr(feature = "serde", derive(::serde::Serialize))]
-#[cfg_attr(feature = "serde", serde(rename_all = "snake_case"))]
 #[cfg_attr(feature = "utoipa", derive(utoipa::ToSchema))]
 pub enum Tier {
 	VeryEasy = 1,
@@ -30,6 +28,20 @@ pub enum Tier {
 	VeryHard = 5,
 	Extreme = 6,
 	Death = 7,
+}
+
+impl Display for Tier {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		f.write_str(match self {
+			Tier::VeryEasy => "very_easy",
+			Tier::Easy => "easy",
+			Tier::Medium => "medium",
+			Tier::Hard => "hard",
+			Tier::VeryHard => "very_hard",
+			Tier::Extreme => "extreme",
+			Tier::Death => "death",
+		})
+	}
 }
 
 #[rustfmt::skip]

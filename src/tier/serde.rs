@@ -1,7 +1,20 @@
 use {
 	super::Tier,
-	serde::{de, Deserialize, Deserializer},
+	serde::{de, Deserialize, Deserializer, Serialize},
 };
+
+impl Serialize for Tier {
+	fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+		(*self as u8).serialize(serializer)
+	}
+}
+
+impl Tier {
+	/// [`serde`] function to serialize a [`Tier`] with its name rather than as a number.
+	pub fn serialize_name<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+		self.to_string().serialize(serializer)
+	}
+}
 
 #[derive(Deserialize)]
 #[serde(untagged)]
