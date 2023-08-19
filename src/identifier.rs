@@ -15,6 +15,7 @@ macro_rules! identifier {
 		#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 		#[cfg_attr(feature = "serde", derive(::serde::Serialize))]
 		#[cfg_attr(feature = "serde", serde(untagged))]
+		#[cfg_attr(feature = "utoipa", derive(utoipa::ToSchema))]
 		pub enum $type {
 			ID(u16),
 			Name(String),

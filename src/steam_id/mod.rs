@@ -47,6 +47,7 @@ pub static COMMUNITY_REGEX: &lazy_regex::Lazy<Regex> = regex!(r#"^(\[U:1:\d+\]|U
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "sqlx", derive(sqlx::Type))]
 #[cfg_attr(feature = "sqlx", sqlx(transparent, no_pg_array))]
+#[cfg_attr(feature = "utoipa", derive(utoipa::ToSchema))]
 #[repr(transparent)]
 pub struct SteamID(u64);
 

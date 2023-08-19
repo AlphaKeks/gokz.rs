@@ -10,6 +10,7 @@ use {
 
 #[allow(missing_docs)]
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "utoipa", derive(utoipa::ToSchema))]
 pub enum PlayerIdentifier {
 	SteamID(SteamID),
 	Name(String),

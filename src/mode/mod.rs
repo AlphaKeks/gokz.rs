@@ -23,6 +23,7 @@ mod serde_tests;
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "sqlx", derive(sqlx::Type))]
 #[cfg_attr(feature = "sqlx", sqlx(type_name = "Mode"))]
+#[cfg_attr(feature = "utoipa", derive(utoipa::ToSchema))]
 pub enum Mode {
 	/// The default mode. Most people play this.
 	#[default]

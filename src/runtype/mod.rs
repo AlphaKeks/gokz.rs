@@ -16,6 +16,7 @@ mod serde;
 
 /// The two runtypes.
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[cfg_attr(feature = "utoipa", derive(utoipa::ToSchema))]
 pub enum Runtype {
 	/// The run was done without teleports.
 	#[default]

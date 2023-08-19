@@ -10,6 +10,7 @@ use crate::{macros::is, Mode};
 #[cfg_attr(feature = "serde", serde(rename_all = "lowercase"))]
 #[cfg_attr(feature = "sqlx", derive(sqlx::Type))]
 #[cfg_attr(feature = "sqlx", sqlx(rename_all = "snake_case", type_name = "Rank"))]
+#[cfg_attr(feature = "utoipa", derive(utoipa::ToSchema))]
 pub enum Rank {
 	New,
 	#[cfg_attr(feature = "serde", serde(rename = "Beginner-"))]
