@@ -28,14 +28,17 @@ pub enum Mode {
 	/// The default mode. Most people play this.
 	#[default]
 	#[cfg_attr(feature = "sqlx", sqlx(rename = "kz_timer"))]
+	#[cfg_attr(feature = "utoipa", schema(rename = "kz_timer"))]
 	KZTimer = 200,
 
 	/// The mode for based individuals.
 	#[cfg_attr(feature = "sqlx", sqlx(rename = "kz_simple"))]
+	#[cfg_attr(feature = "utoipa", schema(rename = "kz_simple"))]
 	SimpleKZ = 201,
 
 	/// In case you really hate yourself.
 	#[cfg_attr(feature = "sqlx", sqlx(rename = "kz_vanilla"))]
+	#[cfg_attr(feature = "utoipa", schema(rename = "kz_vanilla"))]
 	Vanilla = 202,
 }
 
