@@ -59,6 +59,7 @@ pub enum BanType {
 	BhopHack,
 	BhopMacro,
 	StrafeHack,
+	StrafeMacro,
 	BanEvasion,
 	Other,
 }
