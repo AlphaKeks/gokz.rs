@@ -48,6 +48,9 @@ pub mod global_api;
 #[cfg(feature = "kzgo-api")]
 pub mod kzgo_api;
 
+#[cfg(feature = "dawn-api")]
+pub mod dawn_api;
+
 pub(crate) mod macros;
 
 #[cfg(test)]

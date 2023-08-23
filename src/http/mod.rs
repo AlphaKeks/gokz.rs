@@ -12,7 +12,7 @@ macro_rules! get {
 	) => {{
 		let params = $crate::http::get!(__params $(, $params)?);
 		let request = $crate::http::get!(__req, $url, params, $client);
-		let request = $crate::http::get!(__process, request, $($response)?);
+		let request = $crate::http::get!(__process, request $(, $response)?);
 		$crate::http::get!(__finish, request)
 	}};
 

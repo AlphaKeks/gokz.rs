@@ -19,7 +19,7 @@ utoipa = ["dep:utoipa"]
 
 global-api = ["reqwest"]
 kzgo-api = ["reqwest"]
-# schnose-api = ["reqwest"]
+dawn-api = ["reqwest"]
 
 [dependencies]
 thiserror = "1"

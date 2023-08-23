@@ -5,7 +5,7 @@ use {
 		macros::{convert::from, is},
 		yeet, SteamID,
 	},
-	std::str::FromStr,
+	std::{fmt::Display, str::FromStr},
 };
 
 #[allow(missing_docs)]
@@ -20,6 +20,15 @@ pub enum PlayerIdentifier {
 impl PlayerIdentifier {
 	is!(is_steam_id, SteamID(_));
 	is!(is_name, Name(_));
+}
+
+impl Display for PlayerIdentifier {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			PlayerIdentifier::SteamID(steam_id) => write!(f, "{steam_id}"),
+			PlayerIdentifier::Name(name) => write!(f, "{name}"),
+		}
+	}
 }
 
 impl From<SteamID> for PlayerIdentifier {

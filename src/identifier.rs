@@ -27,6 +27,15 @@ macro_rules! identifier {
 			is!(is_name, Name(_));
 		}
 
+		impl std::fmt::Display for $type {
+			fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
+				match self {
+					Self::ID(id) => write!(f, "{id}"),
+					Self::Name(name) => write!(f, "{name}"),
+				}
+			}
+		}
+
 		try_from!([i8, u8, i16, u16, i32, u32, i64, u64, i128, u128, isize, usize] => $type => |int| {
 			let Ok(id) = u16::try_from(int) else {
 				yeet!($id_err(int))
