@@ -104,7 +104,7 @@ impl SteamID {
 
 		assert_eq!(numbers.next(), None, "Nothing of the SteamID should be left over.");
 
-		if account_number == 0 {
+		if account_type == 0 && account_number == 0 {
 			yeet!(InvalidSteamID(steam_id));
 		}
 
