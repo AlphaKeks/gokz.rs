@@ -104,6 +104,14 @@ impl SteamID {
 
 		assert_eq!(numbers.next(), None, "Nothing of the SteamID should be left over.");
 
+		if account_number == 0 {
+			yeet!(InvalidSteamID(steam_id));
+		}
+
+		if account_number + Self::OFFSET > Self::MAX {
+			yeet!(InvalidSteamID(steam_id));
+		}
+
 		#[rustfmt::skip]
 		let steam_id64 = account_universe << 56
 			| 1 << 52
@@ -111,8 +119,15 @@ impl SteamID {
 			| account_number << 1
 			| account_type;
 
-		assert!(steam_id64 > Self::OFFSET, "SteamID should be larger than `SteamID::OFFSET`.");
-		assert!(steam_id64 < Self::MAX, "SteamID should be smaller than `SteamID::OFFSET`.");
+		assert!(
+			steam_id64 > Self::OFFSET,
+			"SteamID should be larger than `SteamID::OFFSET` ({steam_id})."
+		);
+
+		assert!(
+			steam_id64 < Self::MAX,
+			"SteamID should be smaller than `SteamID::OFFSET` ({steam_id})."
+		);
 
 		Ok(SteamID(steam_id64))
 	}
