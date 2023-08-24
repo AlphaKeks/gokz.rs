@@ -35,6 +35,7 @@ pub mod player_identifier;
 pub use player_identifier::PlayerIdentifier;
 
 pub mod prelude;
+pub mod util;
 
 #[cfg(feature = "reqwest")]
 pub mod http;
