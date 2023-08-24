@@ -36,7 +36,11 @@ macro_rules! identifier {
 			}
 		}
 
-		try_from!([i8, u8, i16, u16, i32, u32, i64, u64, i128, u128, isize, usize] => $type => |int| {
+		from!([u8, u16] => $type => |int| {
+			$type::ID(int as _)
+		});
+
+		try_from!([i8, i16, i32, u32, i64, u64, i128, u128, isize, usize] => $type => |int| {
 			let Ok(id) = u16::try_from(int) else {
 				yeet!($id_err(int))
 			};
