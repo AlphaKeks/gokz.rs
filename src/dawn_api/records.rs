@@ -10,7 +10,7 @@ use {
 	super::API_URL,
 	crate::{
 		http, yeet, MapIdentifier, Mode, PlayerIdentifier, Result, Runtype, ServerIdentifier,
-		SteamID,
+		SteamID, Tier,
 	},
 	serde::{Deserialize, Serialize},
 };
@@ -22,7 +22,8 @@ pub struct Record {
 	pub course_id: u32,
 	pub map_id: u16,
 	pub map_name: String,
-	pub stage: u8,
+	pub map_stage: u8,
+	pub stage_tier: Option<Tier>,
 	pub steam_id: SteamID,
 	pub player_name: String,
 	pub mode: Mode,
