@@ -50,6 +50,62 @@ pub struct Record {
 	pub updated_on: String,
 }
 
+impl Record {
+	/// Returns a URL to an image of the map the record was done on.
+	pub fn map_thumbnail(&self) -> String {
+		format!(
+			"https://raw.githubusercontent.com/KZGlobalTeam/map-images/master/images/{}.jpg",
+			self.map_name
+		)
+	}
+
+	/// Returns a link to download the map the record was done on as a `.bsp` file.
+	pub fn map_download(&self) -> String {
+		format!("https://maps.global-api.com/bsps/{}.bsp", self.map_name)
+	}
+
+	/// Returns a link to fetch the map the record was done on from the GlobalAPI.
+	pub fn api(&self) -> String {
+		format!("{API_URL}/maps/name/{}", self.map_name)
+	}
+
+	/// Returns a link to the KZ:GO page of the map this record was done on.
+	pub fn kzgo(&self) -> String {
+		format!("https://kzgo.eu/maps/{}", self.map_name)
+	}
+
+	/// Returns a download link for the replay of this record.
+	pub fn replay_download(&self) -> Option<String> {
+		if self.replay_id == 0 {
+			return None;
+		}
+
+		Some(format!("{API_URL}/records/replay/{}", self.replay_id))
+	}
+
+	/// Returns a link to watch the replay of this record online.
+	pub fn replay_view(&self) -> Option<String> {
+		if self.replay_id == 0 {
+			return None;
+		}
+
+		Some(format!(
+			"http://gokzmaptest.site.nfoservers.com/GlobalReplays/?replay={}",
+			self.replay_id
+		))
+	}
+
+	/// Combination of [`Self::replay_download`] and [`Self::replay_view`] as both of them
+	/// return [`None`] / [`Some`] on the same condition.
+	pub fn replay_links(&self) -> Option<(String, String)> {
+		if let (Some(download), Some(view)) = (self.replay_download(), self.replay_view()) {
+			Some((download, view))
+		} else {
+			None
+		}
+	}
+}
+
 /// `/records/:record_id` route
 ///
 /// Fetches a specific record by id.

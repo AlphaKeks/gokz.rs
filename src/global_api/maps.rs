@@ -80,6 +80,11 @@ impl Map {
 		format!("{API_URL}/maps/name/{}", self.name)
 	}
 
+	/// Returns a link to fetch this map from DawnAPI.
+	pub fn dawn_api(&self) -> String {
+		format!("https://dawn.sh/api/kz/maps/{}", self.id)
+	}
+
 	/// Returns a link to the map's KZ:GO page.
 	pub fn kzgo(&self) -> String {
 		format!("https://kzgo.eu/maps/{}", self.name)

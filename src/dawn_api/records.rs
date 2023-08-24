@@ -42,6 +42,36 @@ pub struct Record {
 	pub created_on: String,
 }
 
+impl Record {
+	/// Returns a URL to an image of the map the record was done on.
+	pub fn map_thumbnail(&self) -> String {
+		format!(
+			"https://raw.githubusercontent.com/KZGlobalTeam/map-images/master/images/{}.jpg",
+			self.map_name
+		)
+	}
+
+	/// Returns a link to download the map the record was done on as a `.bsp` file.
+	pub fn map_download(&self) -> String {
+		format!("https://maps.global-api.com/bsps/{}.bsp", self.map_name)
+	}
+
+	/// Returns a link to fetch the map the record was done on from DawnAPI.
+	pub fn api(&self) -> String {
+		format!("{API_URL}/maps/name/{}", self.map_name)
+	}
+
+	/// Returns a link to fetch the map the record was done on from the GlobalAPI.
+	pub fn global_api(&self) -> String {
+		format!("https://kztimerglobal.com/api/v2/maps/name/{}", self.map_name)
+	}
+
+	/// Returns a link to the KZ:GO page of the map this record was done on.
+	pub fn kzgo(&self) -> String {
+		format!("https://kzgo.eu/maps/{}", self.map_name)
+	}
+}
+
 /// `/records/:record_id` route
 ///
 /// Fetches a specific record by id.
