@@ -48,6 +48,27 @@ impl Map {
 		self.global
 	}
 
+	/// Extracts the [`Tier`] for the main course on this [`Map`].
+	///
+	/// DawnAPI has tiers per course instead of per map, and not all courses have a [`Tier`],
+	/// the main course however does.
+	///
+	/// # Panics
+	///
+	/// This code assumes invariants about DawnAPI:
+	///
+	/// 1. `self.courses` is non-empty.
+	/// 2. `self.courses[0]` is the main course of the map.
+	/// 3. `self.courses[0].tier` is [`Some`] because every main course is tiered.
+	///
+	/// If you construct a [`Map`] yourself, it needs to adhere to these invariants, otherwise
+	/// this method will panic.
+	pub fn tier(&self) -> Tier {
+		self.courses[0]
+			.tier
+			.expect("DawnAPI maps always have at least 1 course with a `Tier`.")
+	}
+
 	/// Returns a URL to an image of the map.
 	pub fn image_url(&self) -> String {
 		format!(
