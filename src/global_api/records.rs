@@ -118,6 +118,23 @@ pub async fn get_record(record_id: u32, client: &crate::http::Client) -> Result<
 	}
 }
 
+/// `/records/place/:record_id` route
+///
+/// Fetches the leaderboard place for a specific record.
+#[tracing::instrument(level = "TRACE", skip(client))]
+pub async fn get_place(record_id: u32, client: &crate::http::Client) -> Result<u32> {
+	#[derive(Deserialize)]
+	struct Place(u32);
+
+	let Place(place) = http::get! {
+		url = format!("{API_URL}/records/place/{record_id}");
+		deserialize = Place;
+		client = client;
+	}?;
+
+	Ok(place)
+}
+
 #[allow(missing_docs)]
 #[derive(Default, Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Params {

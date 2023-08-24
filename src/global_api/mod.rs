@@ -27,7 +27,7 @@ pub use filters::{get_filters_with, RecordFilter};
 
 pub mod records;
 pub use records::{
-	get_maptop, get_pb, get_record, get_records_with, get_wr,
+	get_maptop, get_pb, get_place, get_record, get_records_with, get_wr,
 	world_records::{self, get_wr_leaderboard},
 	Record,
 };

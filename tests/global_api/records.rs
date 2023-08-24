@@ -40,6 +40,16 @@ async fn get_record() -> Result<()> {
 }
 
 #[tokio::test]
+async fn get_place() -> Result<()> {
+	let record_id = 14202658;
+	let place = global_api::get_place(record_id, &crate::GOKZ_CLIENT).await?;
+
+	assert!(place > 0);
+
+	Ok(())
+}
+
+#[tokio::test]
 async fn get_wr() -> Result<()> {
 	global_api::get_wr("kz_lionharder", 0, Mode::SimpleKZ, true, &crate::GOKZ_CLIENT).await?;
 
