@@ -22,7 +22,11 @@ impl<'de> Deserialize<'de> for Runtype {
 		match Deserializable::deserialize(deserializer)? {
 			Deserializable::I8(int) => Runtype::try_from(int),
 			Deserializable::Bool(bool) => Ok(Runtype::from(bool)),
-			Deserializable::String(string) => Runtype::try_from(string),
+			Deserializable::String(string) => match string.as_str() {
+				"true" => Ok(Runtype::TP),
+				"false" => Ok(Runtype::Pro),
+				_ => Runtype::try_from(string),
+			},
 		}
 		.map_err(|err| de::Error::custom(err.to_string()))
 	}
