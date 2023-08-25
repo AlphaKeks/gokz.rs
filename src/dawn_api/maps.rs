@@ -8,6 +8,7 @@ use {
 	super::API_URL,
 	crate::{http, yeet, MapIdentifier, PlayerIdentifier, Result, SteamID, Tier},
 	serde::{Deserialize, Serialize},
+	std::ops::Deref,
 };
 
 #[allow(missing_docs)]
@@ -123,8 +124,16 @@ pub struct Course {
 #[allow(missing_docs)]
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct Mapper {
-	id: SteamID,
-	name: String,
+	pub id: SteamID,
+	pub name: String,
+}
+
+impl Deref for Mapper {
+	type Target = SteamID;
+
+	fn deref(&self) -> &Self::Target {
+		&self.id
+	}
 }
 
 #[allow(missing_docs)]
