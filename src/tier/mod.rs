@@ -34,13 +34,13 @@ pub enum Tier {
 impl Display for Tier {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		f.write_str(match self {
-			Tier::VeryEasy => "very_easy",
-			Tier::Easy => "easy",
-			Tier::Medium => "medium",
-			Tier::Hard => "hard",
-			Tier::VeryHard => "very_hard",
-			Tier::Extreme => "extreme",
-			Tier::Death => "death",
+			Tier::VeryEasy => "VeryEasy",
+			Tier::Easy => "Easy",
+			Tier::Medium => "Medium",
+			Tier::Hard => "Hard",
+			Tier::VeryHard => "VeryHard",
+			Tier::Extreme => "Extreme",
+			Tier::Death => "Death",
 		})
 	}
 }
