@@ -9,6 +9,16 @@ impl Serialize for Runtype {
 	}
 }
 
+impl Runtype {
+	/// Serializes [`Runtype`] as `"tp"` or `"pro"` instead of as a boolean.
+	pub fn serialize_word<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+		serializer.serialize_str(match self {
+			Runtype::Pro => "pro",
+			Runtype::TP => "tp",
+		})
+	}
+}
+
 #[derive(Deserialize)]
 #[serde(untagged)]
 enum Deserializable {
