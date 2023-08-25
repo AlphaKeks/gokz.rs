@@ -31,15 +31,38 @@ macro_rules! get {
 			.await
 			.map_err(|err| {
 				let code = err.status();
+
+				if matches!(code, Some(::reqwest::StatusCode::NO_CONTENT)) {
+					return $crate::Error::EmptyResponse;
+				}
+
 				let message = err.to_string();
 				$crate::Error::Http { code, message }
+			})?
+			.error_for_status()
+			.map_err(|err| {
+				let code = err.status();
+
+				if matches!(code, Some(::reqwest::StatusCode::NO_CONTENT)) {
+					return $crate::Error::EmptyResponse;
+				}
+
+				let message = err.to_string();
+				$crate::Error::Http { code, message }
+			})
+			.and_then(|response| {
+				if response.status() == ::reqwest::StatusCode::NO_CONTENT {
+					return Err($crate::Error::EmptyResponse);
+				}
+
+				Ok(response)
 			})?
 	};
 
 	(__process, $request:expr, $type:ty) => {
 		// async {
 		// 	::serde_json::from_value::<$type>(
-		// 		dbg!($request.json::<::serde_json::Value>().await.unwrap())
+		// 		dbg!(dbg!($request).json::<::serde_json::Value>().await.unwrap())
 		// 	)
 		// }
 
@@ -51,10 +74,9 @@ macro_rules! get {
 	};
 
 	(__finish, $response:expr) => {
-		$response.await
-			.map_err(|err| {
-				$crate::Error::DeserializeResponse(err.to_string())
-			})
+		$response.await.map_err(|err| {
+			$crate::Error::DeserializeResponse(err.to_string())
+		})
 	};
 }
 
