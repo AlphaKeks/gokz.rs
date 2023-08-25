@@ -233,6 +233,39 @@ impl SteamID {
 	}
 }
 
+#[cfg(feature = "reqwest")]
+impl SteamID {
+	/// Fetches the player's Steam avatar.
+	///
+	/// * `api_key`: [Steam WebAPI key](https://steamcommunity.com/dev/apikey)
+	pub async fn avatar_url(
+		&self,
+		api_key: &str,
+		client: &crate::http::Client,
+	) -> crate::Result<String> {
+		let result = crate::http::get! {
+			url = format!("https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002");
+			params = &serde_json::json!({
+				"key": api_key,
+				"steamids": self.as_id64()
+			});
+			deserialize = serde_json::Value;
+			client = client;
+		}?;
+
+		let player = result["response"]["players"]
+			.get(0)
+			.ok_or(crate::Error::EmptyResponse)?;
+
+		["avatarfull", "avatarmedium", "avatar"]
+			.into_iter()
+			.find_map(|x| player.get(x))
+			.and_then(|url| url.as_str())
+			.map(ToOwned::to_owned)
+			.ok_or(crate::Error::EmptyResponse)
+	}
+}
+
 impl Display for SteamID {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		write!(f, "STEAM_1:{}:{}", self.account_type(), self.account_number())
