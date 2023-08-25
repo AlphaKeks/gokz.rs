@@ -51,6 +51,14 @@ pub struct Record {
 }
 
 impl Record {
+	/// Returns the [`Runtype`] for this record.
+	pub const fn runtype(&self) -> Runtype {
+		match self.teleports > 0 {
+			true => Runtype::TP,
+			false => Runtype::Pro,
+		}
+	}
+
 	/// Returns a URL to an image of the map the record was done on.
 	pub fn map_thumbnail(&self) -> String {
 		format!(
