@@ -83,9 +83,10 @@ impl Map {
 		format!("https://maps.global-api.com/bsps/{}.bsp", self.name)
 	}
 
-	/// Returns the map's Steam Workshop ID if it has a known one.
-	pub fn workshop_id(&self) -> Option<u32> {
+	/// Returns a link to the map's Steam Workshop page if it has a known one.
+	pub fn workshop_url(&self) -> Option<String> {
 		self.workshop_id
+			.map(|id| format!("https://steamcommunity.com/sharedfiles/filedetails/?id={id}"))
 	}
 
 	/// Returns a link to fetch this map from DawnAPI.
