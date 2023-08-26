@@ -229,6 +229,36 @@ pub async fn get_pb(
 	Ok(records.remove(0))
 }
 
+/// `/records/top` route
+///
+/// Fetches all of a player's personal bests.
+#[tracing::instrument(level = "TRACE", skip(client))]
+pub async fn get_pbs(
+	player: impl Into<PlayerIdentifier> + std::fmt::Debug,
+	course: u8,
+	client: &crate::http::Client,
+) -> Result<Vec<Record>> {
+	let params = Params {
+		stage: Some(course),
+		player: Some(player.into()),
+		limit: Some(100000),
+		..Default::default()
+	};
+
+	let records = http::get! {
+		url = format!("{API_URL}/records/top");
+		params = &params;
+		deserialize = Vec<Record>;
+		client = client;
+	}?;
+
+	if records.is_empty() {
+		yeet!(EmptyResponse);
+	}
+
+	Ok(records)
+}
+
 #[allow(missing_docs)]
 #[derive(Default, Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct ProgressionParams {

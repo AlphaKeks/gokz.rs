@@ -24,7 +24,7 @@ pub use players::{
 
 pub mod records;
 pub use records::{
-	get_maptop, get_pb, get_pb_progresion, get_record, get_records_with, get_wr, Record,
+	get_maptop, get_pb, get_pb_progresion, get_pbs, get_record, get_records_with, get_wr, Record,
 };
 
 mod serde {
