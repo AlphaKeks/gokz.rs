@@ -46,7 +46,7 @@ pub enum Error {
 
 	/// An HTTP Request failed.
 	#[cfg(feature = "reqwest")]
-	#[error("HTTP Request failed{}: {message}", code.map(|code| code.as_u16().to_string()).unwrap_or_default())]
+	#[error("HTTP Request failed{}: {message}", code.map(|code| format!(" with code {}", code.as_u16())).unwrap_or_default())]
 	Http {
 		/// The HTTP status code returned by the failed request.
 		#[serde(
