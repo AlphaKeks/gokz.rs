@@ -105,3 +105,69 @@ impl FromStr for Tier {
 		})
 	}
 }
+
+#[cfg(feature = "poise")]
+#[poise::async_trait]
+impl poise::SlashArgument for Tier {
+	async fn extract(
+		_: &poise::serenity_prelude::Context,
+		_: poise::ApplicationCommandOrAutocompleteInteraction<'_>,
+		value: &poise::serenity_prelude::json::Value,
+	) -> Result<Self, poise::SlashArgError> {
+		let choice_key = value
+			.as_u64()
+			.ok_or(poise::SlashArgError::CommandStructureMismatch("expected u64"))?;
+
+		Ok(match choice_key {
+			0 => Tier::VeryEasy,
+			1 => Tier::Easy,
+			2 => Tier::Medium,
+			3 => Tier::Hard,
+			4 => Tier::VeryHard,
+			5 => Tier::Extreme,
+			6 => Tier::Death,
+			_ => {
+				return Err(poise::SlashArgError::CommandStructureMismatch(
+					"out of bounds choice key",
+				));
+			}
+		})
+	}
+
+	fn create(builder: &mut poise::serenity_prelude::CreateApplicationCommandOption) {
+		builder.kind(poise::serenity_prelude::CommandOptionType::Integer);
+	}
+
+	fn choices() -> Vec<poise::CommandParameterChoice> {
+		vec![
+			poise::CommandParameterChoice {
+				name: String::from("VeryEasy"),
+				localizations: Default::default(),
+			},
+			poise::CommandParameterChoice {
+				name: String::from("Easy"),
+				localizations: Default::default(),
+			},
+			poise::CommandParameterChoice {
+				name: String::from("Medium"),
+				localizations: Default::default(),
+			},
+			poise::CommandParameterChoice {
+				name: String::from("Hard"),
+				localizations: Default::default(),
+			},
+			poise::CommandParameterChoice {
+				name: String::from("VeryHard"),
+				localizations: Default::default(),
+			},
+			poise::CommandParameterChoice {
+				name: String::from("Extreme"),
+				localizations: Default::default(),
+			},
+			poise::CommandParameterChoice {
+				name: String::from("Death"),
+				localizations: Default::default(),
+			},
+		]
+	}
+}
