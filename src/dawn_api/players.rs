@@ -28,7 +28,7 @@ pub struct PlayerWithCompletion {
 	pub name: String,
 	pub steam_id: SteamID,
 	pub is_banned: bool,
-	pub completion: Completion,
+	pub completions: Completion,
 }
 
 #[allow(missing_docs)]
