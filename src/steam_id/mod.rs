@@ -275,9 +275,13 @@ impl Display for SteamID {
 impl TryFrom<u64> for SteamID {
 	type Error = crate::Error;
 
-	/// Constructs a [`SteamID`] in the format `76561198282622073`. This value must be higher than
-	/// [`SteamID::OFFSET`].
+	/// Constructs a [`SteamID`] in the format `76561198282622073`. This value must be higher
+	/// than [`SteamID::OFFSET`].
 	fn try_from(steam_id64: u64) -> crate::Result<Self> {
+		if let Ok(steam_id32) = u32::try_from(steam_id64) {
+			return Self::try_from(steam_id32);
+		}
+
 		if steam_id64 <= Self::OFFSET || steam_id64 > Self::MAX {
 			yeet!(InvalidSteamID(steam_id64));
 		}
