@@ -246,20 +246,9 @@ pub struct ProgressionParams {
 pub async fn get_pb_progresion(
 	player: impl Into<PlayerIdentifier> + std::fmt::Debug,
 	mode: impl Into<Mode> + std::fmt::Debug,
-	map: impl Into<MapIdentifier> + std::fmt::Debug,
-	course: u8,
-	runtype: impl Into<Runtype> + std::fmt::Debug,
-	limit: Option<u64>,
+	params: &ProgressionParams,
 	client: &crate::http::Client,
 ) -> Result<Vec<Record>> {
-	let params = ProgressionParams {
-		map: Some(map.into()),
-		stage: Some(course),
-		runtype: Some(runtype.into()),
-		limit,
-		..Default::default()
-	};
-
 	let records = http::get! {
 		url = format!("{API_URL}/records/progression/{}/{}", player.into(), mode.into().api());
 		params = &params;
