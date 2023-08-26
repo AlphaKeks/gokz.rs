@@ -77,7 +77,7 @@ impl Record {
 
 	/// Returns a link to the KZ:GO page of the map this record was done on.
 	pub fn kzgo(&self) -> String {
-		format!("https://kzgo.eu/maps/{}", self.map_name)
+		format!("https://kzgo.eu/maps/{}?{}=", self.map_name, self.mode.short().to_lowercase())
 	}
 }
 
