@@ -2,13 +2,15 @@
 //!
 //! Covered:
 //! - `/players`
-//! - `/players/steamid/:steam_id`
-//!
-//! NOTE: `/players/steamid/:steam_id/alts` seems to be broken.
+//! - `/players/:identifier`
+//! - `/players/:identifier/completion`
 
 use {
 	super::API_URL,
-	crate::{http, yeet, PlayerIdentifier, Result, SteamID},
+	crate::{
+		http, http::append_pairs, yeet, Mode, PlayerIdentifier, Result, Runtype, SteamID, Tier,
+	},
+	reqwest::Url,
 	serde::{Deserialize, Serialize},
 };
 
@@ -117,4 +119,61 @@ pub async fn get_player(
 	}?;
 
 	Ok(player)
+}
+
+#[allow(missing_docs)]
+#[derive(Default, Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct CompletionParams {
+	#[serde(skip)]
+	pub stages: Option<Vec<u8>>,
+	pub tier: Option<Tier>,
+	pub mode: Option<Mode>,
+	pub runtype: Option<Runtype>,
+	pub not_completed: Option<bool>,
+	pub limit: Option<u64>,
+	pub offset: Option<i64>,
+}
+
+#[allow(missing_docs)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct CompletedCourse {
+	pub course_id: u32,
+	pub map_id: u16,
+	pub map_name: String,
+	pub map_stage: u8,
+	pub stage_tier: Option<Tier>,
+	pub mode: Mode,
+	pub has_teleports: Runtype,
+	pub steam_id: SteamID,
+	pub player_name: String,
+}
+
+/// `/players/:player_identifier/completion` route.
+///
+/// Fetches all courses (not) completed by a given `player`.
+///
+/// If the API response is empty, this function will return an [`Error`](crate::Error).
+#[tracing::instrument(level = "TRACE", skip(client))]
+pub async fn get_completed(
+	player: impl Into<PlayerIdentifier> + std::fmt::Debug,
+	params: &CompletionParams,
+	client: &http::Client,
+) -> Result<Vec<CompletedCourse>> {
+	let mut url = Url::parse(&format!("{API_URL}/players/{}/completion", player.into()))
+		.expect("This is a valid URL.");
+
+	append_pairs!(&mut url, &params.stages, "stages");
+
+	let completed = http::get! {
+		url = url;
+		params = params;
+		deserialize = Vec<CompletedCourse>;
+		client = client;
+	}?;
+
+	if completed.is_empty() {
+		yeet!(EmptyResponse);
+	}
+
+	Ok(completed)
 }

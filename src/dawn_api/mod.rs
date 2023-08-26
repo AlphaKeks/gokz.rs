@@ -18,11 +18,14 @@ pub use servers::{get_server, get_servers_owned_by, get_servers_with, Server};
 
 pub mod players;
 pub use players::{
-	get_player, get_players_with, Completion, CompletionCount, Player, PlayerWithCompletion,
+	get_completed, get_player, get_players_with, Completion, CompletionCount, Player,
+	PlayerWithCompletion,
 };
 
 pub mod records;
-pub use records::{get_maptop, get_pb, get_record, get_records_with, get_wr, Record};
+pub use records::{
+	get_maptop, get_pb, get_pb_progresion, get_record, get_records_with, get_wr, Record,
+};
 
 mod serde {
 	pub mod chrono {

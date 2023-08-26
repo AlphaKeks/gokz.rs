@@ -1,10 +1,10 @@
 //! `/records` endpoints
 //!
 //! Covered:
+//! - `/records`
 //! - `/records/:record_id`
 //! - `/records/top`
-//! - `/records/top/world_records`
-//! - `/records/place/:record_id`
+//! - `/records/progression/:player/:mode`
 
 use {
 	super::API_URL,
@@ -227,4 +227,49 @@ pub async fn get_pb(
 	}
 
 	Ok(records.remove(0))
+}
+
+#[allow(missing_docs)]
+#[derive(Default, Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct ProgressionParams {
+	pub map: Option<MapIdentifier>,
+	pub stage: Option<u8>,
+	pub runtype: Option<Runtype>,
+	pub limit: Option<u64>,
+	pub offset: Option<i64>,
+}
+
+/// `/records/progression/:player/:mode` route
+///
+/// Fetches all of a player's personal bests in chronological order for the given mode.
+#[tracing::instrument(level = "TRACE", skip(client))]
+pub async fn get_pb_progresion(
+	player: impl Into<PlayerIdentifier> + std::fmt::Debug,
+	mode: impl Into<Mode> + std::fmt::Debug,
+	map: impl Into<MapIdentifier> + std::fmt::Debug,
+	course: u8,
+	runtype: impl Into<Runtype> + std::fmt::Debug,
+	limit: Option<u64>,
+	client: &crate::http::Client,
+) -> Result<Vec<Record>> {
+	let params = ProgressionParams {
+		map: Some(map.into()),
+		stage: Some(course),
+		runtype: Some(runtype.into()),
+		limit,
+		..Default::default()
+	};
+
+	let records = http::get! {
+		url = format!("{API_URL}/records/progression/{}/{}", player.into(), mode.into().api());
+		params = &params;
+		deserialize = Vec<Record>;
+		client = client;
+	}?;
+
+	if records.is_empty() {
+		yeet!(EmptyResponse);
+	}
+
+	Ok(records)
 }

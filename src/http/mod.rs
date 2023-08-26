@@ -82,7 +82,7 @@ macro_rules! get {
 
 pub(crate) use get;
 
-#[cfg(feature = "global-api")]
+#[cfg(any(feature = "global-api", feature = "dawn-api"))]
 macro_rules! append_pairs {
 	($url:expr, $value:expr, $name:expr) => {{
 		if let Some(items) = $value {
