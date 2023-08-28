@@ -183,7 +183,6 @@ pub async fn get_completed(
 #[allow(missing_docs)]
 #[derive(Default, Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub struct ProgressionParams {
-	pub map: Option<MapIdentifier>,
 	pub stage: Option<u8>,
 	pub runtype: Option<Runtype>,
 	pub limit: Option<u64>,
