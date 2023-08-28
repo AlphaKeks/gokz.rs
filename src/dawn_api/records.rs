@@ -13,6 +13,7 @@ use {
 		SteamID, Tier,
 	},
 	serde::{Deserialize, Serialize},
+	std::ops::{Deref, DerefMut},
 };
 
 #[allow(missing_docs)]
@@ -269,6 +270,29 @@ pub struct ProgressionParams {
 	pub offset: Option<i64>,
 }
 
+#[allow(missing_docs)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ProgressionRecord {
+	#[serde(flatten)]
+	pub record: Record,
+	pub time_improvement: Option<f64>,
+	pub attempts: u32,
+}
+
+impl Deref for ProgressionRecord {
+	type Target = Record;
+
+	fn deref(&self) -> &Self::Target {
+		&self.record
+	}
+}
+
+impl DerefMut for ProgressionRecord {
+	fn deref_mut(&mut self) -> &mut Self::Target {
+		&mut self.record
+	}
+}
+
 /// `/records/progression/:player/:mode` route
 ///
 /// Fetches all of a player's personal bests in chronological order for the given mode.
@@ -278,11 +302,11 @@ pub async fn get_pb_progresion(
 	mode: impl Into<Mode> + std::fmt::Debug,
 	params: &ProgressionParams,
 	client: &crate::http::Client,
-) -> Result<Vec<Record>> {
+) -> Result<Vec<ProgressionRecord>> {
 	let records = http::get! {
 		url = format!("{API_URL}/records/progression/{}/{}", player.into(), mode.into().api());
 		params = &params;
-		deserialize = Vec<Record>;
+		deserialize = Vec<ProgressionRecord>;
 		client = client;
 	}?;
 
