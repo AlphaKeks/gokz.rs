@@ -13,7 +13,6 @@ use {
 		SteamID, Tier,
 	},
 	serde::{Deserialize, Serialize},
-	std::ops::{Deref, DerefMut},
 };
 
 #[allow(missing_docs)]
@@ -250,63 +249,6 @@ pub async fn get_pbs(
 		url = format!("{API_URL}/records/top");
 		params = &params;
 		deserialize = Vec<Record>;
-		client = client;
-	}?;
-
-	if records.is_empty() {
-		yeet!(EmptyResponse);
-	}
-
-	Ok(records)
-}
-
-#[allow(missing_docs)]
-#[derive(Default, Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
-pub struct ProgressionParams {
-	pub map: Option<MapIdentifier>,
-	pub stage: Option<u8>,
-	pub runtype: Option<Runtype>,
-	pub limit: Option<u64>,
-	pub offset: Option<i64>,
-}
-
-#[allow(missing_docs)]
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct ProgressionRecord {
-	#[serde(flatten)]
-	pub record: Record,
-	pub time_improvement: Option<f64>,
-	pub attempts: u32,
-}
-
-impl Deref for ProgressionRecord {
-	type Target = Record;
-
-	fn deref(&self) -> &Self::Target {
-		&self.record
-	}
-}
-
-impl DerefMut for ProgressionRecord {
-	fn deref_mut(&mut self) -> &mut Self::Target {
-		&mut self.record
-	}
-}
-
-/// `/records/progression/:player/:mode` route
-///
-/// Fetches all of a player's personal bests in chronological order for the given mode.
-#[tracing::instrument(level = "TRACE", skip(client))]
-pub async fn get_pb_progresion(
-	player: impl Into<PlayerIdentifier> + std::fmt::Debug,
-	mode: impl Into<Mode> + std::fmt::Debug,
-	params: &ProgressionParams,
-	client: &crate::http::Client,
-) -> Result<Vec<ProgressionRecord>> {
-	let records = http::get! {
-		url = format!("{API_URL}/records/progression/{}/{}", player.into(), mode.into().api());
-		params = &params;
-		deserialize = Vec<ProgressionRecord>;
 		client = client;
 	}?;
 
