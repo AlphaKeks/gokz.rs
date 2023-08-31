@@ -37,7 +37,7 @@ impl From<SteamID> for PlayerIdentifier {
 	}
 }
 
-from!([&str, String] => PlayerIdentifier => |player_name| {
+from!([&str, &String, String] => PlayerIdentifier => |player_name| {
 	PlayerIdentifier::Name(player_name.into())
 });
 

@@ -72,7 +72,7 @@ macro_rules! identifier {
 			Ok(id as _)
 		});
 
-		from!([&str, String] => $type => |name| {
+		from!([&str, &String, String] => $type => |name| {
 			$type::Name(name.into())
 		});
 
