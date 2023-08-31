@@ -1,6 +1,6 @@
 [package]
 name = "gokz_rs"
-version = "0.24.2"
+version = "0.24.3"
 description = "CS:GO KZ in Rust."
 authors = ["AlphaKeks <alphakeks@dawn.sh>"]
 edition = "2021"
@@ -44,7 +44,7 @@ features = ["serde"]
 optional = true
 version = "0.11"
 default-features = false
-features = ["rustls", "json"]
+features = ["rustls", "rustls-tls", "json"]
 
 [dependencies.sqlx]
 optional = true

@@ -23,7 +23,7 @@ pub mod chrono {
 		let ndt = NaiveDateTime::parse_from_str(&date, "%Y-%m-%dT%H:%M:%S")
 			.map_err(|err| de::Error::custom(err.to_string()))?;
 
-		Ok(DateTime::<Utc>::from_utc(ndt, Utc))
+		Ok(DateTime::<Utc>::from_naive_utc_and_offset(ndt, Utc))
 	}
 
 	pub fn serialize_date_opt<S: Serializer>(
@@ -46,7 +46,7 @@ pub mod chrono {
 		let ndt = NaiveDateTime::parse_from_str(&date, "%Y-%m-%dT%H:%M:%S")
 			.map_err(|err| de::Error::custom(err.to_string()))?;
 
-		Ok(Some(DateTime::<Utc>::from_utc(ndt, Utc)))
+		Ok(Some(DateTime::<Utc>::from_naive_utc_and_offset(ndt, Utc)))
 	}
 }
 

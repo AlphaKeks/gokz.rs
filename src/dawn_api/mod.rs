@@ -48,7 +48,7 @@ mod serde {
 			let ndt = NaiveDateTime::parse_from_str(&date, "%Y-%m-%dT%H:%M:%SZ")
 				.map_err(|err| de::Error::custom(err.to_string()))?;
 
-			Ok(DateTime::<Utc>::from_utc(ndt, Utc))
+			Ok(DateTime::<Utc>::from_naive_utc_and_offset(ndt, Utc))
 		}
 	}
 }
