@@ -94,5 +94,5 @@ macro_rules! append_pairs {
 	}};
 }
 
-#[cfg(feature = "global-api")]
+#[cfg(any(feature = "global-api", feature = "dawn-api"))]
 pub(crate) use append_pairs;
